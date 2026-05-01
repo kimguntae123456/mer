@@ -3,7 +3,12 @@ name: Daily 메르 블로그 업데이트
 on:
   schedule:
     - cron: '0 22 * * *'  # 매일 오전 7시 KST (UTC 22:00)
-  workflow_dispatch:       # 수동 실행도 가능
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'deploy-only (기존 HTML만 배포) 또는 full (수집+배포)'
+        required: false
+        default: 'full'
 
 permissions:
   contents: write
@@ -11,8 +16,33 @@ permissions:
   id-token: write
 
 jobs:
+  # 1단계: 기존 output/ 즉시 배포
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: GitHub Pages 설정
+        uses: actions/configure-pages@v4
+
+      - name: output/ 폴더 업로드
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: output/
+
+      - name: 배포
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # 2단계: 새 글 수집 (deploy와 병렬 실행)
   update:
     runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.mode != 'deploy-only' }}
 
     steps:
       - name: Checkout
@@ -30,9 +60,8 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          # new_posts.log 없으면 최초 실행 → 4월 6일 이후 백필
           if [ ! -f new_posts.log ]; then
-            echo "최초 실행: 2025-04-06 이후 백필 시작"
+            echo "최초 실행: 2025-04-06 이후 백필"
             python crawl_new.py --backfill 2025-04-06
           else
             python crawl_new.py
@@ -44,11 +73,13 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add processed/ output/ new_posts.log
           git diff --staged --quiet || git commit -m "chore: 메르 블로그 자동 업데이트 $(date '+%Y-%m-%d')"
-          git push
+          git push || true
 
-  deploy:
+  # 3단계: update 완료 후 재배포
+  redeploy:
     needs: update
     runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.mode != 'deploy-only' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -62,11 +93,11 @@ jobs:
       - name: GitHub Pages 설정
         uses: actions/configure-pages@v4
 
-      - name: output/ 폴더 업로드
+      - name: 업데이트된 output/ 업로드
         uses: actions/upload-pages-artifact@v3
         with:
           path: output/
 
-      - name: 배포
+      - name: 재배포
         id: deployment
         uses: actions/deploy-pages@v4
