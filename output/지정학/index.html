@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>메르 리더 — 지정학</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; background: #f5f5f0; color: #1a1a1a; line-height: 1.7; }
+a { color: inherit; text-decoration: none; }
+
+/* 상단 네비 */
+.nav { background: #1a1a1a; color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+.nav .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.5px; }
+.nav .back { font-size: 0.85rem; opacity: 0.6; }
+.nav .back:hover { opacity: 1; }
+
+/* 검색/필터 바 */
+.filter-bar { max-width: 780px; margin: 0 auto; padding: 16px 24px 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.search-input { flex: 1; min-width: 200px; padding: 9px 14px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 0.9rem; background: #fff; outline: none; }
+.search-input:focus { border-color: #1a1a1a; }
+.filter-count { font-size: 0.8rem; color: #aaa; white-space: nowrap; }
+.tag-filter-bar { max-width: 780px; margin: 0 auto; padding: 10px 24px 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-btn { font-size: 0.75rem; background: #f0f0ea; color: #555; padding: 4px 10px; border-radius: 20px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+.tag-btn:hover { background: #e0e0d8; }
+.tag-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.tag-btn.clear-btn { background: #fff; border-color: #ddd; color: #999; }
+
+/* 날짜 그룹 헤더 */
+.date-group-header { font-size: 0.78rem; font-weight: 700; letter-spacing: 1px; color: #aaa; padding: 20px 0 8px; text-transform: uppercase; }
+
+/* 결과 없음 */
+.no-results { text-align: center; padding: 60px 24px; color: #aaa; font-size: 0.95rem; display: none; }
+
+/* 인덱스 페이지 */
+.index-hero { padding: 60px 24px 40px; max-width: 900px; margin: 0 auto; }
+.index-hero h1 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+.index-hero p { color: #666; font-size: 0.95rem; }
+.folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 900px; margin: 0 auto; padding: 0 24px 60px; }
+.folder-card { background: #fff; border-radius: 12px; padding: 24px; border: 1px solid #e8e8e0; cursor: pointer; transition: box-shadow 0.2s, transform 0.2s; }
+.folder-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); transform: translateY(-2px); }
+.folder-card .folder-name { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
+.folder-card .folder-sub { font-size: 0.8rem; color: #888; margin-bottom: 12px; }
+.folder-card .folder-count { font-size: 1.8rem; font-weight: 800; color: #1a1a1a; }
+.folder-card .folder-count span { font-size: 0.85rem; font-weight: 400; color: #888; margin-left: 4px; }
+
+/* 타임라인 페이지 */
+.timeline-header { padding: 40px 24px 24px; max-width: 780px; margin: 0 auto; }
+.timeline-header h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+.timeline-header .sub { color: #888; font-size: 0.85rem; margin-top: 4px; }
+.timeline { max-width: 780px; margin: 0 auto; padding: 0 24px 80px; }
+
+/* 카드 */
+.card { background: #fff; border-radius: 12px; border: 1px solid #e8e8e0; margin-bottom: 16px; overflow: hidden; transition: box-shadow 0.2s; }
+.card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.card-header { padding: 20px 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.card-header-left { flex: 1; }
+.card-date { font-size: 0.78rem; color: #999; margin-bottom: 6px; letter-spacing: 0.3px; }
+.card-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.3px; line-height: 1.5; }
+.card-tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 0.75rem; background: #f0f0ea; color: #555; padding: 3px 8px; border-radius: 20px; }
+.card-toggle { font-size: 1.2rem; color: #ccc; flex-shrink: 0; margin-top: 2px; transition: transform 0.2s; }
+.card.open .card-toggle { transform: rotate(180deg); }
+
+/* 카드 본문 */
+.card-body { display: none; border-top: 1px solid #f0f0ea; padding: 24px; }
+.card.open .card-body { display: block; }
+
+.section { margin-bottom: 24px; }
+.section-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #aaa; margin-bottom: 10px; }
+
+/* 도입 */
+.intro-text { font-size: 0.95rem; color: #333; line-height: 1.8; }
+
+/* 단락 */
+.para { margin-bottom: 16px; }
+.para-title { font-size: 0.85rem; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; padding-left: 10px; border-left: 3px solid #1a1a1a; }
+.para-body { font-size: 0.9rem; color: #444; line-height: 1.8; }
+
+/* 주석 */
+.annotations { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.annotation { font-size: 0.82rem; background: #f7f7f2; border-radius: 6px; padding: 8px 12px; color: #555; line-height: 1.6; }
+.annotation .ann-type { font-weight: 700; color: #888; margin-right: 6px; font-size: 0.75rem; }
+.annotation .ann-target { font-weight: 700; color: #333; margin-right: 4px; }
+
+/* 질문 + 답 */
+.question-box { background: #1a1a1a; color: #fff; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+.question-box .q-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; color: #888; margin-bottom: 6px; }
+.question-box .q-text { font-size: 0.92rem; line-height: 1.6; }
+.answer-box { background: #f7f7f2; border-radius: 10px; padding: 16px 20px; }
+.answer-box .a-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; color: #aaa; margin-bottom: 6px; }
+.answer-box .a-text { font-size: 0.92rem; color: #333; line-height: 1.6; }
+
+/* 원본 링크 */
+.source-link { margin-top: 16px; font-size: 0.8rem; color: #aaa; }
+.source-link a { color: #888; text-decoration: underline; }
+.source-link a:hover { color: #333; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="logo">메르 리더</span>
+  <a href="../index.html" class="back">← 전체 목록</a>
+</nav>
+<div class="timeline-header">
+  <h1>지정학</h1>
+  <div class="sub">중동·지정학 · 중국경제·정치 · <span id="filterCount">85개</span> 글</div>
+</div>
+<div class="filter-bar">
+  <input id="searchInput" class="search-input" type="text" placeholder="제목·태그 검색...">
+</div>
+<div class="tag-filter-bar">
+  <button class="tag-btn clear-btn" data-tag="__clear__">전체</button><button class="tag-btn" data-tag="#중국">#중국</button><button class="tag-btn" data-tag="#이스라엘">#이스라엘</button><button class="tag-btn" data-tag="#이란">#이란</button><button class="tag-btn" data-tag="#시진핑">#시진핑</button><button class="tag-btn" data-tag="#지정학">#지정학</button><button class="tag-btn" data-tag="#중국증시">#중국증시</button><button class="tag-btn" data-tag="#중국경제">#중국경제</button><button class="tag-btn" data-tag="#대만">#대만</button><button class="tag-btn" data-tag="#인도">#인도</button><button class="tag-btn" data-tag="#베트남">#베트남</button><button class="tag-btn" data-tag="#미국">#미국</button><button class="tag-btn" data-tag="#페트로달러">#페트로달러</button><button class="tag-btn" data-tag="#브릭스">#브릭스</button><button class="tag-btn" data-tag="#헤즈볼라">#헤즈볼라</button><button class="tag-btn" data-tag="#반도체">#반도체</button><button class="tag-btn" data-tag="#일본">#일본</button><button class="tag-btn" data-tag="#네타냐후">#네타냐후</button><button class="tag-btn" data-tag="#호르무즈해협">#호르무즈해협</button><button class="tag-btn" data-tag="#홍콩H지수">#홍콩H지수</button><button class="tag-btn" data-tag="#양회">#양회</button><button class="tag-btn" data-tag="#테무">#테무</button><button class="tag-btn" data-tag="#알리바바">#알리바바</button><button class="tag-btn" data-tag="#미사일">#미사일</button><button class="tag-btn" data-tag="#전랑외교">#전랑외교</button><button class="tag-btn" data-tag="#무역전쟁">#무역전쟁</button><button class="tag-btn" data-tag="#후티반군">#후티반군</button><button class="tag-btn" data-tag="#레바논">#레바논</button><button class="tag-btn" data-tag="#시아파">#시아파</button><button class="tag-btn" data-tag="#수니파">#수니파</button><button class="tag-btn" data-tag="#호구제도">#호구제도</button>
+</div>
+<div class="timeline" style="margin-top:16px">
+
+<div class="date-group">
+  <div class="date-group-header">2024년 1월 · 3개</div>
+  
+<div class="card" data-title="홍콩H지수 연계 ELS가 붕괴를 시작했는데, 회복 가능성은 있을까" data-tags="#홍콩H지수 #ELS #재정위기 #중국경제" data-date="2024-01-12">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-01-12</div>
+      <div class="card-title">홍콩H지수 연계 ELS가 붕괴를 시작했는데, 회복 가능성은 있을까</div>
+      <div class="card-tags"><span class="tag">#홍콩H지수</span><span class="tag">#ELS</span><span class="tag">#재정위기</span><span class="tag">#중국경제</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 1월 현재, 홍콩H지수 연계 ELS가 만기 도래와 함께 손실 폭탄을 맞았다. 8만명에 가까운 투자자가 손실 통지를 받을 것이며, 상반기까지 약 5조원의 손실이 예상된다. 이 상황은 홍콩 증시가 심각하게 흔들리고 있음을 나타낸다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">홍콩H지수의 급락</div><div class="para-body">홍콩H지수는 3년간 지속적으로 하락하며, 현재 12,000에서 5,421로 떨어졌다. 이러한 급락은 홍콩 증시의 심각한 상황을 반영하고 있으며, 더 큰 손실이 이어질 가능성이 높다. 현재 이 지수가 더욱 하락할 경우 2025년 추가 손실도 피할 수 없다.</div></div><div class="para"><div class="para-title">부동산 투자 이민제와 자금 유출</div><div class="para-body">2003년 이후, 상하이방 자금이 홍콩에 유입되면서 제주도 및 해외로의 자금 이동이 활발해졌다. 하지만 2017년 이후 중국 정부의 규제가 강화되면서 이러한 흐름이 급감했고, 이는 홍콩 인구와 기업이 이탈하는 원인으로 작용했다. 홍콩의 고급 인력들이 빠져나가며 장기적으로 경제에 부정적인 영향을 미칠 것이다.</div></div><div class="para"><div class="para-title">홍콩의 국제 금융 허브로서 기능 저하</div><div class="para-body">홍콩의 증시 거래량이 급감하고 있어, 강제로 문을 닫는 증권사가 늘어나고 있다. 이는 홍콩의 국제금융 센터로서의 위상이 크게 흔들리음을 의미하며, 향후 기업들이 홍콩 대신 다른 지역으로 이동할 가능성도 크다. 경제적으로 회복하기 어려운 상황에 직면해 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">홍콩H지수의 이러한 위기가 향후 국제 금융 시장에 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">홍콩 경제는 이미 많은 부정적 요소를 안고 있다. ELS 손실과 함께 국제 금융센터로서의 기능이 약화되고 있어, 경제 회복은 매우 어렵다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223318992285" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이란과 파키스탄의 잇따른 공격, 발루치족의 독립은 무슨 관계일까?" data-tags="#이란 #파키스탄 #발루치족 #지정학" data-date="2024-01-20">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-01-20</div>
+      <div class="card-title">이란과 파키스탄의 잇따른 공격, 발루치족의 독립은 무슨 관계일까?</div>
+      <div class="card-tags"><span class="tag">#이란</span><span class="tag">#파키스탄</span><span class="tag">#발루치족</span><span class="tag">#지정학</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 1월 20일 기준, 이란과 파키스탄 간의 공격과 보복이 발생하고 있다. 이 과정에서 발루치족의 독립 요구가 배경으로 작용하고 있는 상황이며, 이는 단순한 군사적 충돌 이상으로 복잡한 지정학적 맥락을 내포하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이란-파키스탄 간의 역사적 갈등</div><div class="para-body">이란과 파키스탄 간의 갈등은 역사적 배경에서 비롯된다. 두 국가는 종교와 정치적 이익으로 얽힌 복잡한 관계를 가지고 있으며, 발루치족과 같은 소수민족 문제는 이 갈등을 더욱 심화시키고 있다. 이란과 파키스탄의 공격은 단순한 군사적 행위가 아닌, 더 깊은 배경을 가진 전략적 선택으로 해석될 수 있다.</div></div><div class="para"><div class="para-title">발루치족과의 관계</div><div class="para-body">발루치족은 이란과 파키스탄 양국에 걸쳐 거주하는 소수민족으로, 자신들의 독립을 원하고 있다. 이들은 두 국가의 긴장 속에서 전투를 벌이며, 서로를 테러 대상으로 삼고 있다. 발루치족 문제는 이란과 파키스탄 간의 관계를 더욱 복잡하게 만들고 있으며, 국제 사회에서도 주목받고 있다.</div></div><div class="para"><div class="para-title">중국의 중재 역할과 지정학적 영향</div><div class="para-body">이란과 파키스탄 간의 갈등 속에서 중국은 중재자의 역할을 자처하고 있다. 중국의 개입은 두 국가의 지정학적 위치와 자원 개발에 큰 영향을 미칠 것으로 보인다. 중국은 파키스탄의 과다르항과 같은 전략적 자산을 통해 이익을 도모하고 있으며, 이는 이란의 입장에서도 중요한 고려 사항이 될 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이란과 파키스탄의 공격은 발루치족의 독립과 어떤 연관성이 있는 걸까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이란과 파키스탄의 군사적 충돌은 발루치족 독립 문제를 불러일으키고 있으며, 이러한 갈등은 우발적인 상황으로 악화될 수 있다. 발루치족의 존재가 이란과 파키스탄의 전략적 선택에 중요한 영향을 미친다고 본다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223327114190" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국 증시 부양책, 춘절 민심 달래기 위한 일시적 조치인가" data-tags="#중국증시 #지준율인하 #춘절 #양회" data-date="2024-01-26">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-01-26</div>
+      <div class="card-title">중국 증시 부양책, 춘절 민심 달래기 위한 일시적 조치인가</div>
+      <div class="card-tags"><span class="tag">#중국증시</span><span class="tag">#지준율인하</span><span class="tag">#춘절</span><span class="tag">#양회</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 1월 기준, 중국의 경기 부양책은 증시안정과 춘절 민심을 겨냥한 단기적 초점으로 보인다. 지준율 인하로 억제된 소비 활성화를 유도하려는 노력에도 불구하고, 본질적인 부동산 문제와 지방정부의 부채가 여전히 발목을 잡고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국 증시 상승의 배경</div><div class="para-body">상하이지수가 22개월 만에 3% 이상 오른 것은 중국 정부의 통화정책 완화와 지준율 인하 덕분이다. 그러나 이러한 상승이 지속 가능성과 관계가 있을지는 미지수다. 과거에도 유사한 정책들이 있었으나, 근본적인 경제 문제 해결에는 한계가 있었다.</div></div><div class="para"><div class="para-title">춘절과 양회의 정치적 의미</div><div class="para-body">춘절을 앞둔 시점에서 경제 안정은 중국 정부에 있어서 중요한 이슈다. 대중의 불만이 높아질 경우, 춘절 민심이 악화될 수 있고, 이는 정부의 권위에도 영향을 미칠 수 있다. 양회 역시 경제 정책 방향성을 설정하는 중요한 회의이므로, 이를 의식한 조치는 필수적이다.</div></div><div class="para"><div class="para-title">지방정부의 부채 문제와 경과</div><div class="para-body">중국 지방정부는 과다한 부채 문제를 안고 있으며, 이는 부동산 경기 회복의 걸림돌이 되고 있다. 정부의 완화 조치가 내려져도, 지방정부의 재정문제가 해결되지 않는 한, 실질적인 성장은 어려운 상황이다. 따라서, 정책이 효과를 거두기 위해서는 지방정부의 재정 상태 개선이 심각한 화두로 남을 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국 정부가 신속히 시행한 부양책이 진정한 경기 회복으로 이어질 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">NO, 부동산 문제와 지방정부의 부채가 여전히 심각하여 실질적인 경기 회복은 어렵다고 판단한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223333085233" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 3월 · 2개</div>
+  
+<div class="card" data-title="중국 초저가 쇼핑앱 테무가 한국을 강타하는 이유는?" data-tags="#테무 #핀둬둬 #알리바바 #직구" data-date="2024-03-21">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-03-21</div>
+      <div class="card-title">중국 초저가 쇼핑앱 테무가 한국을 강타하는 이유는?</div>
+      <div class="card-tags"><span class="tag">#테무</span><span class="tag">#핀둬둬</span><span class="tag">#알리바바</span><span class="tag">#직구</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 3월 기준, 중국의 초저가 쇼핑앱 테무가 한국 시장을 강타하고 있다. 테무는 핀둬둬의 서브 브랜드로 시작되어 막대한 사용자를 불러일으키며, 국경을 넘어 중국의 저소득층을 겨냥한 독특한 사업 모델로 주목받고 있다.</p><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">C2M</span>Customer To Manufacture의 약자로, 소비자가 직접 제조업체와 연결되어 제품을 구매하는 방식.</div></div></div>
+    <div class="section"><div class="para"><div class="para-title">테무의 사업 모델과 저소득층 타겟팅</div><div class="para-body">테무는 해외 판매를 위한 핀둬둬의 서브 브랜드로, 극저가 전략을 내세우며 저소득층 고객을 주요 타겟으로 설정하고 있다. 경쟁업체들에 비해 판매수수료를 부과하지 않으며, 판매 후 확보한 고객 정보를 활용해 수익을 창출하는 구조로 진화하고 있다. 이러한 모델은 해외 시장에서는 큰 도전에 직면할 가능성이 높다.</div></div><div class="para"><div class="para-title">엄격한 가격 경쟁과 납품업체의 압박</div><div class="para-body">테무는 납품업체들 간의 경쟁을 촉발하며 가격을 지속적으로 인하하는 압박을 가하고 있다. 이로 인해 기존 납품업체들은 매주 가격을 재입찰해야 하며, 불리한 조건에서 철수할 위험에 처하게 된다. 이러한 구조는 중소기업에게는 새로운 기회를 제공하나, 지속 가능한 경영을 위협할 수 있다.</div></div><div class="para"><div class="para-title">개인정보 유출 우려와 비즈니스 모델의 한계</div><div class="para-body">테무의 사업 구조는 사용자의 개인정보를 악용할 수 있는 위험성을 내포하고 있다. 악성코드 관련 의혹과 개인정보 유출의 우려는 테무의 성장 가능성을 위협하고 있으며, 이는 해외 시장에 진입하는 데에 걸림돌이 될 가능성이 크다. 여전히 수익을 낼 수 없는 구조로, 향후 생존이 불투명하다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">테무의 초저가 전략은 소비자에게 매력적일 수 있지만, 개인정보 유출이라는 위험을 감수해야 하는 상황, 이런 방식이 지속 가능한가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">NO. 현재 테무가 유지하는 사업 모델은 개인정보 유출 우려로 인해 신뢰를 잃을 가능성이 크다. 고객의 신뢰를 기반으로 한 장기적 성장은 어려울 것으로 보인다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223387894450" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="홍콩 국가보안법 강화, 자금 이탈 가속화될까?" data-tags="#홍콩보안법 #홍콩H지수 #부동산투자 #자금이탈" data-date="2024-03-28">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-03-28</div>
+      <div class="card-title">홍콩 국가보안법 강화, 자금 이탈 가속화될까?</div>
+      <div class="card-tags"><span class="tag">#홍콩보안법</span><span class="tag">#홍콩H지수</span><span class="tag">#부동산투자</span><span class="tag">#자금이탈</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 3월 23일부터 강화된 홍콩 국가보안법이 시행되었다. 이 법안은 외세와의 결탁 및 소문 적시를 범죄로 간주하여 징역형을 부과할 수 있는 조항들을 포함하고 있어 자금의 추가 이탈을 초래할 우려가 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">홍콩 보안법의 주요 내용</div><div class="para-body">홍콩 보안법의 강화 조치는 외세와 결탁할 경우 최대 14년, 허위 정보 유포 시 10년 이상 징역형에 처해질 수 있도록 하여 모호한 언어로 다수의 사람들이 처벌을 받을 위험을 안고 있다. 이로 인해 외국인들의 홍콩 내 거주가 더욱 어려워진 상황이 되었다.</div></div><div class="para"><div class="para-title">부동산 투자 이민제의 인기</div><div class="para-body">부동산 투자 이민제를 통해 제주도와 같은 지역에 5억 이상 투자 시 영주권을 얻을 수 있는 기회가 제공되어 홍콩인들이 자주 선택하고 있다. 하지만, 2017년 중국 정부의 해외 투자 제한으로 이민 수요와 부동산 구매 수가 줄고 있는 상황이다.</div></div><div class="para"><div class="para-title">자금 이탈과 증시의 전환</div><div class="para-body">현재 홍콩과 중국 주식시장은 정부 주도의 매수에도 불구하고 자금 이탈 우려로 하락세를 이어갈 가능성이 크다. 홍콩 H지수의 미미한 반등에도 불구하고, 핵심 자본의 유출이 이어지면 증시는 지속적으로 침체될 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">강화된 홍콩 보안법이 자금의 해외 이탈을 가속화할 경우, 홍콩 경제는 어떤 영향을 받을 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">홍콩 경제는 홍콩 보안법의 영향으로 피해를 입을 수밖에 없다. 자금의 이탈이 가속화된다면, 홍콩은 외국 자본 유치에 실패하면서 지속적인 경제적 어려움을 겪게 될 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223396815739" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 4월 · 2개</div>
+  
+<div class="card" data-title="이스라엘, 이란 영사관 폭격 — 중동의 불씨가 피어오른다" data-tags="#이스라엘 #이란 #중동사태" data-date="2024-04-03">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-04-03</div>
+      <div class="card-title">이스라엘, 이란 영사관 폭격 — 중동의 불씨가 피어오른다</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#이란</span><span class="tag">#중동사태</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 4월 초, 이란 영사관이 이스라엘의 공격을 받으면서 중동 지역의 긴장이 고조되고 있다. 이 사건이 불러일으킨 정치적 파장과 이란의 반응에 대한 우려가 커지고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이스라엘의 공격과 그 여파</div><div class="para-body">이스라엘이 다마스쿠스의 이란 영사관을 폭격함으로써, 이란 고위 군 관계자가 사망하였다. 이란 정권의 기반인 혁명수비대는 이에 대한 보복을 시사하며, 중동의 군사적 긴장감이 한층 강화되고 있다.</div></div><div class="para"><div class="para-title">이란 혁명수비대의 역할</div><div class="para-body">혁명수비대는 이란의 군사 및 정치적 힘의 근본으로, 이란 국가의 방위 및 이슬람 체제를 수호하는 임무를 맡고 있다. 이란의 군사력은 혁명수비대에 의해 효율적으로 제어되며, 그 과정에서 중동의 냉전 구도가 더욱 심화되고 있다.</div></div><div class="para"><div class="para-title">네타냐후 총리의 정치적 상황</div><div class="para-body">이스라엘의 네타냐후 총리는 자신의 법적 문제를 정치적으로 이용하고 있으며, 국제 사회와의 갈등을 통해 내부의 위기에서 눈을 돌리려 하고 있다. 이는 이란과의 군사적 접촉이 증가하는 배경이 되고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘과 이란의 갈등이 고조되는 가운데, 중동의 안보 상황은 새로운 국면에 접어들 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이스라엘의 군사 작전이 계속된다면 이란의 반응 또한 격화될 가능성이 있다. 이란의 내부 정치 상황과 외부과의 갈등이 복합적으로 작용하며 중동의 불안정성이 심화할 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223403494021" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이란이 이스라엘에 전례 없는 공격을 감행하며 시작된 고강도 갈등" data-tags="#이스라엘 #이란 #미사일 #드론 #긴장고조" data-date="2024-04-14">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-04-14</div>
+      <div class="card-title">이란이 이스라엘에 전례 없는 공격을 감행하며 시작된 고강도 갈등</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#이란</span><span class="tag">#미사일</span><span class="tag">#드론</span><span class="tag">#긴장고조</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 4월 기준, 이란이 이스라엘에 대해 역사적으로 처음으로 직접적인 군사 공격을 감행했다. 이번 공격은 드론과 미사일을 활용한 다층적 전술로 진행되었으며, 미국의 군함도 긴장 속에서 개입하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이란의 공격 방식과 전략</div><div class="para-body">이란은 순항미사일과 100대 이상의 드론을 사용하여 이스라엘을 공격했다. 드론은 방어망을 교란하는 역할을 하며, 미사일은 본격적인 공격 수단으로 작용할 예정이다. 이러한 순차 발사 방식은 이란의 전술적 선택을 잘 보여준다.</div></div><div class="para"><div class="para-title">국제 정세의 반응</div><div class="para-body">미국은 이란의 드론 공격에 대한 우려를 표명하며, 이스라엘 방어를 지원하겠다고 밝혔다. 영국과 미국의 동맹국들은 이란을 강하게 비난하였고, 상황은 더욱 격화될 조짐을 보이고 있다.</div></div><div class="para"><div class="para-title">이스라엘의 대응 가능성</div><div class="para-body">이스라엘은 이란의 공격에 대해 보복할 가능성이 높으며, 이는 중동 지역의 안보 상황을 더욱 복잡하게 만들 것이다. 이란은 보복 후 호르무즈 해협을 봉쇄하겠다고 경고하며, 긴장이 고조되고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘이 이란의 위협에 강력히 반응할 경우, 중동의 군사적 긴장은 어떤 방향으로 진전될 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">갈등이 격화될 가능성이 높다. 이란의 공격은 이스라엘의 보복을 유도할 것이며, 이는 지역 안보에 중대한 영향을 미칠 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223414866190" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 5월 · 6개</div>
+  
+<div class="card" data-title="중국 증시, 정부의 영끌 정책이 부양하고 있지만 실적은 정체" data-tags="#중국증시 #양회 #전광리 #이구환신" data-date="2024-05-14">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-05-14</div>
+      <div class="card-title">중국 증시, 정부의 영끌 정책이 부양하고 있지만 실적은 정체</div>
+      <div class="card-tags"><span class="tag">#중국증시</span><span class="tag">#양회</span><span class="tag">#전광리</span><span class="tag">#이구환신</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 5월 기준, 중국 증시가 정부의 강력한 정책에 힘입어 오름세를 보이고 있다. 그러나 기업 실적의 개선 여부는 불투명해, 이러한 정책적 부양이 지속 가능할지 의문이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">양회의 경제 목표와 지역별 GDP</div><div class="para-body">2024년 양회에서 발표된 경제 성장률 목표는 5%로, 이에 따라 지방 정부들은 각자의 사업 계획을 세우고 모여들었다. 특히 티베트와 하이난은 8%의 성장을 목표로 하여 큰 투자가 이루어질 것을 예고하고 있다.</div></div><div class="para"><div class="para-title">부동산 문제와 지방정부의 재정 위기</div><div class="para-body">중국의 부동산 경기 악화로 인해 지방정부의 재정 수입이 감소하고 있다. 토지 사용권 매각 대금이 주요 재정 수입원인 지방정부들은 이로 인해 인프라 투자에 어려움을 겪고 있다.</div></div><div class="para"><div class="para-title">신국9조와 기업 배당 정책 강화</div><div class="para-body">신국9조는 자본시장 업그레이드를 위한 관리 감독 강화 가이드라인으로, 기업들의 배당 증대를 유도하고 있다. 하지만 현금 배당 총액이 감소할 경우 특별 관리 대상이 되는 등 강한 제재가 예고되어, 기업들에게는 부담으로 작용할 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">정부의 정책 부양에도 불구하고 기업 실적 개선이 이루어지지 않는다면, 앞으로 중국 증시는 어떻게 될 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">정부의 부양책이 당장에는 효과를 보일 수 있지만, 기업의 실적이 개선되지 않는다면 이러한 지속적인 상승세는 한계가 있다. 실적 개선이 필수적이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223444963942" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국이 메콩강을 지배하려는 이유는? 베트남과 갈등의 배경" data-tags="#중국 #베트남 #메콩강 #프랜드쇼어링" data-date="2024-05-20">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-05-20</div>
+      <div class="card-title">중국이 메콩강을 지배하려는 이유는? 베트남과 갈등의 배경</div>
+      <div class="card-tags"><span class="tag">#중국</span><span class="tag">#베트남</span><span class="tag">#메콩강</span><span class="tag">#프랜드쇼어링</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 5월 기준, 중국과 베트남 간의 긴장이 고조되고 있으며 이는 메콩강과 관련된 물 관리 문제와 정치적 갈등에 뿌리를 두고 있다. 중국의 댐 개발은 베트남에 심각한 수자원 문제를 야기하고 있으며, 그 결과 양국 간의 갈등이 다시 부각되고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">메콩강의 중요성과 중국의 댐 건설</div><div class="para-body">메콩강은 동남아시아 5개국을 거쳐 바다로 나가는 중요한 수자원으로, 중국은 상류에 대형 댐을 건설하여 수력발전을 계획하고 있다. 이러한 개발로 인해 하류인 베트남은 수량 감소와 퇴적물 증가 등으로 심각한 타격을 받고 있다. 이는 베트남의 농업 생산성에 즉각적인 영향을 미친다.</div></div><div class="para"><div class="para-title">역사적 배경과 군사적 긴장</div><div class="para-body">중국과 베트남의 갈등은 역사적으로 깊은 뿌리를 가지며, 베트남 전쟁 당시 중국의 개입이 그 시작이었다. 이후 1979년 중베 전쟁을 거쳐 양국 간의 복잡한 군사적 긴장은 현재까지 이어지고 있다. 현재 상황은 과거의 분쟁을 반영하는 면이 있으며, 베트남은 이를 이유로 미국과의 관계 개선을 추진하고 있다.</div></div><div class="para"><div class="para-title">베트남의 외교 전략과 미국과의 협력</div><div class="para-body">베트남은 프랜드쇼어링을 통해 미국과의 관계를 강화하고 있으며, 중국을 대신할 수 있는 생산 기지로 자리잡고 있다. 이에 따른 한국과 미국의 투자도 증가하고 있으며, 이는 베트남의 경제 구조 변화에 긍정적인 영향을 미치고 있다. 그러나 중국의 대응이 변수로 작용할 가능성이 높다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국의 메콩강 개발이 베트남에 미치는 영향은 무엇인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">중국의 댐 개발로 인한 베트남의 수자원 감소는 심각한 사태를 초래할 것이다. 이는 두 나라 간의 갈등을 더욱 심화시킬 가능성이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223448210988" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이란 대통령 헬기 추락, 아제르바이잔과의 관계는 어떻게 될까?" data-tags="#이란 #아제르바이잔 #헬기추락 #정치변화" data-date="2024-05-21">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-05-21</div>
+      <div class="card-title">이란 대통령 헬기 추락, 아제르바이잔과의 관계는 어떻게 될까?</div>
+      <div class="card-tags"><span class="tag">#이란</span><span class="tag">#아제르바이잔</span><span class="tag">#헬기추락</span><span class="tag">#정치변화</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 5월 21일, 이란 대통령 에브라힘 라이시의 헬기 추락 사고로 사망했다. 이번 사건은 이란 내정과 아제르바이잔과의 외교적 관계에 중대한 변화를 초래할 가능성이 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">헬기 추락과 외교적 맥락</div><div class="para-body">라이시 대통령은 아제르바이잔 대통령과의 공식 행사 이후 헬기에 탑승 중 사고를 당했다. 이란과 아제르바이잔 간의 관계 개선은 라이시 대통령의 외교적 노력의 일환으로 해석될 수 있다.</div></div><div class="para"><div class="para-title">전쟁과 외교의 교차점</div><div class="para-body">이란과 아제르바이잔은 나고르노-카라바흐 문제에서 역사적인 갈등을 겪어왔다. 아제르바이잔의 군사력 증가와 이스라엘과의 관계는 아르메니아와의 긴장을 더욱 심화시켰다.</div></div><div class="para"><div class="para-title">정권의 향후 방향</div><div class="para-body">라이시 대통령의 사망은 1순위 후계자가 사라짐을 의미한다. 이는 이란 정권 내에서 모즈타바 하메네이가 부상할 수 있음을 시사하며, 이란의 외교 정책이 어떻게 변화할지 주목할 필요가 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이란의 정권 변화가 아제르바이잔과의 관계에 미치는 영향은 무엇일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이란의 새 지도자 선택 과정이 아제르바이잔과의 외교에 중요한 영향을 미칠 것이다. 새로운 지도자가 과거와 다른 노선을 택할 가능성이 크기 때문이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223452107530" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이스라엘, 알자지라 방송 퇴출 — 그 이면의 지정학적 긴장" data-tags="#이스라엘 #알자지라 #언론자유 #AP통신" data-date="2024-05-24">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-05-24</div>
+      <div class="card-title">이스라엘, 알자지라 방송 퇴출 — 그 이면의 지정학적 긴장</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#알자지라</span><span class="tag">#언론자유</span><span class="tag">#AP통신</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 5월, 이스라엘 정부가 알자지라 방송과 AP통신에 대한 강경 조치를 단행했다. 이러한 조치는 이스라엘-하마스 전쟁 보도가 정부에 불리하다는 판단 아래 취해졌으며, 이는 지역 내 미디어 환경과 갈등의 심화를 불러올 수 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">알자지라 방송 폐쇄 결정</div><div class="para-body">이스라엘 각료회의는 알자지라의 이스라엘 사무소를 폐쇄하고 장비를 압수하는 행정명령을 시행했다. 이 조치는 알자지라의 보도가 편향적이라는 이유로 이루어졌으며, 이는 국가안보 우려에서 비롯된 것이다. 결과적으로 알자지라는 비판받는 아랍권 미디어의 상징이 되었다.</div></div><div class="para"><div class="para-title">AP통신의 압류 및 방송 차단</div><div class="para-body">이스라엘은 알자지라 방송 이후 AP통신의 생방송 시설도 압수하고 방송을 차단하려는 조치를 취하고 있다. 이들 매체는 이스라엘-하마스 전쟁을 실시간으로 보도하며 사실적이고 직접적인 정보를 제공해 오던 중이었다. 이러한 조치들은 국제 사회의 우려를 불러일으키고 있다.</div></div><div class="para"><div class="para-title">카타르와 알자지라의 배경</div><div class="para-body">알자지라는 카타르에서 설립된 미디어로, 아랍 왕족의 부패와 중앙 통제 없는 보도를 통해 비판적인 역할을 해왔다. 이란과의 긴장 속에서 카타르는 알자지라 방송을 통해 국제적인 목소리를 높이고 있으며, 이란과의 관계를 유지하는 데에도 중요한 역할을 한다. 이러한 배경은 알자지라 방송의 퇴출 조치와 밀접하게 연결된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘이 알자지라 방송과 AP통신을 차단함으로써 언론의 자유가 제약받는 상황에서, 국제 사회는 어떤 반응을 보여야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">국제 사회는 이스라엘의 언론 차단 조치에 대해 더욱 강력하게 반대해야 한다. 이 조치는 정보의 자유로운 흐름을 방해하며, 민주적 가치에 반하는 행위로 판단된다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223455445930" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="대만 포위 훈련과 중국의 새로운 전개 — 라이칭더의 출범이 불러온 긴장" data-tags="#대만 #중국군 #민진당 #시진핑" data-date="2024-05-25">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-05-25</div>
+      <div class="card-title">대만 포위 훈련과 중국의 새로운 전개 — 라이칭더의 출범이 불러온 긴장</div>
+      <div class="card-tags"><span class="tag">#대만</span><span class="tag">#중국군</span><span class="tag">#민진당</span><span class="tag">#시진핑</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 5월 기준, 중국이 대만을 포위하는 대규모 군사훈련을 이틀째 진행하며 긴장을 고조시키고 있다. 라이칭더의 총통 취임 직후 이뤄진 훈련은 중국의 위협을 더욱 직접적으로 드러내고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국의 군사훈련 배경</div><div class="para-body">이번 군사훈련은 5개 지역에서 동시 진행되며, 대만에 대한 압박을 극대화하는 의도를 담고 있다. 중국의 대만 포위는 기존의 무력 시위에서 한층 격심해진 상황으로, 민진당의 강경한 독립 노선에 대한 경고로 해석된다.</div></div><div class="para"><div class="para-title">총통선거와 중국의 반응</div><div class="para-body">민진당의 라이칭더 후보가 총통으로 당선되자마자 중국은 즉각적인 군사훈련을 실시했다. 중국은 이번 선거가 대만 독립을 지지하는 결과로 이어지지 않도록 위협을 가하는 것으로 보인다. 이는 대만 내 민심을 향한 도전으로, 중도층 흡수에 어려움을 겪는 라이칭더의 입장을 더욱 복잡하게 하고 있다.</div></div><div class="para"><div class="para-title">중국의 장기적 목표</div><div class="para-body">현재 시진핑과 중국 공산당은 대만 통일을 국가의 핵심이익으로 설정하고 이를 위해 군사적 압박을 강화하고 있다. 대만의 정체성 강화와 중국의 군사적 위협은 앞으로도 계속해서 대립을 심화시킬 전망이다. 중국의 지속적인 침략적 태도는 대만 주민들로 하여금 독립 의지를 더욱 강하게 할 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국의 군사적 압박이 계속되는 상황에서 대만의 독립 의지는 어떻게 변화할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">중국의 군사훈련이 대만 주민들에게 위협으로 다가온다면, 민진당의 독립 의지는 더욱 강해질 것이다. 이는 시진핑의 상승세에 역행하는 결과를 초래할 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223457538479" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="케냐를 비나토 동맹으로, 중국 일대일로의 함정은 뭘까" data-tags="#케냐 #미국 #중국 #일대일로" data-date="2024-05-27">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-05-27</div>
+      <div class="card-title">케냐를 비나토 동맹으로, 중국 일대일로의 함정은 뭘까</div>
+      <div class="card-tags"><span class="tag">#케냐</span><span class="tag">#미국</span><span class="tag">#중국</span><span class="tag">#일대일로</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 5월에 조 바이든 미국 대통령이 케냐를 주요 비(非) 나토 동맹국으로 지정했다. 이는 아프리카에서 중국의 영향력을 견제할 의도가 담긴 결정으로 보이지만, 케냐의 대외채무 문제와 얽히며 복잡한 양상을 띤다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">케냐의 부채와 중국의 영향력</div><div class="para-body">케냐의 대외채무 64%가 중국에 대한 차관으로 구성되어 있으며, 이 부채는 중국의 일대일로 정책과 밀접하게 연결되어 있다. 미국이 케냐를 비나토 동맹국으로 지정하면서 아프리카 각국의 부채 문제 해결을 위한 '나이로비-워싱턴비전'을 제안한 것에도 이러한 맥락이 존재한다.</div></div><div class="para"><div class="para-title">민관합작투자사업(MRG)의 문제점</div><div class="para-body">케냐는 MRG 형식으로 대규모 철도사업을 추진했으나, 과도한 화물운송 의무 보증과 높은 운송비로 큰 재정적 부담에 직면했다. 정부는 철도 이용을 강제하기 위해 인플레이션을 유발하고, 결과적으로 세금 인상을 초래했다.</div></div><div class="para"><div class="para-title">정치적 맥락과 미래 전망</div><div class="para-body">케냐에서의 MRG 문제는 대선에서 주요 쟁점으로 떠올랐고, 정치적 갈등을 심화시킴과 동시에 중국과의 관계를 재조명하게 만들었다. 새로운 정부는 이러한 부담을 완화하기 위한 공약을 내세우며, 향후 미국의 개입 가능성을 열어두고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">미국의 케냐 동맹국 지정이 중국의 아프리카 영향력에 미치는 실질적 영향은 무엇일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">미국의 케냐 동맹국 지정을 통해 아프리카에서의 중국 영향력은 약화될 수 있다. 하지만 케냐 내부 상황과 부채 문제를 고려했을 때, 상황이 단순하지 않다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223458663783" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 6월 · 3개</div>
+  
+<div class="card" data-title="페트로 달러 근황(feat 사우디아라비아, 빈 살만, 브릭스)" data-tags="#페트로달러 #사우디아라비아 #브릭스" data-date="2024-06-15">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-06-15</div>
+      <div class="card-title">페트로 달러 근황(feat 사우디아라비아, 빈 살만, 브릭스)</div>
+      <div class="card-tags"><span class="tag">#페트로달러</span><span class="tag">#사우디아라비아</span><span class="tag">#브릭스</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 중반, 사우디아라비아의 페트로 달러 계약 종료에 대한 보도가 나오며 세계 금융 시장의 변화를 예고하고 있다. 이는 미국 달러화의 지배력이 흔들릴 수 있음을 시사한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">페트로 달러의 역사</div><div class="para-body">1971년, 닉슨 대통령의 발표로 금본위제가 폐지되며, 석유 거래에서 달러의 유일한 결제통화로 자리잡는다. 이 후, 미국은 달러가 석유 판매의 주요 통화로 사용되도록 사우디와 협정하였다. 이후 산유국들은 이 구조를 통해 미국 국채를 구매하게 되었다.</div></div><div class="para"><div class="para-title">이란과의 갈등</div><div class="para-body">이란의 석유 국유화 시도는 미국과 영국의 간섭을 초래하고, 소련의 확장을 막기 위한 미국의 군사적 개입으로 이어진다. 이란의 모사데크 총리는 결국 CIA의 개입으로 축출되었고, 이는 이란의 외교에 큰 영향을 미쳤다.</div></div><div class="para"><div class="para-title">브릭스의 탄생</div><div class="para-body">브릭스는 세계 경제의 주요 플레이어로 부상하고 있다. 이들은 달러 의존도를 낮추기 위해 위안화 결제 시스템을 도입하고, 공통 통화의 필요성을 내세우고 있다. 특히, 사우디와 중국의 관계가 긴밀해짐에 따라 새로운 세계 경제 질서가 예상된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">페트로 달러 체제의 붕괴는 세계 경제에 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">페트로 달러 체제의 붕괴는 미국의 금융 및 외교 전략에 심각한 타격을 줄 것으로 예상된다. 국채 시장의 변화와 더불어 글로벌 통화 시스템에도 큰 영향을 미칠 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223479291545" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국, 호주 총선의 패배가 초래한 외교적 후폭풍" data-tags="#호주총선 #전랑외교 #중국 #무역전쟁" data-date="2024-06-18">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-06-18</div>
+      <div class="card-title">중국, 호주 총선의 패배가 초래한 외교적 후폭풍</div>
+      <div class="card-tags"><span class="tag">#호주총선</span><span class="tag">#전랑외교</span><span class="tag">#중국</span><span class="tag">#무역전쟁</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 6월 기준, 중국의 호주 총선에 대한 기대는 실망으로 돌변했다. 노동당의 승리에도 불구하고, 호주의 외교 정책은 중국에 대한 견제를 더욱 강화하는 방향으로 흘러갔다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">호주 총선의 결과와 그 의미</div><div class="para-body">중국은 호주 총선에서 친중 성향의 노동당이 승리할 것이라고 기대했지만, 총리 알바니즈는 미국 및 영국과의 AUKUS 방위동맹 지지를 강하게 천명했다. 결국, 호주 내 반중 정서가 외교 정책에 깊이 반영되었고, 이는 중국의 기대와 상반된 결과를 초래했다.</div></div><div class="para"><div class="para-title">중국의 자원 필요와 외교적 압박</div><div class="para-body">중국은 호주로부터의 석탄 수입이 절실해지면서, 호주 측에 거래 재개를 타진하기 시작했다. 호주 총리가 중국의 지배력이 확대되는 것에 우려를 표현하면서도 석탄 거래는 필요한 상황에서 중국의 요청을 받아들일 수밖에 없던 기로에 놓였다.</div></div><div class="para"><div class="para-title">전랑 외교의 한계와 시진핑의 고민</div><div class="para-body">중국의 전랑 외교 방식은 강한 의도와는 반대로 결국 세계적으로 중국에 대한 적대감을 키웠다. 시진핑은 왕이가 주도하는 외교 정책에 의문을 던지며 조율을 시도하고 있으며, 이는 전랑 외교의 방향성 변화의 단서를 제공할 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국 외교가 전랑 외교를 지속할 것인가, 아니면 새로운 변화의 바람이 불 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">전랑 외교는 과거에 비해 성과를 내지 못하고 있다. 중국은 현실적인 외교 전략을 재고할 필요성이 높다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223482283205" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국, 호주에 패배 선언? 랍스터와 철광석의 전쟁" data-tags="#중국 #호주 #무역전쟁 #기니쿠데타" data-date="2024-06-18">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-06-18</div>
+      <div class="card-title">중국, 호주에 패배 선언? 랍스터와 철광석의 전쟁</div>
+      <div class="card-tags"><span class="tag">#중국</span><span class="tag">#호주</span><span class="tag">#무역전쟁</span><span class="tag">#기니쿠데타</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 6월 기준, 중국과 호주 간의 무역전쟁은 갈등의 심화로 이어지고 있으며, 세부적인 요인들의 복잡한 얽힘 속에서 진행되고 있다. 이 글은 두 나라 간의 갈등이 배경과 구체적인 사건들을 통해 어떤 구조적 충돌을 내포하는지 분석한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">호주의 전략적 선택과 중국의 보복</div><div class="para-body">호주가 중국에 대한 무역 의존도를 유지하며 VIP 고객 대접을 해온 상황에서 코로나19로 인한 조사가 촉발이 되어 두 나라의 관계가 급변하게 된다. 중국은 호주산 수입품에 대해 높은 관세를 부과하며 무역 보복을 시작했고, 이는 결국 호주의 추가 대응을 초래하였다.</div></div><div class="para"><div class="para-title">다윈항과 미국의 관여</div><div class="para-body">다윈항은 아시아-태평양 지역에서 독특한 전략적 입지를 가지고 있다. 중국의 기업이 이 장소를 임차하게 되자 미국 정부는 호주에 강한 항의가 들어왔고, 이는 호주의 대중국 무역 의존도 재인식으로 이어져 무역 갈등을 심화시켰다.</div></div><div class="para"><div class="para-title">철광석과 요소수 사태의 연결고리</div><div class="para-body">호주가 철광석 가격을 대폭 올리자, 중국은 대체 공급원 찾기에 나섰으나 석탄 수입에 제약이 발생했다. 이로 인해 중국 내 요소수 부족 사태가 발생하며 한국과 일본에도 영향을 끼쳤고, 이는 결국 중국과 호주 간의 무역 갈등을 더욱 악화시키는 원인이 되었다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국과 호주 간의 갈등이 심화되는 가운데, 이 경제전쟁이 지역 안정에 미치는 영향은 무엇일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">갈등이 계속된다면 지역의 정치적 긴장은 더욱 불안정해질 것이다. 두 나라의 무역이 상호의존적이라는 점을 고려할 때, 더 이상 되돌릴 수 없는 상황에 진입할 가능성이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223482242335" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 7월 · 1개</div>
+  
+<div class="card" data-title="서울에 잠복한 중국 비밀 경찰서, 우마오당의 인터넷 댓글 전쟁" data-tags="#중국 #정보통제 #비밀경찰서 #우마오당" data-date="2024-07-14">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-07-14</div>
+      <div class="card-title">서울에 잠복한 중국 비밀 경찰서, 우마오당의 인터넷 댓글 전쟁</div>
+      <div class="card-tags"><span class="tag">#중국</span><span class="tag">#정보통제</span><span class="tag">#비밀경찰서</span><span class="tag">#우마오당</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 7월 현재, 중국의 정보 통제는 서울의 비밀 경찰서와 우마오당의 활발한 댓글 작업을 통해 더욱 강화되고 있다. 해외에서의 반체제 인사 탄압과 관련된 의혹이 제기되며 새로운 국면으로 접어들고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">서울의 비밀 경찰서와 그 실행</div><div class="para-body">서울의 한 중식당이 중국 정부의 비밀 경찰서로 운영되었다는 의혹이 제기되었다. 동방명주의 실소유주가 횡령 혐의로 검찰에 송치된 가운데, 추가 범죄 조사 가능성이 언급되며 이 역시 비밀 경찰서 관련 의혹과 연결되고 있다.</div></div><div class="para"><div class="para-title">온라인 통제의 전략</div><div class="para-body">중국 정부는 오프라인 비밀 경찰서보다 온라인 조직을 강화하는 방향으로 나아가고 있다. 이들은 인터넷 댓글을 달아 여론을 조작하기 위해 고용된 평론가들이며, 공개된 정체가 그의 효율성에 의문을 불러일으키고 있다.</div></div><div class="para"><div class="para-title">사회 신용 시스템의 확대</div><div class="para-body">중국의 사회 신용 시스템은 개인의 다양한 정보를 수집하여 평가하는 방식으로 운영되고 있으며, 이는 심각한 개인의 자유 제한 문제를 야기한다. 홍콩 보안법을 통해 외국에서도 법적 제재가 가능해지면서, 중국에 대한 비판은 더욱 위험해졌다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">한국에서 중국 비난이 법적 제재를 받을 가능성이 커지고 있는데, 이에 어떻게 대처해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">중국의 정보 통제 강화에 대응하기 위해서는 정보 수집과 확산 전략이 필수적이다. 비판의 이슈가 법적 처벌로 이어질 위험성은 소통 방식과 내용을 재조정해야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223507575146" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 8월 · 4개</div>
+  
+<div class="card" data-title="이스라엘·헤즈볼라 간 축구장 피격, 중동전 야기 가능성" data-tags="#중동전 #이스라엘 #헤즈볼라 #후티반군" data-date="2024-08-02">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-08-02</div>
+      <div class="card-title">이스라엘·헤즈볼라 간 축구장 피격, 중동전 야기 가능성</div>
+      <div class="card-tags"><span class="tag">#중동전</span><span class="tag">#이스라엘</span><span class="tag">#헤즈볼라</span><span class="tag">#후티반군</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 8월 2일 현재, 이스라엘과 레바논 간의 전투가 다시 점화되고 있다. 헤즈볼라의 오랜 적인 이스라엘이 젊은 유소년들도 포함된 공격에 반응하면서 중동전의 불씨가 점점 타오르고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이스라엘의 공격 배경과 의도</div><div class="para-body">이스라엘의 네타냐후 총리는 전면전 상황을 만들고 있다. 최근 유소년 축구장 피해는 공감대를 더욱 넓히고 있으며, 이에 따른 국민의 반응은 지지율 상승과 직결된다. 네타냐후의 지지율은 반대파인 간츠에게 뒤지고 있다.</div></div><div class="para"><div class="para-title">레바논 내전과 헤즈볼라의 성장</div><div class="para-body">헤즈볼라는 여러 이란의 지원 아래 전력을 강화하고 있으며, 이란과의 연대를 통한 저항 축을 형성하고 있다. 그러나 헤즈볼라는 정치적·군사적 속박 속에서 전면전에 나서지 못하고 있다.</div></div><div class="para"><div class="para-title">국제적 반응과 중동전 확전 우려</div><div class="para-body">이스라엘의 공격에 대해 국제 사회에서 비판이 일고 있으며, 이는 정세를 더욱 복잡하게 하고 있다. 이란의 공식 반응이 이어지며, 한층 더 나쁜 상황으로 치닫는 모습이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘의 전면 공격이 계속된다면 중동전은 필연적으로 발생할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">그렇다. 현재의 갈등은 서로의 존재를 부정하는 상황이 지속되고 있으며, 중동전으로의 전환은 시간 문제일 가능성이 높다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223532658365" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이스라엘-레바논 전면전, 시아파와 수니파의 복잡한 대립으로 확대될까?" data-tags="#이스라엘 #레바논 #헤즈볼라 #시아파 #수니파" data-date="2024-08-02">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-08-02</div>
+      <div class="card-title">이스라엘-레바논 전면전, 시아파와 수니파의 복잡한 대립으로 확대될까?</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#레바논</span><span class="tag">#헤즈볼라</span><span class="tag">#시아파</span><span class="tag">#수니파</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 8월 현재, 이스라엘과 레바논 간 전면전 위기가 고조되고 있다. 이 전쟁은 단순한 국가 간 충돌을 넘어 시아파와 수니파 간의 전면적인 싸움으로 확장될 가능성을 지니고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이스라엘의 공습과 전면전의 징후</div><div class="para-body">이스라엘은 레바논 베이루트에 대한 보복 공습을 감행했으며, 이란 및 헤즈볼라와의 관계를 고려할 때 이 전쟁은 단순한 국가 간 충돌을 넘어설 것으로 보인다. 전투가 시작됨에 따라 여러 역사적 요인들이 얽혀 있는 복잡한 정치적 상황이 전개되고 있다.</div></div><div class="para"><div class="para-title">시아파-수니파 갈등의 뿌리</div><div class="para-body">중동에서 시아파와 수니파 간의 갈등은 오랜 역사를 지니고 있으며, 이란과 이스라엘 간의 경쟁은 이 갈등을 더욱 심화시키고 있다. 이란은 시아파 세력을 지원하는 반면, 이스라엘은 수니파 이익을 지키기 위해 공격적인 태도를 보이고 있는 상황이다.</div></div><div class="para"><div class="para-title">레바논 헤즈볼라의 역할과 목표</div><div class="para-body">헤즈볼라는 레바논에 위치한 시아파 무장단체로, 이란의 지원을 받아 이스라엘과의 전투에서 주요한 역할을 하고 있다. 역사적으로 헤즈볼라는 미국과 이스라엘에 대한 목표를 설정해왔으며, 현재 목표지점에서 어떠한 전략을 취할지가 주목된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘과 레바논의 갈등이 시아파-수니파 대립의 격화로 이어진다면, 중동의 권력 구조는 어떻게 변화할 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">전면전이 발생한다면 중동의 권력 구조는 큰 변화를 겪을 가능성이 높다. 이는 이란과 헤즈볼라 세력이 강화되는 계기가 될 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223532660120" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이스라엘 장관, 극우적 도발로 이란의 반격 부르는 상황" data-tags="#이스라엘 #알아크샤 #도발 #이란" data-date="2024-08-14">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-08-14</div>
+      <div class="card-title">이스라엘 장관, 극우적 도발로 이란의 반격 부르는 상황</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#알아크샤</span><span class="tag">#도발</span><span class="tag">#이란</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 8월 13일, 이스라엘 벤그비르 장관이 알아크샤 사원에서 유대인 기도를 허용하겠다고 선언했다. 이 발언은 이란과 이슬람 세계의 감정을 자극하는 중대 도발로 작용하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이스라엘 정치의 극우적 변화</div><div class="para-body">이스라엘은 다당제 국가로 2022 총선에서 리쿠드당이 32석을 확보하며 과반수를 형성했다. 이 새로운 연정에서 네타냐후 전 총리가 이끄는 강경파의 힘이 강화되고 있으며, 이들의 정책이 실제로 실행되고 있다.</div></div><div class="para"><div class="para-title">알아크샤 사원의 역사적 의미</div><div class="para-body">알아크샤 사원은 이슬람의 3대 성지 중 하나로, 기독교와 유대교의 역사적 갈등이 얽혀있다. 성전산의 역사적 소유권 문제는 두 종교의 사이에서 복잡하게 얽혀 있으며, 벤그비르 장관의 발언은 이 상황을 악화시킬 가능성이 크다.</div></div><div class="para"><div class="para-title">이스라엘과 하마스의 갈등</div><div class="para-body">벤그비르 장관의 도발은 2023년 하마스의 공격과 직접 연결된다. 하마스가 '알 아크 샤 홍수'라는 작전명을 발표한 배경에는 장관의 성전산 방문이 있다. 이러한 도발이 이란에게 공격을 유도할 수 있다는 점에서 매우 위험한 상황이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘이 이란을 자극하는 상황에서, 벤그비르 장관의 다음 행동은 무엇일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이스라엘 정부가 지속적으로 극우정책을 밀어붙인다면, 이란의 반응은 더욱 심각해질 가능성이 크다. 갈등이 격화되면 치명적인 상황에 이를 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223547468125" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="카카오페이, 중국 알리페이에 고객 신용정보 유출 — 금감원 반박에 직면하다" data-tags="#카카오페이 #알리페이 #금융감독원 #신용정보" data-date="2024-08-15">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-08-15</div>
+      <div class="card-title">카카오페이, 중국 알리페이에 고객 신용정보 유출 — 금감원 반박에 직면하다</div>
+      <div class="card-tags"><span class="tag">#카카오페이</span><span class="tag">#알리페이</span><span class="tag">#금융감독원</span><span class="tag">#신용정보</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 8월 13일 기준, 카카오페이가 고객 신용정보를 동의 없이 중국 알리페이에 제공한 사실이 드러났다. 금감원의 검사 결과가 공개되면서 카카오페이는 여러 주장을 펼쳤지만, 반박이 이어지고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">카카오페이의 불법적인 데이터 처리</div><div class="para-body">카카오페이는 전체 고객의 신용정보를 2018년 4월부터 매일 알리페이에 전달해왔다. 금융감독원은 이 정보가 단순 위수탁 데이터가 아니라, 알리페이가 신용 점수(NSF)를 산출하는 데 사용된다고 지적하고 있다.</div></div><div class="para"><div class="para-title">금감원의 반박과 카카오페이의 주장</div><div class="para-body">카카오페이는 정보 제공이 위수탁 정보라고 주장하지만, 금감원은 제공된 정보가 고객 동의를 받지 않은 것이라고 반박했다. 또한, 카카오페이가 주장하는 '암호화' 수준도 미흡하다고 평가하고 있다.</div></div><div class="para"><div class="para-title">중국 정부와의 정보 공유 가능성</div><div class="para-body">중국의 사회 신용 시스템에 대한 우려가 커지는 가운데, 알리페이가 고객 정보를 중앙은행과 공유하게 되면서 카카오페이의 정보가 중국 정부에 들어갈 위험이 제기되고 있다. 이는 고객 개인의 정보 보호에 중대한 영향을 미칠 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">카카오페이의 신용정보 유출 사태가 한국 고객에게 어떤 위험을 초래할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">카카오페이의 고객 신용정보가 중국 알리페이에 유출됨으로써, 이 정보가 중국 정부에 활용될 가능성이 있다. 이는 고객의 개인정보 보호에 심각한 위협이 될 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223547265441" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 9월 · 4개</div>
+  
+<div class="card" data-title="중국의 '나쁜 새' 한마디로 3천만명이 굶어죽은 사연" data-tags="#마오쩌둥 #문화대혁명 #중국현대사 #대약진운동" data-date="2024-09-11">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-09-11</div>
+      <div class="card-title">중국의 '나쁜 새' 한마디로 3천만명이 굶어죽은 사연</div>
+      <div class="card-tags"><span class="tag">#마오쩌둥</span><span class="tag">#문화대혁명</span><span class="tag">#중국현대사</span><span class="tag">#대약진운동</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">1958년 마오쩌둥은 대약진운동을 시작하고, 경제를 격렬하게 변화시키려 했다. 그러나 그의 무지한 결정들이 결국 3천만 명이 굶어죽는 대기근으로 이어졌다는 사실이 드러난다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">대약진운동의 출발과 초기 오류</div><div class="para-body">1958년 마오쩌둥이 대약진운동을 시작하며 영국을 따라잡고, 미국을 넘겠다고 목표를 세웠다. 그러나 농업의 피해를 입히는 참새를 무작정 제거하겠다는 결정은 재앙으로 이어졌다. 참새가 메뚜기를 잡아먹던 사실을 간과한 결과, 곡식을 보호하기 위한 조치는 오히려 농업을 파괴하고 말았다.</div></div><div class="para"><div class="para-title">철 생산의 비극적 결과</div><div class="para-body">초소형 용광로를 만드는 운동은 더 큰 문제를 야기했다. 농민들은 철 생산에 대한 전문지식이 없었고, 결과적으로 '똥철'이라 불리는 저급 강철이 양산되었다. 중앙의 압박으로 멀쩡한 농기구까지 녹였고, 이는 결국 농지의 감소와 대기근으로 직결되었다.</div></div><div class="para"><div class="para-title">문화대혁명과 권력의 회복</div><div class="para-body">1966년 마오쩌둥은 홍위병을 조직해 자신의 권력을 회복하기 위한 문화대혁명을 일으켰다. 학생들은 그를 신격화하며 폭력을 행사했고, 이를 통해 기존 권력을 제거하는 데 성공했다. 그러나 이러한 광기는 결국 마오의 후계자를 처형하게 만들고, 그를 다시 권력 자리로 올려놓았다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">무식한 자가 신념을 가지면 사회에 어떤 비극을 초래할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">중국의 역사를 통해 알 수 있듯, 잘못된 신념이 강력한 독재를 가능하게 하며, 이는 수많은 인명의 희생으로 이어질 수 있다. 정치적 무지와 맹신은 재앙을 불러올 위험이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223578603657" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="단순히 돈을 벌려는 열망이 만든 중국 사회의 균열" data-tags="#중국 #선부론 #호구제도 #농민공 #사회적불안" data-date="2024-09-15">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-09-15</div>
+      <div class="card-title">단순히 돈을 벌려는 열망이 만든 중국 사회의 균열</div>
+      <div class="card-tags"><span class="tag">#중국</span><span class="tag">#선부론</span><span class="tag">#호구제도</span><span class="tag">#농민공</span><span class="tag">#사회적불안</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 9월 15일 기준, 중국의 경제 성장은 덩샤오핑 시대의 정책들에 뿌리를 두고 있으며, 거대한 성장은 사회적 불균형과 불만을 불러일으키고 있다. 급속한 발전에 따른 복잡한 사회 문제는 중국의 미래에 큰 리스크가 되고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">덩샤오핑의 정책과 그 여파</div><div class="para-body">덩샤오핑은 경제 발전을 위해 도광양회, 집단지도체제, 선부론을 제시하며 서방과의 관계를 강화하고 자본주의적 요소를 도입했다. 그러나 이러한 정책은 중국 내부의 양극화를 심화시키고, 정책에서 소외된 계층의 불만을 낳게 되었다.</div></div><div class="para"><div class="para-title">호구제의 사회적 분열</div><div class="para-body">호구제는 시민과 농민 간의 구분을 강화하며 도시 간 계급 차이를 고착화시킨다. 도시로 이동한 농민공들은 사회보장 혜택을 잃고, 이는 교육 및 건강 관리에서의 불이익으로 이어진다. 이러한 격차는 농민공들의 불만을 촉발하고 잠재적 사회 불안을 유발한다.</div></div><div class="para"><div class="para-title">부패와 짝퉁의 만연</div><div class="para-body">부르주아의 부정적 마인드는 고급 소재와 기술의 불법적 사용을 초래했다. 이는 안전 문제와 밀접하게 연결되며, 공공의 신뢰가 무너지고 있다. 강력한 경제 성장 뒤에 숨겨진 비윤리적인 행동들은 중국 사회의 근본적인 가치마저 흔들고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국의 경제 성장 속에서 사회적 양극화와 부패가 확대된다면, 향후 중국 사회는 어떤 방향으로 나아갈 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이런 상황에서는 중국 정부가 관리 체계를 강화해야 한다. 사회적 불안을 통제하지 못할 경우, 저항과 갈등이 발생할 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223579971249" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="부패와의 전쟁, 시진핑의 권력 승계 과정에서 드러난 비극적 하락의 아이러니" data-tags="#시진핑 #부패와의전쟁 #중국정치 #3대파벌" data-date="2024-09-18">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-09-18</div>
+      <div class="card-title">부패와의 전쟁, 시진핑의 권력 승계 과정에서 드러난 비극적 하락의 아이러니</div>
+      <div class="card-tags"><span class="tag">#시진핑</span><span class="tag">#부패와의전쟁</span><span class="tag">#중국정치</span><span class="tag">#3대파벌</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 9월 기준, 중국 정치의 권력 구조는 시진핑의 집권과 그 과정에서 일어난 파벌 간의 부패와의 전쟁을 통해 재편되고 있다. 이 글은 시진핑의 권력 승계 과정에서 드러난 여러 인물들의 흥망과 정치적 갈등을 정리한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">시진핑 집권 전의 정치적 배경</div><div class="para-body">시진핑은 후진타오 이후 차기 주석으로 고려되던 인물로서, 부패는 그 정치적 승계의 주요 배경 중 하나다. 상하이방의 천량위가 부패로 낙마하면서 리커창과의 정치적 경쟁이 불가피해졌다. 이러한 권력 다툼은 부패 문제로 더욱 복잡해졌다.</div></div><div class="para"><div class="para-title">범죄 사건과 권력의 붕괴</div><div class="para-body">링지화의 교통사고 사건은 공청단의 부패 이미지를 severely 타격하며, 반대파의 힘이 빠지게 됐다. 시진핑은 이러한 상황을 기회로 삼아 권력을 강화하였다. 이 사건은 상하이방과 공청단 간의 권력 역학을 급격히 변화시켰다.</div></div><div class="para"><div class="para-title">부패와의 전쟁을 통한 권력 강화</div><div class="para-body">시진핑의 집권 이후, 그는 부패와의 전쟁을 통해 상하이방과 공청단의 간섭을 제거하고 자신의 입지를 확고히 했다. 이러한 맥락에서 시진핑의 권력 승계는 단순한 개인적 성공이 아니라, 중국 공산당 내의 복잡한 권력 다툼에서의 승리를 의미한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">부패에 대한 단호한 처리는 시진핑의 권력을 강화했지만, 이로 인해 어떤 정치적 대가를 치르게 될까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">부패 척결은 권력의 집중을 초래함으로써, 정치적 분열과 내부 저항을 낳을 가능성이 높다. 그것이 장기적으로 중국 정권에 치명적 영향을 미칠 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223579976493" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="시진핑, 영구집권으로 가는 길 — 헌정 개헌과 미국과의 교류" data-tags="#시진핑 #영구집권 #바이든 #보시라이" data-date="2024-09-22">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-09-22</div>
+      <div class="card-title">시진핑, 영구집권으로 가는 길 — 헌정 개헌과 미국과의 교류</div>
+      <div class="card-tags"><span class="tag">#시진핑</span><span class="tag">#영구집권</span><span class="tag">#바이든</span><span class="tag">#보시라이</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 현재, 시진핑의 영구집권이 확고해지는 과정에서 미국과의 관계가 중요한 변수로 작용하고 있다. 헌정 개헌으로 이어지는 시진핑의 정치적 야망과 미국 정치인 바이든과의 복잡한 연결고리를 살펴본다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">시진핑의 권력 집중 과정</div><div class="para-body">시진핑은 과거 권력서열 6위였지만, 정권탈취 정보를 미국으로부터 전달받아 후진타오의 지지로 권력을 강화했다. 이를 통해 정치적 적대를 제거하고 자신의 지배 체제를 확고히 했다. 이러한 과정은 권력의 집중을 의미한다.</div></div><div class="para"><div class="para-title">바이든과 헌터의 중국 연관</div><div class="para-body">바이든 부통령 시절, 헌터 바이든이 중국에서 투자 펀드를 설립하면서 미국과 중국의 관계가 복잡하게 얽혔다. 이는 바이든이 대선 기간 동안 중국과 거리를 두는 이유 중 하나로 지목되며, 가족 내 갈등으로 이어졌다.</div></div><div class="para"><div class="para-title">영구집권 체제를 위한 헌법 개정</div><div class="para-body">시진핑의 영구집권을 가능하게 한 헌정 개정은 그 시대의 평범한 정치적 관행을 뒤집었다. 중앙 집중적 권력 구조는 민중의 불만을 초래할 가능성이 높아, 외부와의 갈등이 필요할 수도 있다. 이는 장기적으로 중국의 정치적 불안정성을 초래할 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">시진핑이 영구집권을 추구하는 이 시점에서, 민중의 불만을 외부의 적으로 돌리는 전략이 성공할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">정치적 불안정성을 해소하려는 시진핑의 전략은 단기적으로는 효과적일 수 있지만, 민중의 불만이 지속적으로 쌓이면 결국 큰 갈등으로 이어질 수 있다. 따라서 현재의 전략이 장기적으로 어떻게 작용할지는 불확실하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223591312357" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 10월 · 14개</div>
+  
+<div class="card" data-title="이스라엘이 후티 반군을 폭격하자 이란이 자극받는 이유는?" data-tags="#이스라엘 #후티반군 #예멘 #지정학" data-date="2024-10-01">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-01</div>
+      <div class="card-title">이스라엘이 후티 반군을 폭격하자 이란이 자극받는 이유는?</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#후티반군</span><span class="tag">#예멘</span><span class="tag">#지정학</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월 1일 기준, 이스라엘의 전폭기가 예멘 반군을 폭격했다는 보도가 나왔다. 이는 이란, 하마스, 헤즈볼라 등과 같은 저항의 축에 포함된 반군들에 대한 공격의 일환으로, 지정학적 긴장을 불러일으킬 여지가 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">저항의 축과 예멘 반군</div><div class="para-body">이스라엘이 예멘의 후티 반군을 공격하는 것은 이란이 지원하는 무장 단체들에 대한 전방위적인 압박의 일환이다. 예멘의 후티 반군은 이란의 군사 지원을 받으며, 사우디와의 다이나믹한 내전 상황 속에서 독립적으로 힘을 키워왔다. 이란이 후티 반군을 지원하는 이유는 예멘의 시아파를 강화하기 위해서다.</div></div><div class="para"><div class="para-title">이스라엘의 군사적 동기</div><div class="para-body">이스라엘의 행동은 하레디 인구 증가로 인한 내부적 불안정을 외부로 돌리려는 전략으로 볼 수 있다. 하레디 인구의 비중이 커지면서 이스라엘의 국력과 정치적 체계가 변하고 있으며, 이란과의 긴장감이 높아져가고 있다. 이러한 상황에서 하마스와 헤즈볼라에 이어 후티 반군을 타겟으로 삼는 것은 이란을 자극하고 이목을 돌리기 위한 시도로 해석될 수 있다.</div></div><div class="para"><div class="para-title">미래의 긴장과 리스크</div><div class="para-body">이스라엘과 이란 간의 긴장 관계는 시간이 지날수록 더욱 심화될 것으로 보인다. 후티 반군에 대한 폭격은 이란의 반응을 유도할 리스크가 크고, 이란이 어떠한 반격을 할지가 큰 변수로 작용할 것이다. 이란은 시간을 적에게 유리하게 이용하고 있다고 판단하는 한, 공격에 대한 자제를 유지할 가능성이 높지만, 언제까지 그럴지는 미지수다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘은 왜 후티 반군을 폭격함으로써 이란을 자극하는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이스라엘은 전반적 국력의 약화를 외부 충돌로 평형을 맞추고자 한다. 이에 따라 이란의 빈틈을 보완하기 위해 후티 반군 같은 무장 세력에 대한 군사적 압박을 지속적으로 시도할 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223601430803" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이란, 최첨단 미사일로 이스라엘을 겨냥한다 — 백악관의 경고" data-tags="#이란 #이스라엘 #미사일 #북한" data-date="2024-10-02">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-02</div>
+      <div class="card-title">이란, 최첨단 미사일로 이스라엘을 겨냥한다 — 백악관의 경고</div>
+      <div class="card-tags"><span class="tag">#이란</span><span class="tag">#이스라엘</span><span class="tag">#미사일</span><span class="tag">#북한</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월 2일, 백악관은 이란의 이스라엘에 대한 탄도미사일 공격이 임박하다고 발표했다. 이란의 공격 준비는 이스라엘의 군사 행동에 의해 촉발되었고, 이란의 미사일 기술이 북한과의 협력에 의해 급격히 발전하고 있음을 보여준다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이란의 미사일 공격 준비 상황</div><div class="para-body">이스라엘의 지상군 공격으로 이란은 탄도미사일 발사 준비를 하고 있으며, 백악관의 경고는 이란의 실전 배치 준비 상태를 시사한다. 이란의 미사일 기술은 북한의 지원과 협력을 통해 발전해 왔으며, 이는 전투에서의 전략적 우위를 의미할 수 있다.</div></div><div class="para"><div class="para-title">북한과 이란의 미사일 협력 관계</div><div class="para-body">북한은 이란에 미사일을 공급하며 빈번히 기술 협력을 이어오고 있다. 이란은 북한의 미사일 기술을 통해 고체 연료 미사일 개발에 성공하며, 두 국가 간의 군사적 유대는 더욱 강화되었다. 이는 미국과의 갈등 구조에서 이란의 공격력을 높이는 요인으로 작용할 것이다.</div></div><div class="para"><div class="para-title">미국의 전략적 우려</div><div class="para-body">미국은 이란과 북한의 협력이 초래할 잠재적인 위협을 심각하게 인식하고 있다. 핵무기와 탄도미사일의 결합이 진행되면서 미국 내의 방어 체계에 대한 도전이 커지고 있다. 이란이 최첨단 미사일을 사용할 경우, 미국 및 이스라엘의 방어력이 시험대에 오를 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이란의 최첨단 미사일이 이스라엘을 타격하게 된다면, 미국의 방어 체계는 제대로 작동할 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이란이 새로운 미사일을 사용할 경우, 요격 성공률이 현저히 낮아질 가능성이 크다. 따라서 미국과 이스라엘은 이에 대한 철저한 대비가 시급하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223603624621" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국의 천인계획, 과학자 유출과 반도체 굴기의 운명" data-tags="#천인계획 #ASML #반도체 #유출" data-date="2024-10-03">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-03</div>
+      <div class="card-title">중국의 천인계획, 과학자 유출과 반도체 굴기의 운명</div>
+      <div class="card-tags"><span class="tag">#천인계획</span><span class="tag">#ASML</span><span class="tag">#반도체</span><span class="tag">#유출</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월 3일 현재, 중국의 반도체 자립 전략과 과학자 유출이 긴밀히 얽혀 있다. 첸런계획의 핵심인재들이 외국으로 유출됨에 따라, 반도체 굴기가 심대한 도전에 직면하게 되었다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">EUV의 중요성과 생산 제한</div><div class="para-body">반도체 제조에서 노광 공정은 전체 생산시간의 60%와 비용의 35%를 차지하는 핵심 단계다. 이 과정에서 필요한 EUV 장비는 현재 ASML만이 생산할 수 있고, 중국은 이 최첨단 장비의 수출을 막혀 있다. 결국, 생산이 극히 제한된 상황이 이어지고 있다.</div></div><div class="para"><div class="para-title">첸런계획과 과학자 유출</div><div class="para-body">중국의 천인계획은 과거 덩샤오핑의 백인계획에서 발전하여, 10년간 천 명 이상의 해외 인재를 불러들이는 방향으로 확대되었다. 이 과정에서 많은 핵심 인재들이 중국으로 돌아오고 영향을 미치고 있지만, 최근에는 외국인 인재 유치가 급증하며 불안 요소로 작용하고 있다.</div></div><div class="para"><div class="para-title">2018년 12월 1일의 사건들</div><div class="para-body">2018년 12월 1일은 중국 반도체 굴기의 방향을 바꿔놓은 날이다. ASML의 EUV 장비가 화재로 전소되는 사건이 발생했고, 동시에 홍콩의 화웨이 부회장 캐나다에서 체포되고 중국계 교수인 장서우청이 투신자살하는 사건이 발생했다. 이 모든 것이 중국의 반도체 산업에 큰 타격을 주었다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">과학자들 유출과 반도체 장비 공급 중단이 중국의 기술 굴기를 얼마나 위협할 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">중국의 반도체 굴기는 심각한 위협에 직면해 있다. 저명한 인재들이 외국으로 유출되고 기술 공급이 차단될 경우, 자립적 기술 발전은 더욱 어려워질 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223602709530" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="대공방어 체계 천궁-Ⅱ 수출 문제 발생 2 (feat 이라크, 저항의 축)" data-tags="#대공방어 #천궁Ⅱ #UAE #이라크 #무기수출" data-date="2024-10-08">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-08</div>
+      <div class="card-title">대공방어 체계 천궁-Ⅱ 수출 문제 발생 2 (feat 이라크, 저항의 축)</div>
+      <div class="card-tags"><span class="tag">#대공방어</span><span class="tag">#천궁Ⅱ</span><span class="tag">#UAE</span><span class="tag">#이라크</span><span class="tag">#무기수출</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월, 한국의 천궁-Ⅱ 대공 방어 시스템 판매의 복잡한 양상과 지정학적 영향이 부각되고 있다. 이라크와의 무기 수출 계약은 이란 및 저항 세력과의 관계에서 주목할 만한 의미를 내포한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">천궁-Ⅱ와 외부 조건</div><div class="para-body">UAE와 사우디는 한국의 유일한 중거리 지대공 무기 공급자로 떠오르고 있으며, 방위 무기 수출에 대한 기대가 높아지고 있다. 한국의 방산 능력은 NATO 표준을 충족해 전 세계의 수요를 만족시키고 있는 상황이다. 하지만, 이란과 관련된 저항 세력과의 관계는 복잡성을 더한다.</div></div><div class="para"><div class="para-title">이라크의 요청과 지형</div><div class="para-body">이라크의 천궁-Ⅱ 도입 요구는 미국과 이스라엘과의 대립 구도로 인해 적대적인 그림을 나타낸다. 이라크 정부는 미군 철수 후 공중 방어력 강화를 필요로 하지만, 이란과의 관계가 원활하다. 이란과의 밀접한 관계는 무기의 용도를 둘러싼 우려를 낳고 있다.</div></div><div class="para"><div class="para-title">결국, 방위의 전환</div><div class="para-body">한국의 방위 산업은 중동에서의 기회를 찾아가고 있으나, 이라크와 같은 상황에서의 방위 공백이 우려된다. 신속한 무기 거래는 한국의 방위 능력을 저해할 수도 있으며, 방산 수출이 국가 안보에 미치는 영향에 대한 깊은 고민이 필요하다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이라크에 천궁-Ⅱ를 판매하는 것이 한국의 안보에 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이라크에 대한 무기 판매는 한국의 방위 능력을 축소시킬 가능성이 크다. 또한, 이란과의 관계가 복잡한 이라크에 대한 무기 공급은 안보 공백을 초래할 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223610501843" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국의 증시가 폭등하는 이유, 정부 정책이 불러온 결과는?" data-tags="#중국증시 #경제성장률 #PMI #정책" data-date="2024-10-10">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-10</div>
+      <div class="card-title">중국의 증시가 폭등하는 이유, 정부 정책이 불러온 결과는?</div>
+      <div class="card-tags"><span class="tag">#중국증시</span><span class="tag">#경제성장률</span><span class="tag">#PMI</span><span class="tag">#정책</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 10월 기준, 중국 증시 폭등의 배경은 정부의 강력한 부양 정책에 기인한다. 제조업 경기의 복잡한 상황 속에서도, 자본시장에서 이루어지는 자금 몰림이 대표적인 현상이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국의 통화정책 변화</div><div class="para-body">7월 기준금리 인하 이후 시장 반응은 미미하지만, 제조업 PMI 지표는 중요한 시점을 지나쳤다. PMI가 50을 넘지 못한 현실에도 불구하고, 기업 구매 관리자들의 심리는 긍정적으로 변화하고 있다. 이는 정부의 부양책이 영향을 미쳤음을 보여준다.</div></div><div class="para"><div class="para-title">경제 성장률 목표와 정책</div><div class="para-body">2024년 경제 성장률 목표는 5% 이상으로 설정되었으며, 3분기 경제 성장률이 4%대에 머무를 것으로 예상되고 있다. 재정과 통화정책을 강화하겠다는 중앙정치국 회의를 통해, 추가적인 부양책이 필요하다는 우려가 드러났다. 이는 정책적 긴급함을 드러내는 사안이다.</div></div><div class="para"><div class="para-title">관광 성수기와 소비자 심리</div><div class="para-body">국경절 연휴 동안 소비가 줄어들면서, 시장에서는 큰 기대를 하지 못하는 모습이다. 중국 정부는 2천억 위안의 추가 재정을 투입하겠다는 발표를 했지만, 시장 반응은 차가웠고, 기대 이하의 재정 지원이 시사하는 바가 크다. 이는 단기적으로는 긍정적인 방향이지만 중장기적 우려를 남긴다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국의 경기 부양책이 단기적인 효과를 보일 수 있을지, 장기적인 경제 구조를 개선할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">단기적인 증시 상승은 가능하지만, 근본적인 경제 문제는 해결되지 않는 한 지속성이 떨어질 것이다. 따라서, 정책의 방향성을 지속적으로 주시해야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223612356849" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국 증시 폭등, 그러나 상승세는 얼마나 지속될까?" data-tags="#중국증시 #경제성장 #부동산 #정치회의" data-date="2024-10-10">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-10</div>
+      <div class="card-title">중국 증시 폭등, 그러나 상승세는 얼마나 지속될까?</div>
+      <div class="card-tags"><span class="tag">#중국증시</span><span class="tag">#경제성장</span><span class="tag">#부동산</span><span class="tag">#정치회의</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월 현재, 중국 증시는 폭등세를 보이고 있으나 그 배경은 복잡하고 지속 가능성에 대한 의문이 남아 있다. 2024년 양회에서 제시된 경제성장률 목표와 지방정부의 재정 문제는 증시 상승의 주요 변수로 작용하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">양회와 경제 성장 목표</div><div class="para-body">2024년 양회에서는 경제성장률 목표로 5% 안팎이 제시되었고, 이는 부동산 부문에서의 문제로 인해 이를 달성하기 어려울 것으로 보인다. 2023년 지방정부의 부채 문제 해결에 실패하며, 성장률은 심각한 도전에 직면했다.</div></div><div class="para"><div class="para-title">내수 확대와 증시 부양</div><div class="para-body">내수 소비 확대를 위한 이구환신 정책이 시행되며, 이를 통해 소비를 늘려 증시를 부양하려는 노력도 함께 이루어지고 있다. 그러나 이러한 정책이 실제로 얼마나 효과를 볼 수 있을지는 미지수다.</div></div><div class="para"><div class="para-title">정치적 요소와 증시 전망</div><div class="para-body">중국 정부는 중앙위원회의 결정을 기반으로 경제 정책을 추진하며, 증시를 부양하기 위한 정책이 나열되고 있다. 하지만 실질적 성장이 없이는 이러한 정책의 효과가 제한적일 수 밖에 없다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국의 증시 부양책이 단기적인 상승세를 유지할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">아니오. 지속적인 정책 개입에도 불구하고 실적 개선이 없다면 결국 증시 상승은 한계에 부딪힐 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223612344661" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이스라엘, UN 평화유지군을 강제 진입시키다 — 중립성 무너지는 순간" data-tags="#이스라엘 #UN평화유지군 #동명부대 #레바논" data-date="2024-10-14">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-14</div>
+      <div class="card-title">이스라엘, UN 평화유지군을 강제 진입시키다 — 중립성 무너지는 순간</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#UN평화유지군</span><span class="tag">#동명부대</span><span class="tag">#레바논</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월, 이스라엘이 UN 평화유지군 부대를 강제로 진입시키며 중립을 위협하는 상황이 발생했다. 이는 과거의 평화 유지 임무와 현장 효력을 모두 무시한 행동으로, 국제 사회의 우려가 커지고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이스라엘의 UN 평화유지군 강제 진입</div><div class="para-body">이스라엘은 최근 UN 평화유지군의 초소에 공격적으로 진입하는 사건을 일으켰다. 이스라엘군의 탱크가 UN 군 초소에 침입하면서 UN 평화유지군은 더 큰 위험에 처하게 되었다. 이 행동은 이스라엘의 공격적인 군사 작전의 연장선상에 있다.</div></div><div class="para"><div class="para-title">레바논 내의 UN 평화유지군 역할</div><div class="para-body">UN 평화유지군은 레바논 내에서 불법행위 감시와 안전 확보를 위한 중요한 임무를 수행하고 있다. 한국의 동명부대 또한 이곳에서 지속적으로 활동하며 현지 주민들에게 필요로 하는 의료 지원을 하고 있다. 그러나 이스라엘의 공격과 불법 행위 감시가 교차되는 현재, 평화 유지의 의무는 더욱 복잡해졌다.</div></div><div class="para"><div class="para-title">이스라엘의 국제적 반발</div><div class="para-body">이스라엘의 UN 평화유지군에 대한 공격은 국제 사회의 강한 반발을 사고 있다. 이란과 진보적인 국제 사회가 이스라엘에게 비인도적인 행동에 대한 보복을 요구할 가능성이 커지고 있다. 이는 앞으로 이스라엘의 군사적 대처가 변화해야 함을 시사한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘의 UN 평화유지군 공격이 국제 전쟁의 계기가 될 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">YES. 이스라엘의 행동은 국제적 규범을 무시하는 경과를 초래하고 있으며, 이에 대한 국제 사회의 대응은 더욱 강력해질 것이다. 이러한 상황은 분쟁을 심화시킬 가능성이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223617973658" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="대만 총선 결과가 드러낸 중국의 대만 포위의 함의는?" data-tags="#대만 #중국몽 #라이칭더 #전랑외교" data-date="2024-10-15">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-15</div>
+      <div class="card-title">대만 총선 결과가 드러낸 중국의 대만 포위의 함의는?</div>
+      <div class="card-tags"><span class="tag">#대만</span><span class="tag">#중국몽</span><span class="tag">#라이칭더</span><span class="tag">#전랑외교</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 10월 15일, 대만 총선 결과가 중국의 대만 포위 시도에 중대한 변수를 던졌다. 민진당의 라이칭더 후보가 승리하면서 중국의 통일 의지가 시험대에 올랐다. 이러한 상황에서 중국의 전랑외교가 민심을 다독이는 방식으로 작용할 가능성이 커졌다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">대만 총선과 중국의 실패</div><div class="para-body">대만 총선에서 민진당의 라이칭더가 승리하며 중국의 통일 전략에 실패가 확정됐다. 중국이 대만의 민심을 잡기 위한 전략이 무색해진 상황에서, 민진당은 지지를 확고히 하며 강경한 반중 메시지를 이어가고 있다. 이는 중국의 대만 정책 실행에 제약을 가할 것으로 보인다.</div></div><div class="para"><div class="para-title">전랑 외교의 영향력</div><div class="para-body">중국의 전랑 외교는 국가이익이 아닌 공산당의 이익을 우선시하는 방향으로 나아가고 있다. 이는 민심을 다독일 수 있는 전략으로 기능하고 있으며, 부동산 경기 침체 등의 부정적 요소를 덮으려는 시도로 볼 수 있다. 그러나 이러한 외교는 대만과의 관계를 더욱 악화시킬 가능성이 높다.</div></div><div class="para"><div class="para-title">미국과 국제 정세</div><div class="para-body">미국은 대만의 독립을 지지하며 중국의 대만 진출을 저지하기 위한 다양한 대응 방안을 모색 중이다. 대만이 중국에 넘어갈 경우, 미국의 방어 전략에 큰 변화를 초래할 것이며, 이는 아시아 태평양 지역의 안보에도 중대한 영향을 미칠 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">대만 총선의 결과가 중국의 통일 정책에 어떤 장기적인 영향을 미칠 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">대만의 민진당 승리는 중국의 통일 추진에 장애물이 될 것이다. 앞으로 라이칭더의 진취적인 정책이 대만과 국제 사회의 관계를 더욱 긴밀히 만들면서 중국의 전략적 압박을 증가시킬 가능성이 높다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223618691008" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국이 대만을 포위하는 이유, 과거사에서 찾다" data-tags="#중국 #대만 #정치 #역사" data-date="2024-10-15">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-15</div>
+      <div class="card-title">중국이 대만을 포위하는 이유, 과거사에서 찾다</div>
+      <div class="card-tags"><span class="tag">#중국</span><span class="tag">#대만</span><span class="tag">#정치</span><span class="tag">#역사</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월, 중국의 대만 포위와 군사 연습은 예기치 않은 전개로 보인다. 이를 이해하기 위해서는 대만의 역사적 배경과 정치적 갈등을 살펴봐야 한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">대만의 역사적 배경</div><div class="para-body">대만은 오스트로네시아어족의 원주민이 거주하던 지역으로, 네덜란드와 스페인의 식민지 역사 속에서 다양한 문화가 섞여졌다. 1624년 네덜란드 동인도회사는 대만의 교역을 통해 중국과 일본으로 상품을 수출하며 영향력을 확대하였다.</div></div><div class="para"><div class="para-title">중국과 대만의 정치적 갈등</div><div class="para-body">중국 공산당은 대만에 대한 통제권을 주장하지만, 대만은 본성인과 외성인 간의 역사적 배경으로 인해 정치적 분열이 심화되었다. 현재 본성인 중심의 민진당은 독립 주장을, 외성인 중심의 국민당은 통일을 희망하고 있다.</div></div><div class="para"><div class="para-title">중국의 군사적 압박</div><div class="para-body">최근 중국의 징병법 개정 이후 대만의 군사적 경계가 높아지고 있다. 중국의 정찰 풍선 발사와 군사 연습은 대만 총통선거에 대한 위협으로 작용하고 있으며, 이는 대만 내 정치적 판도를 흔들 수 있는 요소로 작용하고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">대만 독립에 대한 주민들의 정서는 과연 지속될까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">대만의 독립 주장은 갈수록 강해질 것이다. 과거의 역사와 현재의 정치적 압박이 결합되면서 대만 주민들의 독립 의지는 더욱 확고해질 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223618679798" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="인도-중동-유럽 경제회랑 IMEC 근황 2(feat 인도는 중국을 싫어해)" data-tags="#IMEC #중국 #인도 #지정학" data-date="2024-10-19">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-19</div>
+      <div class="card-title">인도-중동-유럽 경제회랑 IMEC 근황 2(feat 인도는 중국을 싫어해)</div>
+      <div class="card-tags"><span class="tag">#IMEC</span><span class="tag">#중국</span><span class="tag">#인도</span><span class="tag">#지정학</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년, 인도-중동-유럽 경제회랑(IMEC) 프로젝트가 진행되고 있으며, 이는 중국의 일대일로에 대응하기 위한 전략으로 분석된다. 인도는 군사적 협력 및 방산 기술 협력을 통해 중국의 위협을 견제하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">IMEC와 인도의 전략적 역할</div><div class="para-body">IMEC는 인도에서 중동을 거쳐 유럽으로 이어지는 물류 통로로, 인도는 주도적인 역할을 하고 있다. 인도가 미국의 지원을 받아 UAE, 사우디 등과 협력하며 프로젝트를 추진하고 있는 상황이다. 이러한 동선은 중국의 영향력을 견제하기 위한 국제적 전략으로 여겨진다.</div></div><div class="para"><div class="para-title">브라모스 미사일의 공급과 방어적 조치</div><div class="para-body">인도는 필리핀에 브라모스 미사일을 공급하기 시작하며 중국의 해양군사적 확장을 견제하고 있다. 브라모스는 초음속 미사일로, 인도와 필리핀의 군사적 협력을 강화하는 데 중요한 역할을 하고 있다. 이러한 지원은 동남아시아 국가들에게 비대칭 전력을 제공함으로써 전략적 우위를 확보하는 데 기여하고 있다.</div></div><div class="para"><div class="para-title">IMEC의 장애 요인과 진행 상황</div><div class="para-body">IMEC 프로젝트는 다양한 장애 요인에 직면해 있다. 특히 사우디와 이스라엘 간의 연결 노선 문제와 중국의 영향력이 걸림돌이 되고 있다. 그러나 미국의 후원 아래 인도가 역량을 발휘하며 프로젝트 진행 속도가 가속화되고 있다는 점은 긍정적인 신호로 분석된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">IMEC가 성공적으로 완공되면 중국의 일대일로는 어떻게 되는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">IMEC가 완공되면 중국의 해상 통상로에 중대한 영향을 미치고, 이는 국제 통상 환경을 크게 변화시킬 것이다. 인도의 주도권 아래에서 중국의 영향력이 감소할 가능성이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223624621605" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="인도-중동-유럽 경제회랑 IMEC 근황 1(feat 인도는 중국을 싫어해)" data-tags="#인도 #중동 #유럽 #지정학" data-date="2024-10-19">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-19</div>
+      <div class="card-title">인도-중동-유럽 경제회랑 IMEC 근황 1(feat 인도는 중국을 싫어해)</div>
+      <div class="card-tags"><span class="tag">#인도</span><span class="tag">#중동</span><span class="tag">#유럽</span><span class="tag">#지정학</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년, 인도가 주도하는 새로운 물류통로가 구축되고 있는 가운데, 이란과 이라크의 과거 관계가 주목할 만한 요소로 드러나고 있다. 이 글은 이란-이라크의 지정학적 배경과 인도-중동-유럽 경제회랑(IMEC)을 통해 상황을 통찰한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이란-이라크 관계의 역사적 배경</div><div class="para-body">이란과 이라크는 전쟁의 역사를 공유하고 있다. 이란의 새로운 대통령이 이라크를 방문하면서 양국의 복잡한 관계가 부각된다. 과거의 적대감이 현재 어떤 의미를 지니는지 살펴볼 필요가 있다.</div></div><div class="para"><div class="para-title">중국과의 갈등 관점</div><div class="para-body">인도가 중국과의 군사적 갈등을 기반으로 새로운 경로를 모색하고 있다. 인도-중동-유럽 경제회랑(IMEC)이 이란을 우회하는 형태로 구성되어, 중국의 일대일로와 견제하려는 움직임이 발생하고 있다.</div></div><div class="para"><div class="para-title">과거의 전쟁과 현재의 영향</div><div class="para-body">1962년에 발생한 중인 전쟁은 인도와 중국 간의 갈등의 기초가 되었다. 이 전쟁으로 인해 양국 간의 국경 문제가 해결되지 못했으며, 현재의 지정학적 갈등학적인 맥락에서 여전히 영향을 미치고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">인도는 어떻게 IMEC를 통해 중국의 영향력을 견제하려고 하는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">인도는 IMEC를 통해 이란-시리아-레바논을 우회하여 유럽으로 접근함으로써 중국의 일대일로에 대한 대안 경로를 마련하고자 한다. 이는 지정학적 균형을 맞추려는 전략으로 볼 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223624619770" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="브릭스 정상회담에서 인도가 제기한 문제, 결국 어떤 결과를 가져올까" data-tags="#브릭스 #푸틴 #시진핑 #모디 #인도" data-date="2024-10-21">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-21</div>
+      <div class="card-title">브릭스 정상회담에서 인도가 제기한 문제, 결국 어떤 결과를 가져올까</div>
+      <div class="card-tags"><span class="tag">#브릭스</span><span class="tag">#푸틴</span><span class="tag">#시진핑</span><span class="tag">#모디</span><span class="tag">#인도</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월 18일, 브릭스 정상회담 시간이 다가오고 있다. 인도가 강조하는 양다리 외교와 그로 인한 긴장 양상이 진행 중인데, 이번 회담은 실질적인 합의 도출에 시사점을 던질 수 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">인도의 외교적 위치와 딴지</div><div class="para-body">인도는 브릭스와 쿼드에 동시에 가입하여 실리 외교를 추구하고 있다. 이러한 외교 전략은 인도의 이익을 극대화하려는 이중성을 드러내고 있으며, 다음 회담에서는 이 점에서 파장이 예상된다.</div></div><div class="para"><div class="para-title">브릭스의 긴장과 파트너국들의 이해관계</div><div class="para-body">브릭스 정상회담에서 인도는 위안화를 공통 통화로 승인하는 과정에서 불만을 표출하였다. 이는 중국과 러시아의 주도 아래 이루어지는 회담에서 인도의 주장이 어떻게 설득력을 얻으려는지를 명확히 보여준다.</div></div><div class="para"><div class="para-title">정상회담의 예상 결과</div><div class="para-body">2024년 브릭스 회담은 러시아가 의장국을 맡고 있어, 푸틴과 시진핑 간의 관계가 심화될 것으로 보인다. 그러나 인도가 더욱 적극적으로 나설 경우, 회의 결과가 어떤 방향으로 흘러갈지 예측하기 어려운 상황이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">브릭스 정상회담에서 인도의 적극적인 딴지가 어떤 결과로 이어질 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이번 정상회담에서 인도의 요구가 수용되지 않는다면, 브릭스의 통합이 더 어려워질 것이다. 이는 향후 국제관계의 재편성에 부정적인 영향을 미칠 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223626244711" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="브릭스가 위안화 결제로 페트로달러에 도전하는 이유와 그 파장" data-tags="#BRICS #위안화 #페트로달러 #암호화폐" data-date="2024-10-21">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-21</div>
+      <div class="card-title">브릭스가 위안화 결제로 페트로달러에 도전하는 이유와 그 파장</div>
+      <div class="card-tags"><span class="tag">#BRICS</span><span class="tag">#위안화</span><span class="tag">#페트로달러</span><span class="tag">#암호화폐</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월 22일 브릭스 정상회담을 앞둔 시점에서, 중국과 러시아는 위안화 결제 시스템 확대를 통해 페트로달러에 도전하고 있다. 이는 미국의 경제 제재에 대한 방어적 조처이자, 비대칭적 금리 체제의 보완책을 마련하려는 의도로 해석된다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">위안화 결제 시스템의 발전</div><div class="para-body">중국의 CIPS 시스템은 이미 139개국, 1,280개 은행에서 사용되고 있으며, 브라질은 무역에서 위안화 결제를 시작했다. 이는 국제 금융에서 위안화의 위상을 강화할 의도를 가지고 있으며, 제재에 대한 미리 마련된 대책으로 보인다.</div></div><div class="para"><div class="para-title">브릭스의 암호화폐 추진</div><div class="para-body">브릭스는 금과 희토류로 뒷받침되는 암호화폐를 추진하여 달러의 대체 금융 시스템을 구축할 계획이다. 이를 통해 각국의 자국 통화에 대한 신뢰도를 높이고, 미국 달러의 전세계적 지배력을 견제할 수 있을 것으로 기대된다.</div></div><div class="para"><div class="para-title">위안화의 신뢰성 문제</div><div class="para-body">위안화의 환율은 중국 정부의 정책 결정에 의해 결정되므로, 국제 시장에서의 신뢰를 얻는 데 한계가 있다. 이런 상황에서도 브릭스가 위안화를 국제 통화로 선정할 경우, 그 전망은 흥미롭지만 도전과 과제가 잔존한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">위안화와 암호화폐가 BRICS의 국제통화로 자리잡을 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">위안화와 암호화폐의 결합이 금융 시장에서 주목받으려면 신뢰성을 확보해야 하므로, 이는 결코 쉽지 않을 것이다. 현재 상황을 고려할 때, 신뢰 구축이 가장 큰 기반이 되는 과정이라 볼 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223625914779" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="브릭스 정상회담에서 푸틴·시진핑·모디가 새 국제통화 체제를 제안하는 이유는?" data-tags="#브릭스 #푸틴 #시진핑 #모디 #페트로달러" data-date="2024-10-21">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-21</div>
+      <div class="card-title">브릭스 정상회담에서 푸틴·시진핑·모디가 새 국제통화 체제를 제안하는 이유는?</div>
+      <div class="card-tags"><span class="tag">#브릭스</span><span class="tag">#푸틴</span><span class="tag">#시진핑</span><span class="tag">#모디</span><span class="tag">#페트로달러</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 10월 22일, 브릭스 정상회담에서 푸틴과 시진핑이 통용되는 국제통화를 만드는 것을 제안했다는 사실은 중요한 의미를 지닌다. 그들이 제안하는 새로운 국제통화의 목표는 미국 중심의 경제 질서에서 벗어나려는 시도로 풀이된다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">브릭스의 개념과 성장</div><div class="para-body">브릭스(BRICS)는 2001년 골드만삭스의 짐 오닐이 만든 개념으로, 브라질, 러시아, 인도, 중국의 머리글자를 따서 만들어졌다. 처음에는 세계 GDP의 8%밖에 차지하지 않았던 이들 국가가 지금은 37%까지 성장했으며, 가입국의 수가 지속적으로 증가하고 있는 상황이다.</div></div><div class="para"><div class="para-title">푸틴과 시진핑의 통화 제안</div><div class="para-body">푸틴은 2022년 브릭스 포럼에서 새로운 국제통화를 제안했으며, 시진핑도 이를 지지했다. 이 제안은 브릭스 국가 간의 무역대금을 달러가 아닌 위안화로 결제하자는 내용을 포함하고 있다. 양측은 이를 통해 미국 중심의 경제 질서를 타파하고자 한다.</div></div><div class="para"><div class="para-title">페트로달러 대신하는 중국의 통화 전략</div><div class="para-body">중국은 미국이 주도하는 SWIFT 대신 CIPS를 사용하려는 계획을 세우고 있으며, 이는 페트로달러 체제에 도전하는 행위로 볼 수 있다. 이런 변화는 세계 경제의 판도를 바꿔놓을 가능성을 지니고 있다. 때문에 향후 국제 경제 상황에 큰 영향을 끼칠 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">브릭스의 통화 제안이 성공하면 기존의 페트로달러 체제가 어떤 영향을 받을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">예, 기존 페트로달러 체제는 심각한 위협에 직면할 것이다. 미국의 통화 지배력은 약해지고, 브릭스 국가들의 경제적 힘이 강화될 가능성이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223625899337" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 11월 · 1개</div>
+  
+<div class="card" data-title="중국의 무비자 확대, 한국 포함은 정치적 이유가 있었나" data-tags="#중국 #무비자 #여행 #반간첩법" data-date="2024-11-04">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-11-04</div>
+      <div class="card-title">중국의 무비자 확대, 한국 포함은 정치적 이유가 있었나</div>
+      <div class="card-tags"><span class="tag">#중국</span><span class="tag">#무비자</span><span class="tag">#여행</span><span class="tag">#반간첩법</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 11월 기준, 중국이 한국에 무비자를 허용한 조치는 단순한 외교적 결정 이상으로 보인다. 이는 반간첩법 시행과 관련된 정치적 맥락과 맞물려 있으며, 한국의 여행업계도 기대를 품고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">무비자 정책의 배경</div><div class="para-body">중국은 11월 8일부터 한국을 포함한 9개국에 대해 15일간 무비자를 시행한다고 발표했다. 이번 조치는 한국인이 중국 여행을 할 때 비자 발급비와 기간을 줄이는 장점이 있다. 하지만, 반간첩법 시행을 배경으로 한 정치적 압박을 줄이기 위한 전략일 수도 있다.</div></div><div class="para"><div class="para-title">반간첩법과의 연관성</div><div class="para-body">중국의 반간첩법이 한국인 구속 사례를 포함하게 되자, 한국을 무비자 대상으로 포함시키며 반중 감정의 악화를 사전 차단하려는 의도가 보인다. 법 적용 범위가 확대되면서 한국인에 대한 경고가 높아진 상황이다.</div></div><div class="para"><div class="para-title">여행업계의 기대와 리스크</div><div class="para-body">여행업체들은 한국의 무비자 혜택으로 인해 중국 여행 수요가 증가할 것으로 기대하고 있다. 하지만, 새로운 법적 리스크에 대한 주의가 필요하다. 여행사들은 한국인 여행객들에게 반간첩법과 관련된 조치들에 대한 충분한 정보를 제공해야 한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국이 한국에 무비자 입국을 허용한 진짜 이유는 무엇일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">정치적 이유가 크다. 반간첩법 시행 이후 한국인에 대한 압박이 커진 상황에서, 무비자 조치는 상대적으로 좋은 이미지를 만들기 위한 전략적 선택으로 보인다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223645223056" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 12월 · 2개</div>
+  
+<div class="card" data-title="중국, 미국 반도체 규제에 희유금속으로 반격하는 법" data-tags="#반도체 #희유금속 #갈륨 #게르마늄 #중국" data-date="2024-12-09">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-12-09</div>
+      <div class="card-title">중국, 미국 반도체 규제에 희유금속으로 반격하는 법</div>
+      <div class="card-tags"><span class="tag">#반도체</span><span class="tag">#희유금속</span><span class="tag">#갈륨</span><span class="tag">#게르마늄</span><span class="tag">#중국</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 12월 기준, 중국이 미국의 반도체 수출 금지에 맞서 희유금속을 무기화하는 움직임을 보이고 있다. 갈륨과 게르마늄에 대한 수출 통제를 강화하며, 미국의 최근 조치에 즉각적으로 대응하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">미국의 반도체 규제 배경</div><div class="para-body">트럼프 행정부는 미국의 크리티컬 미네랄 확보를 위한 조사를 시작했으며, 이 결과로 희토류의 중요성이 강조되었다. 현재 미국 내 희토류 생산은 미흡하나, 군사 및 산업적 필요로 인해 관련 정책이 지속적으로 강화되고 있다.</div></div><div class="para"><div class="para-title">중국의 반격과 희유금속 전략</div><div class="para-body">중국은 2022년부터 갈륨과 게르마늄의 수출을 국방 차원에서 관리하기 시작했다. 2024년에는 희토류 관리조례를 의결하여 더 강력한 통제 체계를 구축했으며, 이를 통해 갈륨과 게르마늄 수출을 전면 금지하였다.</div></div><div class="para"><div class="para-title">한국의 입장과 향후 우려</div><div class="para-body">한국은 희토류 수입이 대부분 중국에 의존하고 있어, 중국의 불확실한 반격에 노출되어 있다. 이로 인해 한국의 방산 및 반도체 산업은 중국의 희유금속 수출 금지 조치에 큰 영향을 받을 가능성이 크다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국의 희유금속 반격이 한국의 반도체 산업에 어떤 리스크를 초래할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">현재로서는 미중 간의 무역 갈등이 지속되고 있기에, 한국은 대중 의존도를 낮추고 다른 공급망 확보에 집중해야 한다. 중국의 반발이 한국에게 즉각적인 재앙이 될 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223682470159" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="공동부유가 중국 경제의 안정성에 어떤 영향을 미칠까?" data-tags="#중국경제 #공동부유 #호구제도 #부동산" data-date="2024-12-18">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-12-18</div>
+      <div class="card-title">공동부유가 중국 경제의 안정성에 어떤 영향을 미칠까?</div>
+      <div class="card-tags"><span class="tag">#중국경제</span><span class="tag">#공동부유</span><span class="tag">#호구제도</span><span class="tag">#부동산</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 12월 기준, 중국 경제는 심각한 위기에 직면하면서도 시진핑은 5% 성장률을 자신하고 있다. 그러나 공동부유 정책과 부동산 시장의 구조적 문제는 이 목표 달성에 큰 변수로 작용할 것이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">부동산 시장의 위기</div><div class="para-body">중국의 부동산 개발은 한계에 도달한 상태로, 준공 후 비어있는 주택이 5천만 호에 이른다. 이에 따라 농민공들에게 도시호구를 부여하여 부동산 시장을 살리려는 시도가 진행되고 있다. 그러나 이 제도는 자격 요건이 까다로워 농민공들이 도시 호구를 얻는 사례가 드물다.</div></div><div class="para"><div class="para-title">공동부유와 그 영향</div><div class="para-body">시진핑의 공동부유 정책은 고소득자에 대한 재분배 강화를 목표로 하고 있으나, 이는 부자들이 자산을 해외로 유출하게 만드는 부작용을 초래할 수 있다. 이러한 환경에서 기업들의 자발적인 기부와 부자들에 대한 압박이 시작되었으나, 이는 장기적으로 경제의 불안정을 심화시킬 수 있다.</div></div><div class="para"><div class="para-title">경제 정책의 단기적 효과</div><div class="para-body">2024년 9월 중앙정치국 회의에서 통화 정책의 강화를 언급했다. 계속된 경기 부양 조치와 함께 재정 지출 증가를 목표로 하지만, 이러한 정책이 시장에 실질적인 영향을 미치기까지는 상당한 시차가 발생할 것이다. 이러한 불확실성 속에서 5% 성장률 목표는 더욱 힘들어 보인다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국의 성장은 지금의 정책들로 정말 가능할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">우려가 크다. 부동산 시장의 회복이 없이는 경제 성장이 어렵고, 정책 변화가 장기적으로 부정적인 영향을 미칠 수 있다. 이에 따라 성장률 목표 달성은 힘들 것으로 보인다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223696497361" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 1월 · 3개</div>
+  
+<div class="card" data-title="인도·중국의 물 분쟁, 얄룽창포강은 새로운 시한폭탄" data-tags="#물분쟁 #중국 #인도 #에티오피아 #나일강" data-date="2025-01-08">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-01-08</div>
+      <div class="card-title">인도·중국의 물 분쟁, 얄룽창포강은 새로운 시한폭탄</div>
+      <div class="card-tags"><span class="tag">#물분쟁</span><span class="tag">#중국</span><span class="tag">#인도</span><span class="tag">#에티오피아</span><span class="tag">#나일강</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 1월, 중국과 인도의 국경 분쟁이 고조되고 있으며, 새로운 물 분쟁 요소로 얄룽창포강이 등장하고 있다. 중국은 이 지역에서 대형 댐 건설을 추진하며 인근 국가들과의 갈등을 심화시킬 가능성이 높아 보인다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">물 분쟁의 역사</div><div class="para-body">나일강의 수량을 둘러싼 이집트와 에티오피아 간의 갈등은 현재까지 이어지고 있다. 이집트는 청나일에서 흐르는 물이 줄어들 경우 흉년이 올 수 있다는 우려를 하고 있으며, 이는 동아프리카 지역의 정치적 긴장을 유발하고 있다.</div></div><div class="para"><div class="para-title">중국의 물 관리 전략</div><div class="para-body">중국은 메콩강을 포함한 주요 하천에 대규모 댐 건설을 통해 수자원을 확보하려 하고 있다. 이는 주변국과의 갈등을 부추기는 동시에 장기적으로 물 부족 문제 해결에 기여할 것으로 기대하고 있지만, 반발도 심심치 않다.</div></div><div class="para"><div class="para-title">얄룽창포강 발전소의 의미</div><div class="para-body">중국의 얄룽창포강 발전소 건설 계획은 인도, 방글라데시와의 관계에서 새로운 긴장을 낳고 있다. 하류 국가들은 지나치게 물을 통제하려는 중국의 정책에 저항하고 있으며, 이는 지역 간 무역과 협력에도 부정적 영향을 미칠 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국의 대규모 댐 건설이 인도 및 동남아 국가들과의 갈등을 심화시킬 경우, 이 지역의 정치적 안정성은 어떻게 변화할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">중국의 댐 건설이 계속된다면, 인도와 동남아시아 국가들과의 긴장이 더욱 악화될 것으로 보인다. 이는 지역 분쟁의 가능성을 높이기 때문이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223715815738" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국의 7광구 감시, 일본과의 갈등을 더욱 부추기다" data-tags="#중국 #7광구 #일본 #지정학" data-date="2025-01-18">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-01-18</div>
+      <div class="card-title">중국의 7광구 감시, 일본과의 갈등을 더욱 부추기다</div>
+      <div class="card-tags"><span class="tag">#중국</span><span class="tag">#7광구</span><span class="tag">#일본</span><span class="tag">#지정학</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 1월 기준, 중국이 서해와 7광구 주변에 대규모 구조물을 설치하며 긴장이 고조되고 있다. 이는 일본과의 영토 분쟁을 더욱 복잡하게 만들 가능성이 크다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국, 7광구에 대한 군사적 압박 강화</div><div class="para-body">중국은 7광구와 인접한 한중 잠정조치수역에 큰 철골구조물을 설치하기 시작했다. 이는 이후 남중국해에서 보인 인공섬 확장과 유사한 패턴을 보이고 있어, 일본과의 Tension을 더욱 증가시키고 있다. 이러한 움직임은 China's intention to cement its claims in contested areas가 분명해졌다.</div></div><div class="para"><div class="para-title">일본의 7광구 대응과 갈등</div><div class="para-body">일본은 7광구에 대한 공동 개발을 일방적으로 중단한 뒤, 전략적이면서도 수동적인 접근을 취하고 있다. 하지만, 일본의 시추 요청을 무시하고 침대축구를 지속하는 가운데, 중국의 확대 움직임이 결국 일본에게 큰 부담으로 작용하고 있다. 이로 인해 한일 간의 합의도 흔들릴 수 있는 위기에 처해 있다.</div></div><div class="para"><div class="para-title">중국의 법적 주장과 영토 전략</div><div class="para-body">중국은 자연 연장설을 내세워 7광구의 영유권을 주장하기 시작했다. 이는 전통적으로 중간선 이론에 의존해 왔던 한국과의 대립을 더욱 격화시킬 수 있으며, 한중 관계도 난항을 겪을 가능성이 크다. 이러한 상황에서 한국이 대응 전략을 제대로 마련하지 않으면, 더 큰 갈등이 예상된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국이 7광구에 대한 압박을 계속 강화한다면, 한국과 일본의 공동 개발 전략은 어떤 방향으로 나아가야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">연합의 필요성이 높아졌다. 일본과의 협력 강화를 통해 공동 대응 체계를 강화해야 7광구를 지킬 수 있을 것이다. 그럴 경우, 협력이 장기적으로 양국의 이익이 될 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223728461020" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="홍콩 시위가 한국의 부동산 시장에 미치는 영향은?" data-tags="#홍콩시위 #한국부동산 #상하이방 #화교" data-date="2025-01-27">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-01-27</div>
+      <div class="card-title">홍콩 시위가 한국의 부동산 시장에 미치는 영향은?</div>
+      <div class="card-tags"><span class="tag">#홍콩시위</span><span class="tag">#한국부동산</span><span class="tag">#상하이방</span><span class="tag">#화교</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 1월 기준, 홍콩에서 시작된 시위와 상하이방의 도피가 한국 부동산 시장에 미친 영향은 복합적이다. 홍콩의 힘 있는 자본이 한국으로 유입되며 부동산 열풍이 간접적으로 형성되었다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">상하이방의 정치적 이동과 자금 흐름</div><div class="para-body">상하이방이 시진핑 정권의 부패 단속으로 홍콩으로 도피하면서, 이들이 가지고 있는 자본의 흐름이 한국으로 이어졌다. 이들은 막대한 자금력으로 강남의 비싼 부동산을 사들이며 한국 시장에 영향을 주었다.</div></div><div class="para"><div class="para-title">홍콩 시위와 한국의 부동산 투자</div><div class="para-body">홍콩의 범죄인 인도법 개정은 상하이방 자금의 홍콩을 떠나게 한 주요 원인으로, 이에 따라 한국 내 부동산 투자가 증가하게 되었다. 특히 제주도와 같은 지역이 이들의 주요 투자처로 부각되고 있다.</div></div><div class="para"><div class="para-title">한국 내 중국인 거주 인구 증가</div><div class="para-body">한국에서 거주하는 중국인 숫자가 증가하면서, 그들이 아파트 구입을 통해 한국 경제에 통합되고 있다. 그러나 이들이 대량으로 특정 지역에 집중 거주하면서 사회적 변화와 우려를 낳고 있다는 점은 중요한 이슈로 떠오르고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">한국에서 사업을 하는 중국인과 홍콩의 부유층이 겹치는 구간에서 어떤 사회적 부작용이 발생할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">부동산 시장에 긍정적인 영향을 미치는 반면, 지나친 집중은 갈등을 일으킬 수 있다. 적절한 조정과 정책이 필요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223739231403" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 3월 · 1개</div>
+  
+<div class="card" data-title="중국 증시 상승, 시진핑의 민영경제 부활이 열쇠일까?" data-tags="#중국경제 #시진핑 #민영경제 #증시" data-date="2025-03-19">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-03-19</div>
+      <div class="card-title">중국 증시 상승, 시진핑의 민영경제 부활이 열쇠일까?</div>
+      <div class="card-tags"><span class="tag">#중국경제</span><span class="tag">#시진핑</span><span class="tag">#민영경제</span><span class="tag">#증시</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 3월 기준, 중국 증시가 상승세를 보이고 있다. 이는 시진핑 주석의 민영경제 재고 및 지원 발언에 힘입은 바가 크다. 해당 변화는 중국 경제의 탄력성과 변화가능성을 암시한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">시진핑의 민영기업 지지</div><div class="para-body">최근 시진핑은 민영경제에 대한 긍정적인 언급을 하며 민영기업과 기업가들이 경제를 이끄는 데 기여할 것을 격려했다. 이는 과거 국진민퇴 정책과 대조되는 접근법이며, 경제 활성화를 위한 전환점을 의미한다.</div></div><div class="para"><div class="para-title">증시 부양 정책</div><div class="para-body">중국 정부는 증시 부양을 위해 신규 가이드라인을 수립하고, 자본 시장의 업그레이드를 예고했다. 특히 특히 배당 실적 기준을 강화하여 안정적인 주식 시장을 만들 방향으로 나아가고 있다.</div></div><div class="para"><div class="para-title">경제 성장의 지속 가능성 문제</div><div class="para-body">중국 경제는 부동산 의존도가 높아 경기 침체 시 큰 타격을 받을 수 있다. 현재 민영경제와 증시 부양 정책이 긍정적인 신호를 보내고 있지만, 장기적인 지속 가능성은 여전히 불확실하다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">민영경제가 다시 활성화된다면, 중국 경제의 방향성은 어떻게 변화할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">여전히 경제 구조의 변동성이 존재한다. 민영기업의 성장은 긍정적이지만, 장기적으로 규제와 부정부패 문제를 해결해야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223800231421" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 4월 · 4개</div>
+  
+<div class="card" data-title="리카싱의 파나마운하 항구 운영권 매각 — 중국의 복수인가?" data-tags="#리카싱 #파나마운하 #중국 #홍콩" data-date="2025-04-03">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-04-03</div>
+      <div class="card-title">리카싱의 파나마운하 항구 운영권 매각 — 중국의 복수인가?</div>
+      <div class="card-tags"><span class="tag">#리카싱</span><span class="tag">#파나마운하</span><span class="tag">#중국</span><span class="tag">#홍콩</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 4월초, 리카싱이 운영하는 CK허치슨 홀딩스의 파나마운하 항구 매각이 중국 정부의 반발을 일으키고 있다. 이는 리카싱과 중국 당국 간의 긴장이 고조된 시점에서 발생한 복잡한 사건으로, 양측의 이해관계가 얽혀 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">리카싱의 경영 전환</div><div class="para-body">리카싱은 정치적 긴장 속에서도 자신의 기업 구성을 재편해왔다. 2019년 홍콩 시위에서 시위대의 편에 서 힘 있는 인사로 남아 있었으나, 이후 중국 정부와의 관계 악화가 자산 매각 이후에도 여전히 영향을 미치고 있다.</div></div><div class="para"><div class="para-title">중국 정부의 반발</div><div class="para-body">CK허치슨의 항구 매각은 중국 정부의 반독점 규제로 둘러싸여 있다. 중국 당국은 매각 계약을 취소하기 위해 다양한 방법으로 압박을 가하고 있으며, 이는 리카싱의 사업에 중대한 영향을 미칠 수 있다.</div></div><div class="para"><div class="para-title">글로벌 정치의 해석</div><div class="para-body">이 사건은 미국과 중국 간의 긴장 상황을 더욱 부각시킨다. 리카싱의 개인적 재산과 정치적 입장이 미국, 중국 모두에 중요한 이슈로 떠오르면서, 복잡한 국제 정치의 구도를 드러내고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">리카싱이 마주한 중국 정부의 반발, 그의 복수가 이루어질 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">중국 정부의 반발은 피할 수 없는 대치 상황을 나타내며, 리카싱은 중대한 선택을 마주하게 될 것이다. 이번 매각이 성공적으로 이루어질 경우, 그는 명실상부한 국제적 인물로 자리매김할 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223819003038" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="일본 지진이 부산항 성장의 기회가 되었던 이유" data-tags="#부산항 #リカシン #한국경제 #항만" data-date="2025-04-05">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-04-05</div>
+      <div class="card-title">일본 지진이 부산항 성장의 기회가 되었던 이유</div>
+      <div class="card-tags"><span class="tag">#부산항</span><span class="tag">#リカシン</span><span class="tag">#한국경제</span><span class="tag">#항만</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 4월, 리카싱의 항구 운영권 매각이 중국 당국의 압박으로 연기된 상황은 부산항과의 역사적 연결고리를 다시 조명하게 만든다. 1995년 고베 대지진이 부산항의 급성장을 촉발시킴으로써 항만 물류와 경제 구조에 미친 영향은 여전히 현재진행형이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">부산항의 역사적 맥락</div><div class="para-body">부산항은 일본 고베항이 대지진으로 피해를 입은 후, 많은 선주들이 부산으로 이동하면서 급격히 발전하게 되었다. 한국의 항구 운영 방식과 지리적 장점이 결합해 경쟁력을 확보하였고, 이는 부산항의 랭킹을 세계 5위로 끌어올리는데 기여하였다.</div></div><div class="para"><div class="para-title">리카싱의 항구 운영권 매각과 중국의 압박</div><div class="para-body">리카싱이 운영하는 CK 허치슨의 43개 항구 운영권 매각이 중국 당국의 압박으로 연기되었다. 그러나 이는 전 세계 해운과 물류 시장에 큰 영향을 미치는 사건으로, 특히 부산항의 입지에 대한 재조명 기회를 제공한다.</div></div><div class="para"><div class="para-title">부산항의 미래와 리카싱의 역할</div><div class="para-body">부산항은 그 지리적 장점과 효율적인 운영으로 글로벌 해운 시장에서 중요한 위치를 차지하고 있다. 리카싱의 항구 운영권 매각이 완료되면, 부산항 또한 새로운 경쟁 과제에 직면할 수 있지만 역사적 맥락은 이 경쟁력을 더욱 강화할 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">리카싱의 항구 운영권 매각이 부산항에 어떤 새로운 기회를 줄 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">부산항은 리카싱의 항구 운영권 매각을 통해 국제 물류 경쟁의 중심으로 더욱 발전할 기회를 가질 수 있다. 독창적인 운영 방식으로는 여전히 경쟁력을 유지할 수 있을 것이라 본다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223822010211" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="美, 중국 선박에 폭탄 수수료 부과 — 과연 실제로 어떤 영향이 있을까?" data-tags="#미국 #중국 #조선산업 #수수료" data-date="2025-04-07">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-04-07</div>
+      <div class="card-title">美, 중국 선박에 폭탄 수수료 부과 — 과연 실제로 어떤 영향이 있을까?</div>
+      <div class="card-tags"><span class="tag">#미국</span><span class="tag">#중국</span><span class="tag">#조선산업</span><span class="tag">#수수료</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 4월 기준, 미국이 중국 선박에 고액의 입항 수수료를 부과할 준비를 마쳤다. 이는 중국의 조선 산업 점유율 증가에 대한 대응책으로, 수수료가 누적 되어 중국 선사에게 상당한 재정적 부담을 초래할 것이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">미국의 조치 배경</div><div class="para-body">미국 무역대표부(USTR)는 2025년 2월 21일 중국의 불공정 조치에 대한 긴급 대응이 필요하다고 보고했다. 중국 조선 산업의 점유율이 2000년 5%에서 2023년 50%로 성장한 만큼, 미국은 이를 제어하기 위한 수단으로 고액의 입항 수수료 부과를 결정했다.</div></div><div class="para"><div class="para-title">수수료의 구조와 그 영향</div><div class="para-body">중국 선사가 미국 항구에 입항할 때마다 고액의 수수료가 누적되어 부과된다. 예를 들어, 중국 선박이 4곳의 미국 항구를 경유할 경우 최대 2,000만 달러에 이르는 수수료가 발생할 수 있다. 이는 중국산 선박의 운영 자체를 비효율적으로 만들며, 각국의 선사들은 현재 상태에서의 해법을 모색할 수밖에 없다.</div></div><div class="para"><div class="para-title">글로벌 선사들의 대응</div><div class="para-body">미국의 정책 시행 후, 선사들은 기존 조선소에 대한 의존도를 낮추기 위해 다른 국가로의 발주를 고려하고 있다. 특히 한국과 같은 신뢰할 수 있는 조선소로의 발주가 증가할 가능성이 크며, 이는 한국 조선 산업에 긍정적인 영향을 미칠 것으로 예상된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국에 대한 수수료 부과가 선사의 운영 환경을 어떻게 변화시킬 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">중국 선사들은 높은 수수료로 인해 운영에 어려움을 겪을 수밖에 없고, 이는 선박 발주 결정을 더욱 복잡하게 만들 것이다. 결국 한국 조선업체에게 긍정적 기회가 될 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223824026921" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="트럼프의 중국산 선박 수수료, 한국 조선업의 기회인가" data-tags="#중국 #USTR #조선업 #트럼프" data-date="2025-04-18">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-04-18</div>
+      <div class="card-title">트럼프의 중국산 선박 수수료, 한국 조선업의 기회인가</div>
+      <div class="card-tags"><span class="tag">#중국</span><span class="tag">#USTR</span><span class="tag">#조선업</span><span class="tag">#트럼프</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 4월 18일, 미국 USTR이 중국산 선박에 대한 수수료를 부과하겠다고 발표했다. 이 정책은 미국과 중국 간의 무역 갈등 속에서 한국 조선업에 기회를 제공할 가능성을 내포하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">USTR의 수수료 부과 방식</div><div class="para-body">이번 발표에서 USTR은 중국산 선박 소유자에게 180일 유예기간 후 톤당 50달러의 수수료를 부과하며, 이후 2028년까지 점진적으로 톤당 140달러로 올릴 계획을 밝혔다. 중국 외 국가가 운영하는 중국 선박에 대해서도 수수료가 부과되며, 이는 조선업계에 상당한 영향을 미칠 것으로 예상된다.</div></div><div class="para"><div class="para-title">외국산 자동차 및 LNG 운반선 수수료 추가</div><div class="para-body">외국산 자동차 운반선과 LNG 운반선에도 수수료가 부과된다. 자동차 운반선의 경우 선적 차량 1대당 150달러를 부과하고, LNG 운반선은 단계적 목표 비율을 설정하여 미국산 선박 사용을 의무화할 예정이다. 이는 미국의 조선업 보호 조치로 해석된다.</div></div><div class="para"><div class="para-title">한국 조선업의 기회와 대응 전략</div><div class="para-body">미국이 수수료 부과를 통해 중국 조선사를 배제하고 한국 조선사에 기회를 줄 가능성이 있다. 하지만 조선업계는 미국 내 조선소와의 협력이 필요하며, 주요 부품 공급망과의 협력 강화를 통해 경쟁력을 높여야 한다. 이 기회를 놓치지 않기 위해 사전적인 준비가 요구된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국 조선사에 대한 규제가 한국 조선업에 어떤 기회를 제공할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">한국 조선업은 미국의 수수료 정책을 통해 성장할 기회를 맞이하고 있다. 다만, 미국 내 생산 확대와 협력이 필수적이라 적극적인 대응이 필요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223838385266" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 6월 · 6개</div>
+  
+<div class="card" data-title="인도네시아와 중국, 해수면 상승의 공동위험에 직면하다" data-tags="#인도네시아 #중국 #해수면상승 #재정문제" data-date="2025-06-10">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-06-10</div>
+      <div class="card-title">인도네시아와 중국, 해수면 상승의 공동위험에 직면하다</div>
+      <div class="card-tags"><span class="tag">#인도네시아</span><span class="tag">#중국</span><span class="tag">#해수면상승</span><span class="tag">#재정문제</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 6월 기준, 인도네시아와 중국은 해수면 상승과 지반침하라는 복합적인 위협에 직면하고 있다. 각국의 대응 전략이 필요하지만, 재정 부담이 큰 상황에서 외부 투자도 조심스러워 보인다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">해수면 상승과 지반 침하 현상</div><div class="para-body">전 세계적으로 해수면이 10년간 3.5cm 상승했으나, 중국은 4.5cm로 그 속도가 더 빠르다. 특히 선전 지역은 매년 7cm의 땅이 꺼지고 있는 심각한 상황이다. 이러한 현상은 지하수 사용과 도시화가 결합하여 심화되고 있다.</div></div><div class="para"><div class="para-title">인도네시아의 수도 이전과 재정 문제</div><div class="para-body">인도네시아의 수도 자카르타는 기후변화가 아닌 과도한 지하수 사용으로 인해 가라앉고 있다. 새 수도 건설에 327억 달러가 투입될 예정이지만, 재정 여력이 제한적이다. 정부 재정 20%와 민간자금 80%로 계획되고 있지만, 이러한 조달이 쉽지 않아 보인다.</div></div><div class="para"><div class="para-title">정치적 정세와 외국인 투자</div><div class="para-body">프라보워 대통령의 정책은 국민의 지지를 받지만, 대규모 재정적자는 외국인 투자자에게 우려의 요소가 되고 있다. 중국과의 협력을 통해 경제성장률을 끌어올리려는 시도가 있으나, 상황이 복잡하고 불확실한 상태이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">해수면 상승을 견디지 못하는 인도네시아의 재정적 압박이 투자 결정에 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">인도네시아의 수도 이전과 재정 지원을 동시에 추진하기에는 여력이 부족하다. 외국인 투자자들은 재정적 불안정성을 우려할 수밖에 없다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223892955321" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="한국 건보 적자, 중국인 피부양자 문제의 진실은?" data-tags="#건강보험 #중국인 #피부양자 #정책변화" data-date="2025-06-12">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-06-12</div>
+      <div class="card-title">한국 건보 적자, 중국인 피부양자 문제의 진실은?</div>
+      <div class="card-tags"><span class="tag">#건강보험</span><span class="tag">#중국인</span><span class="tag">#피부양자</span><span class="tag">#정책변화</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 6월 기준, 한국의 건강보험에서 외국인들이 기여한 것과 중국인들의 적자를 비교해보면 여러 가지 복잡한 양상이 드러난다. 특히 중국인의 피부양자 비율 상승이 기여도를 왜곡하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국인 건보 적자의 현황</div><div class="para-body">2024년 외국인 건강보험 가입자들이 총 2조3364억원을 납부하여 9,439억원의 흑자를 기록했지만, 한국 거주 중국인들은 최근 몇 년 동안 누적 적자가 발생했다. 2024년에는 겨우 55억원의 흑자를 냈으나 2023년과 2022년에는 각각 27억, 229억 적자를 기록했다.</div></div><div class="para"><div class="para-title">중국인의 피부양자 비율과 의료 환경</div><div class="para-body">중국인들 사이에서 피부양자 비율은 한국 거주 외국인 중 가장 높아 68%에 달한다. 이는 한국에서 의료 혜택을 보다 쉽게 누리기 위한 전략으로 해석될 수 있지만 중의적인 해석도 가능하다. 중국 내 의료 종사자들의 수입이 낮고 직업적 위험이 커 우수 인재가 의료 직종에 진입하지 않게 되어 전체적 의료 서비스 품질에도 악영향을 미친다.</div></div><div class="para"><div class="para-title">제도적 개선과 정책의 변화</div><div class="para-body">2023년 12월 보건복지부가 외국인의 피부양자 등록을 최소 6개월 거주 후 가능하도록 하는 법안이 통과되었다. 이 제도로 인해 한국에 새롭게 들어온 중국인이 즉시 피부양자로 등록해 혜택을 누리는 것을 막을 수 있으며, 2024년 건강보험 수지에서의 흑자 전환은 이 제도의 효과로 평가되고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국인 피부양자의 등록 요건이 강화된 상황에서 한국 건보 재정은 앞으로 어떻게 될까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">적자의 가능성은 줄어들 것이다. 제도적 개선이 이루어졌으므로, 앞으로는 중국인들로 인한 건보의 재정적 부담이 감소할 가능성이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223895270139" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이스라엘, 이란 공격과 지구촌 안보의 갈림길" data-tags="#이스라엘 #이란 #핵협상 #안보" data-date="2025-06-13">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-06-13</div>
+      <div class="card-title">이스라엘, 이란 공격과 지구촌 안보의 갈림길</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#이란</span><span class="tag">#핵협상</span><span class="tag">#안보</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 6월 기준, 이란의 핵무장 완성에 대한 우려가 극에 달하며 이스라엘의 선제공격이 시작되었다. 이 공격은 단순히 군사적 행동으로 끝나지 않을 것이라는 점에서 국제 사회의 긴장을 끌어올리고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이스라엘과 이란의 관계 역사</div><div class="para-body">과거 이란과 이스라엘은 팔레비왕조 시절 우호적인 관계를 유지했으나, 이란의 이슬람 혁명 이후 상황이 급변했다. 현재 이란은 이스라엘을 '작은 사탄'으로 간주하고 적대 관계를 형성하게 된 배경이 있다. 이란의 시아파와 이스라엘의 공격 사이에서 복잡한 지정학적 관계가 얽혀 있다.</div></div><div class="para"><div class="para-title">군사적 긴장과 핵무장</div><div class="para-body">이스라엘은 이란의 핵무장 완성을 저지하기 위해 무력 사용을 불사하고 있다. 이란의 자원과 군사력은 문제가 되고 있으며, 특히 혁명수비대의 군사력이 세계에서 몇 안 되는 수준으로 평가받고 있다. 이란은 미국과의 핵 협상이 결렬되자 핵무장에 더욱 박차를 가하고 있다.</div></div><div class="para"><div class="para-title">전 세계 경제에 미치는 영향</div><div class="para-body">이스라엘의 공격으로 호르무즈 해협이 봉쇄되면, 한국을 포함한 전 세계의 원유 공급망이 큰 타격을 받을 수 있다. 특히 한국의 경우 원유의 70%가 이 해협을 지나기 때문에 국제 유가가 급등할 가능성이 있다. 한국은 비축원유로 위기를 버텨야 하는 부담을 안게 된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘의 공격이 세계 경제와 안보에 미칠 영향은 무엇인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이스라엘의 공격은 전 세계 에너지 공급망과 안보 환경을 크게 흔들 것이다. 이란의 반응이나 주변국들의 개입 여부가 중요한 변수로 작용할 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223897740116" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이스라엘, 하레디 문제로 전면전의 시계추가 한가운데 있다" data-tags="#이스라엘 #이란 #하레디 #전면전" data-date="2025-06-14">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-06-14</div>
+      <div class="card-title">이스라엘, 하레디 문제로 전면전의 시계추가 한가운데 있다</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#이란</span><span class="tag">#하레디</span><span class="tag">#전면전</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 6월 중순, 이스라엘과 이란 간의 긴장이 고조되고 있다. 이란은 하레디 인구의 급증으로 인해 이스라엘의 국력 감소를 주장하고, 이스라엘은 빠르게 이란의 군사적 인프라를 타격하려는 의지를 보이고 있다. 이란의 핵무기 개발은 갈수록 신속해지고 있으며, 충돌은 불가피해 보인다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이스라엘과 하레디의 갈등 구조</div><div class="para-body">하레디 인구는 이스라엘의 전체 인구 중 12%를 차지하고 있으며, 출산율은 7.5명에 달한다. 이들은 병역 면제를 받으며, 사회와 단절된 생활을 통해 급속히 늘어나는 영향을 미치고 있다. 이로 인해 이스라엘 정치에서 하레디 정당의 힘이 강화되고 있어, 이란 입장에서는 시간이 지날수록 이스라엘의 전력을 약화시킬 기회를 제공하고 있다.</div></div><div class="para"><div class="para-title">이스라엘의 군사적 긴장과 응징 전략</div><div class="para-body">이스라엘은 이란의 핵무기 개발과 군사적 자산을 파괴하기 위해 대대적인 공습을 감행하였고, 이란의 고위 군 관계자들에 대한 타격을 포함해 330개 이상의 폭탄을 투하했다. 이는 이란에게 강력한 응징의 신호를 보내며, 군사적 충돌의 위험이 증가하고 있음을 알린다.</div></div><div class="para"><div class="para-title">이란의 대응과 향후 상황 예측</div><div class="para-body">이란은 현재 공세적인 대응을 고려하고 있지만, 핵무기 개발을 저지하기 위한 내부 정치적 압박도 겪고 있다. 이란의 복수는 미사일 및 드론 공격과 같은 약식 상의 대응이 될 가능성이 크며, 전면전 확대는 피할 가능성이 높다. 하지만 시간이 지연됨에 따라 이란의 선택이 어떤 방향으로 나아갈지는 치명적일 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘의 하레디 인구 증가가 국가의 군사 전략에 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이스라엘은 하레디 문제 해결 없이 이란과의 전면전을 지속할 수 없다. 이란의 보복은 예측 불가능하므로, 빠른 결단이 필수적이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223898253542" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="미국, 이란 핵시설 3곳 B2 폭격기로 벙커버스터 폭격" data-tags="#미국 #이란 #핵시설 #전쟁" data-date="2025-06-22">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-06-22</div>
+      <div class="card-title">미국, 이란 핵시설 3곳 B2 폭격기로 벙커버스터 폭격</div>
+      <div class="card-tags"><span class="tag">#미국</span><span class="tag">#이란</span><span class="tag">#핵시설</span><span class="tag">#전쟁</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 6월 22일, 미국이 이란의 핵시설 3곳을 벙커버스터 bomb으로 폭격했다는 보도가 전해졌다. 이는 미국의 군사적 참전으로, 이란의 반응과 향후 상황을 심각하게 변화시킬 가능성이 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이란의 반격 가능성</div><div class="para-body">이번 폭격에 대해 이란 정권은 미국 시민과 군인을 합법적인 표적으로 삼겠다고 발표했다. 이란 국민들의 감정도 이러한 상황을 더욱 격화시키고 있다. 따라서 이란의 반격 가능성이 크게 증가할 것으로 예상된다.</div></div><div class="para"><div class="para-title">미사일 위협과 방어</div><div class="para-body">이란의 단거리 미사일이 충분히 남아있어 미국의 군사시설을 향한 대규모 발사가 가능한 상황이다. 또한 호르무즈 해협의 봉쇄 가능성이 높아지면서 긴장이 더욱 고조될 수 있다.</div></div><div class="para"><div class="para-title">경제적 영향 예측</div><div class="para-body">폭격으로 인해 유가 상승이 예상되며, 식량 가격 또한 오를 것이라는 분석이 있다. 이란의 핵발전소가 파괴될 경우, 주변국가에도 심각한 오염 문제가 발생할 것이며, 이는 경제적으로도 큰 영향을 미친다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이란의 반응은 어떻게 전개될 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이란은 강력한 보복을 천명했으므로, 그 반응이 즉각적이고 강렬할 가능성이 높다. 미국의 군사적 압박이 이란에 가해질수록 더욱 격렬한 대응이 예상된다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223907479240" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이스라엘-이란 전쟁이 농산물 가격에 미치는 여파는?" data-tags="#이스라엘 #이란 #요소수 #농산물가격" data-date="2025-06-25">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-06-25</div>
+      <div class="card-title">이스라엘-이란 전쟁이 농산물 가격에 미치는 여파는?</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#이란</span><span class="tag">#요소수</span><span class="tag">#농산물가격</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 6월 기준, 이스라엘과 이란 간 전쟁이 일시적 휴전으로 이어지더라도, 이는 농산물 가격에 영향을 미칠 수 있는 복잡한 연결고리를 형성하고 있다. 특히, 전쟁은 석탄 및 요소의 공급망에 중대한 타격을 주고 있으며, 이에 따라 글로벌 농산물 생산 원가에도 큰 변화를 초래할 가능성이 농후하다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">전쟁과 석탄 공급의 연결</div><div class="para-body">휴전 이후에도 이스라엘의 천연가스 생산과 공급 중단이 계속되면서, 이란과 이집트의 요소 생산이 차질을 빚고 있다. 이는 요소 가격 급등으로 이어져, 농산물을 생산하는 여러 국가에 직격탄이 될 수 있다. 전통적인 요소 수출국의 가동 중단은 global supply chain에 심각한 영향을 미친다.</div></div><div class="para"><div class="para-title">요소 부족 사태의 전개</div><div class="para-body">중국의 요소 수출 제한으로 인해 한국에서 요소수 부족 사태가 발생했다. 한국은 전량 수입에 의존하고 있었기에, 요소 공급 부족은 직접적인 문제로 이어졌고, 이로 인해 트럭 운전자의 어려움이 심각해졌다. 이처럼 석탄에서 생산되는 요소는 농업과 산업 전반에 걸쳐 필수 자원임을 다시 한번 인식하게 된다.</div></div><div class="para"><div class="para-title">농산물 가격에 미치는 영향</div><div class="para-body">이란과 이스라엘 간 전쟁이 종료되고, 요소 공급이 회복되더라도, 농산물 가격 상승은 피할 수 없는 상황이 될 것이다. 요소 가격이 오르면 농산물 생산 비용이 증가하여, 최종 가격에 전가될 수밖에 없다. 따라서 전쟁의 여파는 단순히 전장에 그치지 않고, 글로벌 식료품 가격의 변동성을 키우게 될 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘-이란 전쟁이 종료된 후에도 농산물 가격이 급등할 가능성이 있는 이유는 무엇인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">요소 가격의 상승은 농산물 생산 원가를 증가시켜, 결국 소비자에게 전가될 수밖에 없다. 석탄 공급 중단과 함께 이어진 요소 수출 제한은 그 원인을 제공하고 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223909919038" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 7월 · 4개</div>
+  
+<div class="card" data-title="필리핀, 중국과의 충돌 속 두테르테와 마르코스 간 갈등이 심화되다" data-tags="#필리핀 #중국 #두테르테 #마르코스" data-date="2025-07-18">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-07-18</div>
+      <div class="card-title">필리핀, 중국과의 충돌 속 두테르테와 마르코스 간 갈등이 심화되다</div>
+      <div class="card-tags"><span class="tag">#필리핀</span><span class="tag">#중국</span><span class="tag">#두테르테</span><span class="tag">#마르코스</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 7월 기준, 필리핀은 중국과의 영유권 분쟁이 격화되고 있으며, 내부적으로 두테르테와 마르코스 가문 간의 정치적 긴장이 함께 영향을 미치고 있다. 필리핀의 군사적 강화와 갈등이 맞물려 진행 중인 상황이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">미국의 군사적 지원과 필리핀의 대응</div><div class="para-body">필리핀은 최근 인도의 브라모스 미사일을 도입하기로 결정하고, 이는 중국의 해군 작전에 대한 필리핀의 대응력을 높일 것으로 기대된다. 또한, 필리핀의 군사 기지는 미군에게 대중국 작전의 전략적 거점이 되고 있다.</div></div><div class="para"><div class="para-title">정치적 내분과 향후 상대</div><div class="para-body">필리핀의 정치 상황은 두테르테와 마르코스 간의 갈등으로 복잡해지고 있다. 두 가문은 각기 다른 외교 성향을 가지고 있어 국가의 방향성에 큰 영향을 미치고 있다. 최근의 갈등은 내전 가능성마저 점치게 하고 있으며, 이는 외부의 군사 지원에 영향을 미치고 있다.</div></div><div class="para"><div class="para-title">중국과의 갈등이 가져올 결과</div><div class="para-body">중국군과의 물리적 충돌은 인명 피해를 불러올 수 있으며, 이는 필리핀과 주변국의 군사적 긴장을 더욱 높일 것이다. 필리핀의 무장 강화를 통해 독립적인 방어력을 갖추려는 시도가 이루어지고 있으며, 이는 궁극적으로 국제 관계에 영향을 미칠 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">필리핀의 내부 정치가 중국과의 갈등에 어떤 영향을 미칠 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">필리핀 내 정치적 충돌이 심화될수록 중국에 대한 대처는 약화될 수밖에 없다. 해양 영유권 분쟁의 격화가 불가피하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223937327745" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국의 영유권 주장에 밀리는 필리핀 — 미군이 남긴 공백" data-tags="#중국 #필리핀 #미군철수 #스프래틀리군도" data-date="2025-07-18">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-07-18</div>
+      <div class="card-title">중국의 영유권 주장에 밀리는 필리핀 — 미군이 남긴 공백</div>
+      <div class="card-tags"><span class="tag">#중국</span><span class="tag">#필리핀</span><span class="tag">#미군철수</span><span class="tag">#스프래틀리군도</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 7월 현재, 필리핀은 중국의 9단선 영유권 주장 아래에서 심각한 압박을 받고 있다. 미군 철수가 가져온 힘의 공백이 필리핀의 대응 능력을 저하시켰고, 중국은 여기에 적절히 대응하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국의 공격적인 영유권 주장</div><div class="para-body">중국은 9단선이라는 이름으로 남중국해의 90%를 자신의 영해로 주장하고 있다. 이는 필리핀의 배타적 경제수역에 포함된 스프래틀리 군도에서 무장한 인공섬 건설로 이어졌으며, 국제재판소의 판결에도 불구하고 이를 거부하고 계속해서 군사적 압박을 가하고 있다.</div></div><div class="para"><div class="para-title">미군의 철수와 필리핀의 힘 감소</div><div class="para-body">미군 철수로 인해 필리핀의 힘은 급격히 감소했다. 역사적으로 필리핀에 주둔한 미군은 필리핀의 군사적 방어력에 크게 기여했지만, 두테르테 대통령 하의 외교 정책 변화와 미군 기지 철수는 필리핀의 방어력을 약화시켰다.</div></div><div class="para"><div class="para-title">정치적 갈등 속 미국과의 관계 복원</div><div class="para-body">많은 국민의 지지를 얻었던 두테르테의 외교 정책에 대한 비판이 일며, 필리핀은 미국과의 관계 복원을 모색하게 된다. EDCA 체결 이후 다시 주둔 중인 미군은 필리핀의 안보에 중요한 역할을 하지만, 두테르테의 과거 행동이 여전히 영향을 미치고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">미군 철수 이후 필리핀의 대중국 대응에는 어떤 변화가 생길까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">필리핀은 미국과의 관계 회복을 통해 중국의 압박에 대응할 가능성이 높다. 그러나 미군의 존재만으로는 필리핀의 정치적 안정과 지역 내 균형을 완전히 확보하기 어렵다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223937280433" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이스라엘의 시리아 수도 폭격 — 네타냐후의 정치적 필요와 비무장 완충지역의 이유" data-tags="#이스라엘 #시리아 #네타냐후 #중동전쟁" data-date="2025-07-19">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-07-19</div>
+      <div class="card-title">이스라엘의 시리아 수도 폭격 — 네타냐후의 정치적 필요와 비무장 완충지역의 이유</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#시리아</span><span class="tag">#네타냐후</span><span class="tag">#중동전쟁</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 7월, 이스라엘이 시리아 수도를 폭격하는 배경은 복잡한 내부 정치와 지정학적 이해가 얽혀 있다. 폭격의 목적은 시리아 반군 지원과 내부 정치적 목적을 동시에 가지고 있으며, 이러한 결정을 통해 이스라엘의 전략적 쉼표가 드러난다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이스라엘의 반군 지원과 정권 불안</div><div class="para-body">이스라엘은 시리아 반군 편을 들어 아사드 정권에 압박을 가하고 있다. 반군이 강화될수록 이란의 지원전력이 소모되는 구조가 형성되고 있다. 이스라엘의 목표는 아사드 정권이 아닌 반군의 무장을 통한 시리아 내부의 전력 분산이다.</div></div><div class="para"><div class="para-title">네타냐후의 정치적 필요</div><div class="para-body">이스라엘 총리 네타냐후는 내부 정권의 불안정성을 외부로 돌리기 위해 시리아 폭격을 단행했다. 연정 파트너의 탈퇴로 인해 과반수가 붕괴되면서 지지율 회복을 위한 정치적 목표가 분명해졌다. 그러나 의회에서의 위치가 약해지면서 이 폭격의 의미는 모호해졌다.</div></div><div class="para"><div class="para-title">하레디 세력의 증가와 군대 문제</div><div class="para-body">이스라엘 내 하레디의 인구 증가가 군대 징집 문제를 심각하게 만들고 있다. 이들은 의무징집이 어려운 집단으로, 하레디의 정치적 힘이 강화됨에 따라 이스라엘의 군사력 유지에 어려움이 생길 수 있다. 이는 하레디의 병역면제 논란으로 이어지고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘의 시리아 수도 폭격이 단기적 정치적 효과를 넘어서 장기적으로 어떤 악영향을 초래할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">중장기적으로 하레디 세력의 정치적 힘이 커지는 상황에서 군대 징집이 이루어지지 않는다면 이스라엘의 방어 능력은 약화될 가능성이 높다. 따라서 장기적인 안보에 우려가 생길 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223938662740" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이스라엘, 드루즈족 보호의 명분 아래 시리아 수도를 폭격하는 진짜 의도는?" data-tags="#이스라엘 #시리아 #드루즈족 #헤즈볼라" data-date="2025-07-19">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-07-19</div>
+      <div class="card-title">이스라엘, 드루즈족 보호의 명분 아래 시리아 수도를 폭격하는 진짜 의도는?</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#시리아</span><span class="tag">#드루즈족</span><span class="tag">#헤즈볼라</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 7월 기준, 이스라엘의 시리아 폭격 사건은 600명의 사망자를 초래하며 중동 정세에 큰 변수를 불러일으켰다. 이 공격은 드루즈족을 보호하는 명분 아래 진행되었지만, 실질적으로는 시리아 정부군의 남부지역 무장 진입을 저지하려는 전략적 의도가 담겨 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이스라엘 폭격의 배경</div><div class="para-body">이스라엘의 공습과 관련된 사건은 드루즈족과 베두인 부족 간의 충돌에서 시작되었다. 이스라엘은 드루즈족이 시리아 정부군의 공격을 받고 있다는 명분을 내세워 수도 다마스쿠스를 폭격하였으며, 이는 드루즈족의 존재를 강조하는 의미를 지닌다.</div></div><div class="para"><div class="para-title">드루즈족의 역사적 배경</div><div class="para-body">드루즈족은 시리아, 레바논, 이스라엘에 걸쳐 분포한 소수민족으로, 독특한 종교적 신념과 함께 복잡한 정치적 역사 속에서 생존해왔다. 그들은 이스라엘 내에서 군 복무를 하고 있지만, 시리아 내전에서의 위치는 미묘하다.</div></div><div class="para"><div class="para-title">현재 시리아 내전의 상황</div><div class="para-body">현재 시리아는 여러 내부 세력 간의 갈등으로 고통받고 있으며, 드루즈족과 같은 소수민족은 각자 무장을 갖추고 지역을 방어해야 하는 어려운 처지에 놓여있다. 이스라엘의 개입은 이러한 복잡한 상황 속에서 특정 세력을 지지하고, 시리아 정부의 무장 진입을 저지하고자 하는 전략으로 이해된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘의 드루즈족 보호 명분 아래 숨겨진 전략적 의도는 무엇인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이스라엘의 폭격은 단순한 보호 목적이 아닌, 지역의 세력 균형을 재조정하고자 하는 명확한 전략이다. 드루즈족 보호라는 명분 아래 이스라엘의 군사적 개입이 지속된다면, 중동 지역의 긴장은 더욱 심화될 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223938411525" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 8월 · 3개</div>
+  
+<div class="card" data-title="헝다 상장폐지 — 중국 부동산의 대재앙은 시작됐다" data-tags="#헝다 #중국부동산 #상장폐지 #중국경제" data-date="2025-08-16">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-08-16</div>
+      <div class="card-title">헝다 상장폐지 — 중국 부동산의 대재앙은 시작됐다</div>
+      <div class="card-tags"><span class="tag">#헝다</span><span class="tag">#중국부동산</span><span class="tag">#상장폐지</span><span class="tag">#중국경제</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 8월 25일 헝다그룹의 상장폐지가 결정되며, 중국 부동산 재벌의 몰락이 짙어지고 있다. 이는 또한 중국 경제가 직면한 심각한 위기를 드러내고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">헝다의 성장과 위기</div><div class="para-body">헝다는 1998년 중국의 주택 시장 개혁 이후 빠르게 성장한 부동산 기업이다. 중산층의 주택 소유 욕구와 정부의 지원 정책 덕분에 단기간에 세계 1위의 부동산 회사로 성장했으나, 정치적으로 부패한 이미지가 부각됨에 따라 규제를 받기 시작했다. 이후 고립된 헝다는 대출 회수와 행정처분으로 나락에 빠졌다.</div></div><div class="para"><div class="para-title">중국 부동산의 경착륙</div><div class="para-body">헝다의 상장폐지는 단지 한 기업의 위기가 아닌 중국 부동산 시장 전체의 위기를 상징한다. 지방정부의 재정은 민간 부동산 회사들과의 토지 사용권 매각 의존도가 높아, 부동산 시장의 위축은 바로 지방정부 재정에도 영향을 미치고 있다. 더욱이 3도홍선 규제는 다른 부동산 기업들로까지 확산되며, 운영자금이 줄어드는 상황이 계속되고 있다.</div></div><div class="para"><div class="para-title">앞으로의 전망</div><div class="para-body">부동산 기업들의 국유화 및 정부 자금 투입이 논의되고 있지만 이는 잠정적인 대책일 뿐이다. 자금 유동성을 높이기 위해 금리와 대출 기준 조정을 하더라도, 이미 구축된 신뢰 저하는 쉽게 회복되지 않을 것이다. 헝다와 같은 대규모 기업들이 재건되기 위해서는 시간이 필요할 것이고, 정부 정책 효과에 대한 기대감이 영향을 미칠 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">헝다의 상장폐지가中国경제에 어떤 도미노 효과를 불러올까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">핵심은 </div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223971559058" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="베트남, 중국 인공섬에 맞서 인공섬 건설에 나서다" data-tags="#베트남 #중국 #남중국해 #인공섬" data-date="2025-08-31">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-08-31</div>
+      <div class="card-title">베트남, 중국 인공섬에 맞서 인공섬 건설에 나서다</div>
+      <div class="card-tags"><span class="tag">#베트남</span><span class="tag">#중국</span><span class="tag">#남중국해</span><span class="tag">#인공섬</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 8월 현재, 베트남은 중국과의 영해 분쟁에서 점점 더 적극적인 대응을 보여주고 있다. 중국이 남중국해에서 무단으로 인공섬을 건설하며 영해를 확장하려는 반면, 베트남은 점차 인공섬을 확대하고 있으며 조건부에 따라 대항하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국의 인공섬 전략</div><div class="para-body">중국은 영해를 확장하기 위해 구조물을 무단으로 먼저 설치하고, 이를 인공섬으로 발전시킨 뒤 영해로 선언하는 방법을 사용한다. 남중국해에서 중국의 인공섬은 이미 군사기지로 기능하고 있으며, 이러한 점령 방식은 지역 내 긴장을 유발하고 있다.</div></div><div class="para"><div class="para-title">베트남의 대응 방식</div><div class="para-body">베트남은 과거 한중 영해 분쟁에서 시추선과의 충돌을 통해 강경한 대응을 보여줬다. 최근에는 인공섬 건설을 시작하며 대놓고 중국의 행동에 맞서고 있으며, 이는 중국과의 군사적 긴장을 야기할 수 있는 상황이다. 베트남은 중국의 인공섬 전략에 직면하고 반격의 수위를 높여가고 있다.</div></div><div class="para"><div class="para-title">한국에 주는 교훈</div><div class="para-body"> 베트남의 대응은 한국에게도 중요한 시사점을 제공한다. 한국이 서해에서 중국과의 분쟁을 해결하기 위해 참고할만한 사례가 늘어나고 있다는 것이다. 정치적, 군사적 대응이 앞으로 더욱 필요해질 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국이 인공섬을 확대하는 가운데, 베트남의 강경한 대응이 한국에 어떤 교훈을 줄 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">한국은 베트남의 대중국 대처 방식에서 군사적 경계와 함께 정치적 입장을 강화해야 한다. 여기서 대처를 소홀히 하게 되면, 비슷한 상황이 한국에서도 발생할 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223989766467" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="베트남, 중국 영해 문제에 맞서는 방법과 그 배경" data-tags="#베트남 #중국 #영해문제 #프렌드쇼어링" data-date="2025-08-31">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-08-31</div>
+      <div class="card-title">베트남, 중국 영해 문제에 맞서는 방법과 그 배경</div>
+      <div class="card-tags"><span class="tag">#베트남</span><span class="tag">#중국</span><span class="tag">#영해문제</span><span class="tag">#프렌드쇼어링</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 8월 기준, 베트남은 중국과의 영해 분쟁을 통해 자신의 해양 권리를 강하게 주장하고 있으며, 이는 단순한 territorial dispute를 넘어서는 복잡한 역사적 배경을 안고 있다. 베트남의 저항은 과거의 공산주의 동맹 이탈과 현재의 경제 전략으로 이어진다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">베트남의 역사적 배경</div><div class="para-body">1975년 북베트남은 통일을 맞이하였고, 이후 화교들의 재산 몰수와 중국의 군사적 압박이 이어졌다. 이 과정에서 많은 베트남 화교들이 재산을 지키기 위해 해외로 탈출했던 보트피플이라는 용어가 탄생했다.</div></div><div class="para"><div class="para-title">중국과의 군사적 갈등</div><div class="para-body">1979년, 베트남은 중국의 대규모 침공을 받았다. 비록 수적으로 우세한 중국군이었으나, 베트남의 민병대는 과거의 전투 경험을 바탕으로 중국군에 맞서게 되며, 결국 전쟁 결과는 중국군의 심각한 졸전으로 이어진다.</div></div><div class="para"><div class="para-title">현재의 경제 전략과 영해 분쟁</div><div class="para-body">베트남은 중국과의 경제적 경쟁 속에서 미국으로부터의 프렌드쇼어링을 통해 자국의 수출 구조를 강화하고 있다. 그러나 영해 문제는 여전히 베트남의 외교적 긴장 요소로 남아 있으며, 이는 베트남과 중국 간의 갈등을 더욱 심화시키고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">베트남이 자국의 영해를 지키기 위해 어떤 전략을 더욱 강화해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">베트남은 영해를 방어하기 위해 군사적 준비와 국제적 외교 노력을 병행해야 한다. 과거의 경험을 바탕으로 한 강력한 민병대의 역할이 중요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223989754586" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 9월 · 3개</div>
+  
+<div class="card" data-title="한국-일본, 7광구에서 에너지 전쟁의 판이 바뀌나" data-tags="#에너지전쟁 #7광구 #제주분지 #중국 #일본" data-date="2025-09-01">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-09-01</div>
+      <div class="card-title">한국-일본, 7광구에서 에너지 전쟁의 판이 바뀌나</div>
+      <div class="card-tags"><span class="tag">#에너지전쟁</span><span class="tag">#7광구</span><span class="tag">#제주분지</span><span class="tag">#중국</span><span class="tag">#일본</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 9월 기준, 한국의 제주분지와 7광구를 둘러싼 에너지 경쟁이 격화되고 있다. 일본과의 공동 개발이 종료를 앞두고 있는 가운데, 중국의 개입이 상황을 복잡하게 만들고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">제주 분지와 7광구의 전략적 중요성</div><div class="para-body">제주분지는 일본과 근접하면서도 한국과 대륙붕으로 연결되어 있어 전략적 위치를 갖는다. 1969년 UN 보고서에 따르면, 이 지역에는 세계 최대 규모의 석유가 매장될 가능성이 제기되었다. 따라서 제주분지와 7광구의 개발은 한국의 에너지 안보에 중대한 영향을 미친다.</div></div><div class="para"><div class="para-title">일본의 대륙붕 영유권 주장과 한국의 대응</div><div class="para-body">일본은 대륙붕 영유권을 주장하며 한국과의 경제협력을 단절할 움직임을 보였다. 이에 한국은 미국의 지원을 받아 해저 자원 조사에 나섰으며, 일본과의 협상에서 중간선 이론을 지지했다. 이러한 배경 속에서 일본의 입장이 더욱 고립되고 있다.</div></div><div class="para"><div class="para-title">중국의 개입과 한중일 갈등 심화</div><div class="para-body">중국은 2012년부터 자연 연장설을 주장하며 7광구에 대한 권리를 주장하였고, 이는 한국에 부담이 되고 있다. 7광구는 일본, 중국과의 공동 개발 협정이 종료될 예정이며, 이로 인해 한중일 간의 갈등이 심화될 가능성이 있다. 이러한 경쟁 구도 속에서 한국은 일본과의 협상으로 공동 개발의 최선안을 모색해야 할 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국이 개입하는 상황에서, 일본과 한국이 합의하여 7광구를 공동 개발하는 것이 가능할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">가능하다. 일본과 한국이 서로의 이익을 고려해 적절히 합의한다면, 중국의 개입을 차단하면서 지속 가능한 개발이 가능할 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223989778427" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이스라엘의 도하 폭격 — 카타르의 중립 전략이 흔들리다" data-tags="#이스라엘 #카타르 #하마스 #중동" data-date="2025-09-11">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-09-11</div>
+      <div class="card-title">이스라엘의 도하 폭격 — 카타르의 중립 전략이 흔들리다</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#카타르</span><span class="tag">#하마스</span><span class="tag">#중동</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 9월 9일, 이스라엘은 카타르 수도 도하에서 하마스 고위 인사를 겨냥한 공습을 감행했다. 이 공격은 하마스와의 협상에 심각한 영향을 미치며, 카타르의 중립 외교 전략에 흔들림을 줬다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이스라엘의 공격 배경</div><div class="para-body">이스라엘은 카타르 상공에서 하마스 대표단 숙소를 공습했으며, 이에 따라 협상 대표와 수행원들이 피해를 입었다. 이 행위는 하마스를 해외에서 섬멸하겠다는 이스라엘의 강력한 의지를 나타내며, 미국의 사전 통보 없이는 진행되었다.</div></div><div class="para"><div class="para-title">언론인의 희생과 국제 반응</div><div class="para-body">이스라엘의 공격으로 여러 외신 기자들이 사망하고, 피해가 증가했다. 이스라엘은 이를 실수라고 주장하지만, 외신 기자들이 다음 공격의 목표가 된 점은 심각한 문제로 여겨지고 있다.</div></div><div class="para"><div class="para-title">카타르의 외교적 딜레마</div><div class="para-body">카타르는 이란과의 관계 속에서 천연가스를 활용한 외교 전략을 이어왔지만, 이스라엘의 공격으로 인해 그 전략이 시험대에 올랐다. 사우디와의 갈등이 심화되는 상황에서 카타르의 중립 외교가 보다 어려운 상황이 될 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이스라엘의 카타르 폭격이 중동의 외교 지형에 어떤 변화를 가져올까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이스라엘의 공격은 카타르의 중립 전략에 큰 타격을 줄 수 있다. 최근의 긴장 상황 속에서는 더 많은 갈등이 예고된다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224002149850" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="일본 종합상사 주가와 중국 증시 상승, 주주환원율의 비밀은 무엇인가" data-tags="#중국증시 #일본종합상사 #주주환원율" data-date="2025-09-15">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-09-15</div>
+      <div class="card-title">일본 종합상사 주가와 중국 증시 상승, 주주환원율의 비밀은 무엇인가</div>
+      <div class="card-tags"><span class="tag">#중국증시</span><span class="tag">#일본종합상사</span><span class="tag">#주주환원율</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 9월 기준, 일본 종합상사와 중국 증시가 함께 상승세를 보이는 이유는 주주환원율에 기인하고 있다. 일본의 종합상사들은 높은 주주환원율로 주가를 지탱하고 있으며, 중국은 신국 9조와 자본시장 정책으로 반전을 꾀하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">주주환원율의 중요성</div><div class="para-body">주주환원율은 기업이 순이익 중 얼마를 주주에게 돌려주는지를 나타내는 지표로, 배당금과 자사주 매입이 포함된다. 주주환원율이 높을수록 투자자 신뢰가 증가하며, 이는 주가 상승으로 이어진다.</div></div><div class="para"><div class="para-title">중국 증시 상승의 배경</div><div class="para-body">중국 증시는 2024년 하반기부터 신국 9조라는 관리 감독 강화 가이드라인의 영향으로 반등을 보이고 있다. 이 정책은 기업의 배당 성과를 강제하고, 주주환원율을 높여 기업 가치를 끌어올리려는 목적을 가지고 있다.</div></div><div class="para"><div class="para-title">일본의 주주환원율과 주가 실적</div><div class="para-body">일본의 종합상사들은 높은 주주환원율을 기록하며 안정적인 주가 상승세를 유지하고 있다. 특히 마루베니는 700억 엔 규모의 자사주 매입을 발표하며 주주에게 환원하는 수익 모델을 강화하고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">주주환원율이 높은 기업의 주가는 반드시 상승하는 걸까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">아니다. 높은 주주환원율이 주가 상승을 담보하지 않으며, 기업의 성장성과 투자 재원 배분이 균형을 이뤄야 지속적인 성장이 가능하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224007689159" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 10월 · 5개</div>
+  
+<div class="card" data-title="중국의 수출 통제가 자극하는 한국 경제의 기회는 무엇인가" data-tags="#중국 #수출통제 #리튬이온배터리 #희토류" data-date="2025-10-14">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-10-14</div>
+      <div class="card-title">중국의 수출 통제가 자극하는 한국 경제의 기회는 무엇인가</div>
+      <div class="card-tags"><span class="tag">#중국</span><span class="tag">#수출통제</span><span class="tag">#리튬이온배터리</span><span class="tag">#희토류</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 11월 8일부터 시행될 중국의 인조 다이아몬드와 리튬이온배터리에 대한 수출 통제는 한국 기업들에게 새로운 기회를 제공할 것으로 보인다. 특히 고려아연과 같은 기업들은 이 상황을 활용할 가능성이 크다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국의 수출 통제 품목</div><div class="para-body">중국은 인조 다이아몬드와 리튬이온배터리의 수출을 통제할 예정이다. 인조 다이아몬드는 반도체 장비 제작 시 필수적으로 사용되는 자원으로, 미국의 반도체 장비 수출 제한에 대한 보복 차원으로 이루어졌다. 리튬이온배터리는 전기차와 AI 데이터센터에서 필수적인 요소로, 이번 수출 통제가 한국 기업들의 기회를 증대시킬 것으로 예상된다.</div></div><div class="para"><div class="para-title">한국 기업들의 새로운 가능성</div><div class="para-body">한국의 LG에너지솔루션, SK온, 삼성SDI는 미국 내 리튬이온배터리 생산을 확대하고 있다. 이들은 ESS용 배터리 시장에서 급속히 증가하는 수요를 충족시키기 위해 발 빠르게 움직이고 있다. 또한, 고려아연은 미국 록히드마틴과의 협력을 통해 희귀금속 공급망을 확보하고 있다.</div></div><div class="para"><div class="para-title">지정학적 상황에서 한국의 전략</div><div class="para-body">중국의 수출 통제가 한국 기업들에게 기회를 제공하는 동시에, 지정학적 위험 요소도 내포하고 있다. 한국은 중국과 미국 간의 갈등 속에서 전략적 유연성을 가지고 기회를 포착해야 하며, 이 과정에서 발생할 수 있는 리스크에도 대비해야 한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국의 통제 강화 속에서 한국 기업들이 어떤 기회를 최대한 활용할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">중국의 수출 통제는 한국 기업들에게 새로운 기회를 제공하는 상황이다. 그러나 이 기회를 잘 관리하지 않으면 위험에 처할 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224039793642" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국, 한화오션 미국 자회사 5곳 제재 — 한국 조선사에 경고 메시지?" data-tags="#중국 #한화오션 #제재 #조선업" data-date="2025-10-15">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-10-15</div>
+      <div class="card-title">중국, 한화오션 미국 자회사 5곳 제재 — 한국 조선사에 경고 메시지?</div>
+      <div class="card-tags"><span class="tag">#중국</span><span class="tag">#한화오션</span><span class="tag">#제재</span><span class="tag">#조선업</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 10월 14일, 중국이 한화오션의 미국 자회사를 제재한 배경에는 미국의 새로운 해운 규제가 있다. 이는 한국 조선사에 대한 경고이기도 하다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국의 제재 조치</div><div class="para-body">중국 상무부는 한화오션 자회사를 블랙리스트에 추가하고, 이들 법인이 중국과의 거래를 금지한다고 발표했다. 이는 미국 정부의 조사에 대한 지원이 중국의 안전과 발전에 위협적이라는 주장을 근거로 한다.</div></div><div class="para"><div class="para-title">미국의 해운 규제와 제재 배경</div><div class="para-body">미국 USTR이 발표한 새로운 규제는 중국 선박에 대해 단계적으로 수수료를 부과하는 내용이다. 특히, 중국산 선박을 사용하는 해운사도 추가 비용을 지불해야 하며, 이는 한국 기업에게 불리한 상황을 초래할 수 있다.</div></div><div class="para"><div class="para-title">한국 조선사의 영향과 경고의 의미</div><div class="para-body">한화오션이 중국과 거래가 적어 제재의 실질적 영향은 제한적이다. 하지만 이번 조치는 한국 조선업체들에게의 경고를 의미하며, 한국이 미국 군사력 지원에 협력하고 있다는 불만을 시사한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국의 제재가 한국 조선사에 미치는 의미는 무엇일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">중국의 이번 제재는 한국 조선사에 직접적인 영향을 주지는 않겠지만, 미중 간의 긴장 상황에서 한국 기업에 대한 경고로 읽혀야 한다. 조용히 사업을 지속하는 일본식 접근이 필요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224040946267" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="리카싱의 중국 탈출과 파나마운하 위기" data-tags="#리카싱 #파나마운하 #중국탈출 #홍콩" data-date="2025-10-16">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-10-16</div>
+      <div class="card-title">리카싱의 중국 탈출과 파나마운하 위기</div>
+      <div class="card-tags"><span class="tag">#리카싱</span><span class="tag">#파나마운하</span><span class="tag">#중국탈출</span><span class="tag">#홍콩</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 10월 기준, 리카싱은 파나마운하 문제로 갈등과 함께 중국 탈출을 진행하고 있다. 그의 선택은 단순한 부의 이동이 아니라, 지정학적 긴장의 변화를 반영하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">리카싱의 사업적 역량과 관계 변화</div><div class="para-body">리카싱은 덩샤오핑 이후 중국 최고위층과 긴밀한 관계를 유지하며 성장해 왔다. 그러나 시진핑 정부 들어 그 관계가 악화되면서 리카싱은 중국 내 자산을 매각하고 홍콩을 떠나려는 움직임을 보이고 있다.</div></div><div class="para"><div class="para-title">파나마운하와 미국의 개입</div><div class="para-body">리카싱의 CK허치슨홀딩스는 파나마운하 양끝의 항구 운영권을 보유하고 있으며, 트럼프 대통령이 집권 이후 이 문제를 공론화했다. 이는 미국의 파나마정부에 대한 압박으로 이어져, 파나마 정부가 반중국적인 노선을 취하게 만들었다.</div></div><div class="para"><div class="para-title">중국 내 정치적 압박과 리카싱의 반응</div><div class="para-body">중국 정부는 리카싱의 외국 자산 매각에 대해 반독점 조사를 예고하며 강한 불만을 나타냈다. 그의 불만을 담은 광고는 시위대와의 연결을 시도했으나, 결과적으로 중국 정부의 비판을 받게 되었다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">리카싱의 중국 탈출이 그의 사업과 홍콩 경제에 어떤 장기적 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">리카싱의 탈출은 중국과 홍콩 사회에 심각한 신뢰 위기를 초래할 가능성이 크다. 이는 경제적 불안정성으로 연결될 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224042487517" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국 4중전회가 시진핑의 권력에 미치는 영향은?" data-tags="#중국정치 #4중전회 #시진핑 #장유샤" data-date="2025-10-19">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-10-19</div>
+      <div class="card-title">중국 4중전회가 시진핑의 권력에 미치는 영향은?</div>
+      <div class="card-tags"><span class="tag">#중국정치</span><span class="tag">#4중전회</span><span class="tag">#시진핑</span><span class="tag">#장유샤</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 10월 20일 열리는 중국 4중전회가 특별한 관심을 받는 이유는 지금까지의 관행과 다르게 이념과 인사 문제 외에 차기 5개년 계획을 논의하기로 한 점이다. 이는 군부 인사와 시진핑의 권력 문맥에서 중요한 변화로 해석될 수 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국 4중전회의 중요성</div><div class="para-body">중국 공산당의 중앙위원회에서 열리는 4중전회는 이념, 정치 노선 정비와 인사 이동을 다루며, 이는 당과 군부의 권력 균형을 결정짓는 데 큰 영향을 미친다. 4중전회에서 인사 이동의 결정은 시진핑의 측근과 장유샤 파벌 간의 갈등 양상을 드러내는 중요한 요소이다.</div></div><div class="para"><div class="para-title">로켓군 사건과 시진핑의 권력</div><div class="para-body">로켓군의 기밀 유출 사건은 시진핑의 권력 기반을 흔들리게 한 계기로 작용했다. 이 사건으로 인해 군부 인사들의 대대적인 숙청이 이뤄졌고, 이들은 시진핑의 측근이 먼저 희생되는 양상이 보였다. 이는 내부 경쟁과 권력 다툼의 복잡성을 나타내며, 시진핑의 권력이 여전히 견고한지를 결정짓는 요소가 된다.</div></div><div class="para"><div class="para-title">4중전회에서의 변수</div><div class="para-body">이번 4중전회에서 중앙군사위원회의 주요 자리들이 채워질 것인지 여부는 시진핑과 장유샤 간의 권력 균형을 다시 평가하는 중요한 계기가 될 것이다. 장유샤가 푸젠방을 숙청하는 대응을 보이고 있어, 전반적인 권력 싸움이 더욱 촘촘하게 이어질 것으로 전망된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이번 4중전회에서 세력 균형이 변화할 가능성은?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">가능성이 있다. 로켓군 사건을 통해 시진핑의 권력 기반이 흔들리고 있으며, 4중전회에서의 인사 및 정책 결정을 통해 그 균형이 재편될 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224045138020" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="미국이 중국산 크레인 제재에 나섰다 — ZPMC의 트로이 목마가 되어버릴 위험" data-tags="#중국산크레인 #미국제재 #ZPMC" data-date="2025-10-20">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-10-20</div>
+      <div class="card-title">미국이 중국산 크레인 제재에 나섰다 — ZPMC의 트로이 목마가 되어버릴 위험</div>
+      <div class="card-tags"><span class="tag">#중국산크레인</span><span class="tag">#미국제재</span><span class="tag">#ZPMC</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 10월 20일 기준, 미국이 중국산 항만 크레인에 대한 100% 관세 부과를 확정했다. 이 제재는 ZPMC 사장의 발언에서 시작된 논란과 함께 중국의 정보수집 활동 가능성을 염두에 두고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">ZPMC의 발언과 미국의 반응</div><div class="para-body">ZPMC 사장이 Bilibili에서 크레인의 글로벌 파급력을 강조한 발언 이후, 미국에서 해당 크레인이 정보수집 도구가 될 수 있다는 주장이 제기되었다. 이로 인해 ZPMC의 크레인이 '트로이 목마'로 간주되기 시작했고, 미 정부 기관에서도 우려의 목소리를 내고 있다.</div></div><div class="para"><div class="para-title">미국의 제재와 그 배경</div><div class="para-body">미국은 ZPMC가 공급하는 크레인이 항만 운영의 핵심이자 중국의 군사적 정보 수집에 기여할 수 있다고 우려하여 100% 관세를 부과하기로 결정했다. 그러나 미국에는 항만 크레인을 제조하는 기업이 없다는 함정이 있으며, 이에 따라 대체재 찾기가 어려운 상황이다.</div></div><div class="para"><div class="para-title">한국과 일본의 기회</div><div class="para-body">한국과 일본의 크레인 제조업체들은 ZPMC의 제재로 인해 생긴 시장 공백을 노릴 수 있는 기회를 맞이하고 있다. 특히, 한국의 HD현대삼호와 일본의 미쓰이 E&S가 이 시장에서 입지를 강화할 가능성이 커졌다. 이는 두 나라의 제조업에 긍정적인 영향을 미칠 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">ZPMC의 발언이 이렇게 큰 제재의 기폭제가 되었는데, 다른 중국 기업들에도 이 같은 리스크가 존재할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">제재의 파급 효과는 ZPMC에 국한되지 않고, 중국의 다른 기업들에게도 영향을 미칠 것이다. 적절한 대비가 필요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224047802465" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 11월 · 3개</div>
+  
+<div class="card" data-title="중국의 토륨 원자로 — 저렴하고 안전하지만, 실현 가능성 의문" data-tags="#토륨원자로 #중국핵 #에너지 #희토류" data-date="2025-11-16">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-11-16</div>
+      <div class="card-title">중국의 토륨 원자로 — 저렴하고 안전하지만, 실현 가능성 의문</div>
+      <div class="card-tags"><span class="tag">#토륨원자로</span><span class="tag">#중국핵</span><span class="tag">#에너지</span><span class="tag">#희토류</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 11월 기준, 중국은 세계 최초로 토륨 원자로 상용화를 추진하고 있다. 그러나 이 원자로는 미국에서 처음 개발되었고, 안전성과 비용 문제로 여러 도전을 마주하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">토륨 원자로의 역사적 배경</div><div class="para-body">토륨 원자로는 초기 미국에서 개발되었지만, 발전 효율이 낮아 1969년에 폐쇄되었다. 이후 독일과의 몇 가지 시도도 실패로 끝나며, 환경 위험이 발생했다. 그러나 후쿠시마 원전 사고 이후, 안전성이 중요한 이슈가 됨에 따라 다시 주목받고 있다.</div></div><div class="para"><div class="para-title">중국의 토륨 원자로 개발 동기</div><div class="para-body">중국은 2011년부터 토륨 원자로 프로젝트를 시작했으며, 고비사막에 시험용 원자로를 건설하며 2029년까지 상용화를 목표로 하고 있다. 이 원자로는 사용후 핵연료를 적게 생산하고, 고온에서 안전하게 작동할 수 있는 장점이 있지만, 국제적 기준과 규제를 모두 충족해야 하는 복잡한 상황이다.</div></div><div class="para"><div class="para-title">환경적 편익과 상업적 도전</div><div class="para-body">토륨 원자로는 방사성 폐기물이 적고, 물이 없는 지역에서도 설치 가능하다는 이점이 있다. 그러나 안전성 검사를 통과해야 하는 많은 부분에서 험난한 절차가 기다리고 있어, 중국 조차도 상용화에 대한 의문을 떨치기 어려운 상황이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">토륨 원자로의 상용화 시도가 여전히 문제에 직면할 때, 중국은 과연 이 계획을 성공적으로 실현할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">한정적인 성공 가능성이 크고, 초기 손해를 감수할 민간 원전 건설사가 나오기 어려운 상황이다. 토륨 원자로의 상용화는 쉽지 않을 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224076878672" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="대만을 둘러싼 일본과 중국의 충돌 – 갈림길에 선 외교" data-tags="#대만 #중국 #일본 #외교" data-date="2025-11-18">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-11-18</div>
+      <div class="card-title">대만을 둘러싼 일본과 중국의 충돌 – 갈림길에 선 외교</div>
+      <div class="card-tags"><span class="tag">#대만</span><span class="tag">#중국</span><span class="tag">#일본</span><span class="tag">#외교</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 11월 18일 기준, 일본과 중국은 대만 문제를 두고 심각한 외교 갈등에 직면해 있다. 다카이치 총리의 발언과 중국의 반발로 인해 상황은 더욱 복잡해지고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">대만을 둘러싼 역사적 배경</div><div class="para-body">대만의 원주민과 중국인의 관계는 복잡하며, 역사적으로 여러 지배자들이 대만을 거쳐갔다. 네덜란드와 스페인이 최초로 대만에 식민지를 세운 이후, 정성공이 대만을 차지한 과정은 대만 민족 형성에 중요한 요소로 작용하였다.</div></div><div class="para"><div class="para-title">최근 일본의 대만 관련 발언</div><div class="para-body">다카이치 총리는 대만 문제가 일본의 존립 위기에 해당할 수 있다고 발언하였다. 이는 일본이 대만 문제에 대해 군사적 개입을 고려하고 있음을 시사하며, 중국의 강한 반발을 불러일으켰다.</div></div><div class="para"><div class="para-title">중국의 반응과 각국의 입장</div><div class="para-body">중국은 일본 총리의 발언에 대해 강력히 반발하며 경제 보복을 예고하고 있다. 일본 내에서는 총리의 발언이 지지율을 상승시키는 효과를 낳았으나, 반중 감정이 고조되는 상황이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">일본과 중국 간의 갈등이 심화된다면, 대만의 미래는 어떻게 될 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">장기적으로 갈등이 심화된다면 대만은 더욱 불안정한 상황에 처할 것이다. 일본과 중국의 외교 마찰이 계속되면 대만은 경기침체와 외교적 고립을 경험할 가능성이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224078812706" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="삼성디스플레이, BOE 소송 합의 — 애플 공급 막기 위한 선택인가" data-tags="#삼성디스플레이 #BOE #소송 #애플" data-date="2025-11-20">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-11-20</div>
+      <div class="card-title">삼성디스플레이, BOE 소송 합의 — 애플 공급 막기 위한 선택인가</div>
+      <div class="card-tags"><span class="tag">#삼성디스플레이</span><span class="tag">#BOE</span><span class="tag">#소송</span><span class="tag">#애플</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 11월 기준, 삼성디스플레이가 중국 BOE와의 소송에서 승소하며 14년 8개월간 미국 수입 금지라는 예비판결을 얻었다. 그러나 BOE와의 합의가 알려지며 한국 기업들의 경쟁력에 대한 우려가 커지고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">BOE의 역사와 성장 경로</div><div class="para-body">BOE는 2002년 한국 하이디스를 인수한 이후 낮은 인건비와 정부 지원으로 가격경쟁력을 확보하며 세계 시장에 진출했다. 현재 BOE는 세계 LCD 1위를 차지하고 있으며, 애플의 패널 공급을 확대하고 있다.</div></div><div class="para"><div class="para-title">삼성디스플레이의 법적 대응</div><div class="para-body">삼성디스플레이는 2022년 BOE를 상대로 OLED 특허 침해 소송을 제기하며, 2023년에는 영업 비밀 침해 혐의로 추가 제소했다. ITC의 예비 판결에서 BOE의 영업 비밀 침해가 인정되며 삼성의 손을 들어주었다.</div></div><div class="para"><div class="para-title">합의의 이면과 한국 기업들의 미래</div><div class="para-body">2025년 11월, 삼성디스플레이와 BOE는 소송을 취하하고 합의에 도달했다. BOE는 특허 사용료를 지급하고 애플에 대한 패널 공급을 지속적으로 확대할 예정이다. 그러나 이는 한국 기업 전체에 대한 경쟁력 우려로 이어질 가능성이 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">삼성디스플레이의 소송 승리가 한국 전체 경쟁력에 어떤 영향을 미칠 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">합의로 인해 BOE의 시장 진입이 지속되므로 다소 아쉬운 선택으로 평가된다. 개별 기업의 이익과 한국 기업 전체의 경쟁력을 함께 고려해야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224081275517" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 12월 · 1개</div>
+  
+<div class="card" data-title="홈플러스, 중국 이커머스가 인수해 물류허브로 변신할 수 있을까?" data-tags="#홈플러스 #중국이커머스 #알리바바 #테무" data-date="2025-12-07">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-12-07</div>
+      <div class="card-title">홈플러스, 중국 이커머스가 인수해 물류허브로 변신할 수 있을까?</div>
+      <div class="card-tags"><span class="tag">#홈플러스</span><span class="tag">#중국이커머스</span><span class="tag">#알리바바</span><span class="tag">#테무</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 12월 기준, 홈플러스의 인수 가능성이 중국 이커머스 업체들에 의해 제기되고 있다. 하지만 이는 양국의 정치적·경제적 상황을 고려했을 때 복잡한 문제로 남아있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국 정부의 지원 배경</div><div class="para-body">중국 정부는 2024년 6월 8일, 9개 부처가 합동으로 수출 지원을 위한 의견을 발표하며 중국 이커머스의 해외 물류센터 건설을 지원할 것을 명시했다. 이는 단순한 수출 확대를 넘어선 전략적인 접근으로 보인다.</div></div><div class="para"><div class="para-title">중국 이커머스의 한국 시장 내 활동</div><div class="para-body">중국 이커머스 업체들의 한국 진출이 활발해지고 있으며, 알리익스프레스는 G마켓과 합작법인을 추진 중이고, 테무, 징둥 등도 물류센터를 확보하고 있다. 이들은 한국 시장에서의 입지 강화의 일환으로 많은 투자를 진행하고 있다.</div></div><div class="para"><div class="para-title">홈플러스의 역할과 가능성</div><div class="para-body">홈플러스는 전국 250여개의 매장을 보유하며, 대형마트 규제를 벗어난 지배력을 갖고 있다. 이로 인해 중국 이커머스 업체들이 홈플러스를 물류센터로 활용하여 새벽배송 서비스 제공 가능성이 제기된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">홈플러스의 매장을 물류센터로 전환하는 것이 중국 이커머스의 진출에 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">가능성이 낮다. 하지만 홈플러스의 위치와 물류센터 변환 가능성은 중국이커머스의 배송 논리에 맞아떨어지는 부분이 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224100977035" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2026년 1월 · 2개</div>
+  
+<div class="card" data-title="중국의 은 수출 제한이 산업에 미치는 영향은 무엇인가" data-tags="#은 #중국 #수출제한 #산업" data-date="2026-01-02">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-01-02</div>
+      <div class="card-title">중국의 은 수출 제한이 산업에 미치는 영향은 무엇인가</div>
+      <div class="card-tags"><span class="tag">#은</span><span class="tag">#중국</span><span class="tag">#수출제한</span><span class="tag">#산업</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 1월부터 중국의 은 수출 제한이 시행된다. 이는 전 세계 산업에 중요한 영향을 미치는 결정으로, 은의 수요가 급증하는 상황에서 이루어진다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">은의 산업적 중요성 증가</div><div class="para-body">은은 전기 전도율이 가장 높은 금속으로서 전기차와 태양광 패널 등에서 중요한 자원으로 사용된다. 중국의 전광리 산업이 성장함에 따라 은의 수요는 계속 증가하고 있다.</div></div><div class="para"><div class="para-title">중국의 수출 통제 배경</div><div class="para-body">중국 정부는 2025년 10월 26일 은에 대한 수출통제를 발표하며, 이를 통해 국가의 전략 물자 지위를 강화하려는 의도를 밝혔다. 선정된 44개 기업만이 수출할 수 있도록 제한하여 시장의 혼탁함을 줄이려 하고 있다.</div></div><div class="para"><div class="para-title">국제 시장에 미치는 영향</div><div class="para-body">중국의 은 수출 통제가 시행됨에 따라, 세계 시장에서 은 가격의 변동성이 클 것으로 예상된다. 특히 일론 머스크와 같은 주요 인물들이 반응하고 있어, 산업계의 우려가 커지고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국의 은 수출 통제는 글로벌 산업 구조에 어떤 변화를 가져올 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">국제 은 시장에 미치는 영향이 클 것으로 보인다. 전문가들은 수요 증가와 공급 부족의 전선에서 가격이 급등할 가능성을 경계하고 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224130467668" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="장유사 숙청으로 군부의 판도가 바뀌었다 — 시진핑이 주도권을 잡은 것인가?" data-tags="#시진핑 #장유사 #군부 #부패" data-date="2026-01-24">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-01-24</div>
+      <div class="card-title">장유사 숙청으로 군부의 판도가 바뀌었다 — 시진핑이 주도권을 잡은 것인가?</div>
+      <div class="card-tags"><span class="tag">#시진핑</span><span class="tag">#장유사</span><span class="tag">#군부</span><span class="tag">#부패</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">26년 1월 24일 기준, 시진핑이 장유사와 류전리를 숙청하며 군부 장악에 성공한 것으로 보인다. 이는 군부 내부의 권력 재편을 의미하며, 향후 중국의 군사적 대응에 중대한 영향을 미칠 것 같다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">군부 내부의 부패와 숙청</div><div class="para-body">중국 로켓군 부패 문제가 터지면서, 사령관과 정치위원이 교체되었고 조사 중 부사령관이 자살하는 사건까지 발생했다. 이러한 사태는 시진핑이 군부의 주요 인사들을 정리할 기회를 제공한 것으로 보인다.</div></div><div class="para"><div class="para-title">인물 재배치와 군부의 힘의 균형</div><div class="para-body">중앙군사위원회의 부주석 자리에 장성민이 임명되며 장유사가 군부의 2인자로 영향력을 행사하고 있다. 그러나 시진핑 역시 군부에 대한 영향력을 유지하고 있어, 이러한 힘의 균형이 군부 운영에 중요한 요인으로 작용하고 있다.</div></div><div class="para"><div class="para-title">미래의 군사적 대응 가능성</div><div class="para-body">젊은 장군들의 발탁과 구 인물들의 퇴임은 대만과의 긴장관계에서 더욱 두드러질 위협이 될 가능성이 크다. 이는 시진핑이 군부의 구조를 재정비하며 향후 군사적 대응을 준비하고 있음을 시사한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">군부의 구조 조정이 실제로 중국의 군사적 대응 능력에 어떤 변화를 가져올 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">시진핑의 군부 정리 작업은 전반적으로 긍정적 영향을 미칠 가능성이 있다. 그러나 빈 자리가 늘어나는 상황 속에서 권력 균형이 어떻게 유지될지가 중요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224158480402" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2026년 2월 · 1개</div>
+  
+<div class="card" data-title="사우디 아라비아, 빈 살만의 변신 (feat 더 라인, 데이터센터)" data-tags="#사우디 #빈살만 #네옴시티 #데이터센터" data-date="2026-02-12">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-02-12</div>
+      <div class="card-title">사우디 아라비아, 빈 살만의 변신 (feat 더 라인, 데이터센터)</div>
+      <div class="card-tags"><span class="tag">#사우디</span><span class="tag">#빈살만</span><span class="tag">#네옴시티</span><span class="tag">#데이터센터</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 현재, 사우디 아라비아는 빈 살만 왕세자의 리더십 아래 미래 지향적인 변화를 모색하고 있다. 아람코의 막대한 이익에도 불구하고 정부 재정은 타이트해지며, 새로운 경제 모델을 창출하기 위한 여러 프로젝트가 동시에 진행되고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">아람코의 역할과 사우디 경제</div><div class="para-body">아람코는 사우디 수출의 70%를 차지하며 가장 큰 기업으로 자리 잡고 있다. 매년 천억 달러의 이익을 내지만, 이 자금만으로는 정부 예산 4천억 불을 감당하기에는 부족하다. 결국 사우디 정부는 지속적인 재정 적자에 직면해 있다.</div></div><div class="para"><div class="para-title">빈 살만의 비전 2030과 네옴시티</div><div class="para-body">빈 살만은 석유에 의존하는 경제에서 친환경 경제로의 전환을 목표로 '비전 2030'을 시작하였다. 네옴시티 프로젝트는 이러한 비전의 상징으로, 수조 달러 규모의 초대형 사업으로 발전을 계획하고 있다. 그러나 막대한 자금을 요구받으며 실현 가능성에 의문이 제기된다.</div></div><div class="para"><div class="para-title">데이터센터와 경제 현실</div><div class="para-body">더 라인의 건설 계획은 축소되는 반면, 데이터센터로의 전환 검토가 이루어지고 있다. 최첨단 데이터센터가 환경 친화적인 면을 살려 운영될 가능성이 있지만, 외부 투자 유치가 필요하다. 결국 사우디는 향후 데이터를 활용한 경제 모델 구축을 모색하고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">사우디가 그토록 대규모 프로젝트를 진행할 재정적 여력을 갖추고 있는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">사우디의 현재 재정 상황으로는 대규모 프로젝트를 지속적으로 진행하기 어려운 것으로 보인다. 외부 투자 유치와 실현 가능한 사업 모델이 동시에 필요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224180041898" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2026년 3월 · 7개</div>
+  
+<div class="card" data-title="이란 하메네이의 후계자는 누가 될까?" data-tags="#이란 #하메네이 #후계자" data-date="2026-03-02">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-03-02</div>
+      <div class="card-title">이란 하메네이의 후계자는 누가 될까?</div>
+      <div class="card-tags"><span class="tag">#이란</span><span class="tag">#하메네이</span><span class="tag">#후계자</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 5월, 이란 대통령 에브라힘 라이시가 헬기 추락사고로 사망하였다. 이로 인해 하메네이의 후계자 문제에 대한 논의가 본격적으로 시작되는 상황이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">하메네이 및 후계자 시스템 설명</div><div class="para-body">이란의 종교 최고지도자는 라흐바르로 불리며, 대통령보다 더 큰 권한을 지닌다. 헌법을 개정한 하메네이는 라흐바르 자격요건을 무하타히드로 변경하여 스스로 라흐바르가 되었다.</div></div><div class="para"><div class="para-title">모즈타바 하메네이의 입지</div><div class="para-body">라이시 대통령 사망 후, 2순위인 모즈타바 하메네이가 유력한 후계자로 떠올랐다. 그는 공식직책이 없음에도 군사 및 정보 분야에서 권력을 행사하고 있어 후계자로서 큰 가능성을 지닌 인물이다.</div></div><div class="para"><div class="para-title">혁명수비대와 바시즈의 역할</div><div class="para-body">혁명수비대는 이란 정권을 지탱하는 핵심 세력으로, 국가의 잘못된 외부 간섭 및 쿠데타를 방지하는 역할을 한다. 바시즈는 혁명수비대의 기반을 다지며 청소년들의 정치적 충성도를 높이고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이란의 다음 종교 최고지도자가 되기 위한 경쟁에서 누가 우위를 점할 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">모즈타바 하메네이가 후계자로서 유력한 후보이지만, 그의 입지와 혁명수비대의 액션이 향후 이란 정치에 영향을 미칠 것이다. 이러한 요소들은 이란의 중장기 정세를 더욱 복잡하게 만들 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224201002909" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="수니파-시아파 갈등 속 이란-이스라엘 전쟁구도가 더 복잡해졌다" data-tags="#중동전쟁 #시아파 #수니파 #이란 #이스라엘" data-date="2026-03-03">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-03-03</div>
+      <div class="card-title">수니파-시아파 갈등 속 이란-이스라엘 전쟁구도가 더 복잡해졌다</div>
+      <div class="card-tags"><span class="tag">#중동전쟁</span><span class="tag">#시아파</span><span class="tag">#수니파</span><span class="tag">#이란</span><span class="tag">#이스라엘</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 3월, 이란의 공격과 그에 따른 사망자는 종교적 대립 구조의 연장을 암시한다. 이란, 헤즈볼라, 후티반군이 미국과 이스라엘 외 지역을 공격함으로써 시아파와 수니파의 역사적 갈등을 재조명하게 된다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">이란의 공격과 지역 반응</div><div class="para-body">이란의 공격으로 미국과 이스라엘이 직접 피해를 입었으며, 사우디, UAE, 카타르 등의 미군 기지에도 여파가 미치고 있다. 이란의 군사 행동은 지역 속국들의 불안감을 키우고 있으며, 후티 반군과 레바논의 헤즈볼라가 새로운 전선에서 이스라엘에 공격을 감행하고 있다.</div></div><div class="para"><div class="para-title">시아파와 수니파의 역사적 대립</div><div class="para-body">무함마드의 후계자 지명에서 시작된 시아파와 수니파의 갈등은 지금까지도 계속되고 있다. 이란과 그 지지 세력은 수니파 국가들을 공격하며 역사적 대립을 더욱 심화시키고 있다.</div></div><div class="para"><div class="para-title">종교적 갈등의 근본적 원인</div><div class="para-body">시아파는 자신들의 역사적 고난을 잊지 않기 위해 끊임없이 새로운 세력과 충돌을 벌인다. 이란의 입장에서 시아파 세력을 강화하려는 노력은 종교전쟁의 구도로 번질 가능성을 품고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">시아파와 수니파의 대립 구도가 이란의 공격에서 어떤 새로운 변화를 가져올 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">현재 상황에서 수니파와 시아파의 갈등은 더욱 격화될 가능성이 높다. 이란의 공격은 단순한 군사적 수단이 아니라, 종교적 정체성의 위협으로 인식된다는 점에서 더욱 주목할 필요가 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224201454011" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="호르무즈해협 봉쇄, 반도체용 헬륨 공급이 걱정된다" data-tags="#호르무즈해협 #헬륨 #반도체 #산업 #희귀가스" data-date="2026-03-09">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-03-09</div>
+      <div class="card-title">호르무즈해협 봉쇄, 반도체용 헬륨 공급이 걱정된다</div>
+      <div class="card-tags"><span class="tag">#호르무즈해협</span><span class="tag">#헬륨</span><span class="tag">#반도체</span><span class="tag">#산업</span><span class="tag">#희귀가스</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 3월 기준, 호르무즈해협 봉쇄가 한국의 헬륨 공급에 심각한 영향을 미치고 있다. 한국은 헬륨의 60%를 카타르에서 수입하고 있으며, 이 공급이 차질을 빚을 경우 반도체 산업에 직접적인 위험이 닥칠 수 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">헬륨 공급의 중대성과 현황</div><div class="para-body">헬륨은 반도체 제조 공정에 필수적으로 사용되는 가스로, 특히 웨이퍼 냉각 및 식각 공정에 필요하다. 카타르가 헬륨의 세계 1위 공급국으로, 한국은 이들 가스 공급에 크게 의존하고 있는 상황임. 호르무즈해협의 봉쇄는 한국의 공급망에 심각한 차질을 의미한다.</div></div><div class="para"><div class="para-title">제철소 파괴와 가스 공급 이슈</div><div class="para-body">아조우스탈 제철소의 완전 파괴로 인해 한국은 크립톤, 제논, 네온, 헬륨 등의 공급선을 잃었다. 이 제철소에서 생산된 많은 양의 희귀가스가 한국 반도체 기업에 공급되었으나, 이제는 이러한 자원이 사라져버렸다. 이는 한국의 반도체 공급망에 큰 위협을 안겼으며, 대체 공급국을 찾아야 할 시급한 상황이다.</div></div><div class="para"><div class="para-title">미국과의 협력 필요성</div><div class="para-body">현재 한국은 미국에 헬륨 공급을 요청할 수 있는 상태이나, 미국 내 헬륨 생산이 감소하고 있는 상황이다. 미국은 헬륨의 국내 소비 비중이 높아 대량의 수출이 어려운 상황이므로, 한국 기업들은 미국의 헬륨 생산능력 확보에 더 많은 관심을 기울여야 한다. 이 과정에서 헬륨 공급의 안정성을 보장할 수 있는 방안 모색이 중요하다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">호르무즈해협 봉쇄가 한국의 헬륨 공급에 미치는 리스크를 어떻게 관리할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">한국은 한국 내 희귀가스 생산시설을 증가시키고, 미국과의 협력을 통해 헬륨 공급망을 다각화해야 한다. 현재 상황은 긴급한 조치가 필요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224208697204" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이란이 호르무즈해협을 기뢰로 막으면 생기는 일?" data-tags="#이란 #호르무즈해협 #지정학" data-date="2026-03-11">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-03-11</div>
+      <div class="card-title">이란이 호르무즈해협을 기뢰로 막으면 생기는 일?</div>
+      <div class="card-tags"><span class="tag">#이란</span><span class="tag">#호르무즈해협</span><span class="tag">#지정학</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 3월 11일, 이란이 호르무즈 해협에 기뢰를 설치하기 시작한 정보가 전해졌다. 이 상황은 과거 이란-이라크 전쟁 당시의 기뢰 작전을 떠올리게 하며, 현대 미국의 에너지 수급에 미치는 영향을 가진다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">과거와의 유사성</div><div class="para-body">이란은 1987년에 호르무즈 해협에 기뢰를 부설하여 이라크의 석유 수출을 방해한 사례가 있다. 이란-콘트라 스캔들 이후, 미국은 전면전 대신 제한적 군사 작전을 통해 기뢰를 제거하였다. 현대에서도 이란의 기뢰 설치가 에너지 수송로에 미치는 효과는 비슷하게 우려를 낳고 있다.</div></div><div class="para"><div class="para-title">현재의 상황</div><div class="para-body">2026년 현재, 미국은 석유 수출국으로 성장하여 호르무즈 해협의 에너지 수송로에 대한 의존도가 줄어들었다. 반면, 호르무즈 해협에 의존하는 한국, 일본, 대만은 에너지 자원 비축이 한정적이다. 따라서, 이란의 기뢰 설치가 에너지 가격 상승을 초래할 가능성이 존재한다.</div></div><div class="para"><div class="para-title">이란의 군사적 반응</div><div class="para-body">트럼프와 미 군 관계자들은 이란의 기뢰 설치에 신속히 대응할 조치를 밝히고 있다. 중요한 것은 기뢰 부설이 미국과 이란 간의 긴장도를 높이고 있으며, 그에 따른 군사적 갈등의 가능성을 경계해야 한다는 점이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이란의 호르무즈 해협 기뢰 설치가 국제 에너지 시장에 미치는 영향은 무엇인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이란의 기뢰 설치는 에너지 수송에 큰 위협이 될 수 있으며, 특히 한국과 일본 등 중소국가들은 교역망에 심각한 영향을 받을 것이다. 미국의 군사적 대응이 단기적으로는 에너지 시장에 혼란을 줄 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224212378946" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이란이 호르무즈해협을 기뢰로 막으면 생기는 일.." data-tags="#이란 #호르무즈해협 #기뢰" data-date="2026-03-12">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-03-12</div>
+      <div class="card-title">이란이 호르무즈해협을 기뢰로 막으면 생기는 일..</div>
+      <div class="card-tags"><span class="tag">#이란</span><span class="tag">#호르무즈해협</span><span class="tag">#기뢰</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년, 이란의 호르무즈해협 기뢰 설치 결정이 전세계 에너지 시장에 미치는 파장을 예고하고 있다. 이 장면은 지정학적 긴장을 불러일으키고 있으며, 미국의 대응 전략과 관계국의 군사적 자원 배치에 대한 새로운 질문을 던진다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">기뢰 사용의 역사와 현대전</div><div class="para-body">기뢰의 역사는 길지만, 현대전에서 사용되는 패턴은 변화하고 있다. 과거 부유기뢰가 주로 사용되었으나, 현대에는 물에 고정된 계류기뢰가 많이 쓰인다. 계류기뢰는 물속의 잠수함이나 선박을 겨냥할 수 있는 높은 정확성을 지니고 있다. 이런 형태의 기뢰 사용이 증가하면서, 미국의 소해 능력의 저하가 특별히 우려되고 있다.</div></div><div class="para"><div class="para-title">미국의 소해 능력과 일본의 역할</div><div class="para-body">미국의 소해능력은 과거 14척의 소해함을 보유했으나, 현재는 최소 수준으로 감소하였다. 마지막 남은 4척의 소해함이 퇴역하였으며, 함정의 간섭으로 효과적인 소해작업이 어려워졌다. 이란의 기뢰 설치가 현실화되면, 일본의 소해 능력이 필수적일 수 있으며, 일본이 세계적으로 최상위의 소해 능력을 보유하고 있다는 점에서 더욱 중요한 의미가 있다.</div></div><div class="para"><div class="para-title">기뢰 설치의 위험성과 방어 전략</div><div class="para-body">이란의 소형 고속정과 함께 기뢰의 소형화 현상은 전투의 양상을 크게 변화시킬 수 있다. 미국은 이란 기뢰를 파괴하고 있으나, 기뢰의 소형화가 그 대응을 어렵게 하고 있다. 이란이 기뢰를 대량으로 설치한다면 호르무즈해협의 봉쇄가 장기화될 수 있으며, 이에 따라 국제사회의 긴장도가 크게 높아질 주목할 만한 영향이 예상된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이란의 기뢰 설치가 실제로 어떻게 국제 경제에 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이란의 기뢰 설치는 에너지 공급망에 직접적인 위협을 미칠 수 있다. 특히 호르무즈해협은 전 세계 석유의 약 20%가 통과하는 중요한 해역이기 때문이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224213031872" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="이스라엘 하레디, 네타냐후 정권에 어떻게 영향력을 미치나" data-tags="#이스라엘 #하레디 #네타냐후 #정치" data-date="2026-03-27">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-03-27</div>
+      <div class="card-title">이스라엘 하레디, 네타냐후 정권에 어떻게 영향력을 미치나</div>
+      <div class="card-tags"><span class="tag">#이스라엘</span><span class="tag">#하레디</span><span class="tag">#네타냐후</span><span class="tag">#정치</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 3월 기준, 이스라엘 하레디 집단의 성장은 정치에 중대한 영향을 미치고 있다. 하레디는 정부의 중요한 지원을 받으며 정치에서 커다란 캐스팅보트 역할을 하는데, 그 배경과 함의를 살펴보자.</p></div>
+    <div class="section"><div class="para"><div class="para-title">하레디 집단의 역사와 사회적 뿌리</div><div class="para-body">하레디는 극정통파 유대교 집단으로, 현대 교육과 문화를 거부하며 전통을 고수한다. 이들은 1949년 벤구리온 정부의 병역면제 특권으로 인해 사회적 지위가 높아졌고, 출산율이 매우 높은 덕분에 이스라엘에서 인구의 14%를 차지하게 되었다. 이러한 인구 증가가 정치적 힘을 강화하는 계기가 되었다.</div></div><div class="para"><div class="para-title">이스라엘 정치 구조와 하레디의 역할</div><div class="para-body">이스라엘은 다당제 체제로, 120석의 의회에서 하레디 정당이 18석을 차지하고 있다. 이들은 연정에서 중요한 역할을 하며, 자주 자신의 요구사항을 관철시키고 있다. 특히, 하레디의 병역면제 특권 문제는 그들의 정치적 존재를 더욱 부각시키고 있다.</div></div><div class="para"><div class="para-title">하레디의 군대 복무와 사회적 저항</div><div class="para-body">하레디들은 최근 징집 법안 이후 군대에 복무하게 되었지만, 여전히 그들의 특유의 신앙과 생활방식 때문에 부적응 문제가 나타나고 있다. 이들은 현대의학 및 군대 규율을 거부하며, 이러한 갈등은 사회적 반발로 이어지고 있다. 결국 하레디의 군복무 문제는 이스라엘 사회 내에서 중요한 정치적 이슈로 자리잡고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">하레디의 정치적 힘이 계속해서 커진다면, 이스라엘 사회와 군대에 어떤 변화가 일어날까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">하레디의 정치적 영향력이 강해질 경우, 군대와 사회적 통합이 어려워질 수 있다. 이는 이스라엘의 안전과 민주적 가치를 위협하는 요인이 될 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224231513918" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="네타냐후가 예산안 통과를 위해 강경파에 이끌려 다니는 상황" data-tags="#네타냐후 #이스라엘 #예산안 #강경파" data-date="2026-03-28">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-03-28</div>
+      <div class="card-title">네타냐후가 예산안 통과를 위해 강경파에 이끌려 다니는 상황</div>
+      <div class="card-tags"><span class="tag">#네타냐후</span><span class="tag">#이스라엘</span><span class="tag">#예산안</span><span class="tag">#강경파</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">26년 3월 28일 기준, 이스라엘 총리 네타냐후의 정치적 생존을 위한 예산안 통과가 임박했다. 그의 집권 연정은 갈수록 강경파에 종속되며, 이는 이란과의 갈등에도 영향을 미칠 수 있는 중대한 상황이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">예산안 통과의 불가피한 조건</div><div class="para-body">이스라엘의 예산안 통과는 네타냐후의 정치적 생존을 위한 절박한 관문이다. 강경파 정당들은 군사비 증액과 전쟁 지속을 요구하며 예산안 통과를 단서로 협상 중이다. 과거와 달리 이번 예산안은 병역법 면제 조항과 무관하게 통과될 가능성이 높아졌다.</div></div><div class="para"><div class="para-title">정치적 압박과 군사적 요구</div><div class="para-body">이스라엘의 국회는 3월 31일 예산안 통과를 목표로 하지만, 지지율이 낮은 네타냐후는 이러한 압박 속에서 강경파의 요구에 따라야 할 처지에 있다. 예산안 통과 여부가 그의 정치 미래를 좌우할 것으로 보이며, 이란 공격의 가능성도 배제할 수 없다.</div></div><div class="para"><div class="para-title">내부 갈등과 가족의 영향</div><div class="para-body">네타냐후의 가족 문제도 이스라엘 국민들 사이에서 큰 논란을 일으키고 있다. 그의 아들이 군 복무를 하지 않고 미국에서 거주하는 모습이 보도되면서 여론이 악화되었다. 이러한 상황은 네타냐후의 정치적 입지를 더욱 흔들리게 하고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">네타냐후가 예산안을 통과시키지 못한다면, 그의 정치적 미래는 어떻게 될 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">네타냐후는 예산안 통과를 반드시 이루어내야 한다. 그게 실패할 경우 총리직에서 물러나야 할 위험이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224231732607" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+</div>
+<div class="no-results" id="noResults">검색 결과가 없습니다.</div>
+<script>
+// 카드 펼치기
+document.querySelectorAll('.card-header').forEach(h => {
+    h.addEventListener('click', () => h.closest('.card').classList.toggle('open'));
+});
+
+// 검색 + 태그 필터
+const searchInput = document.getElementById('searchInput');
+const filterCount = document.getElementById('filterCount');
+const noResults = document.getElementById('noResults');
+const cards = Array.from(document.querySelectorAll('.card'));
+const dateGroups = Array.from(document.querySelectorAll('.date-group'));
+let activeTag = null;
+
+function getCardText(card) {
+    return card.dataset.title + ' ' + card.dataset.tags + ' ' + card.dataset.date;
+}
+
+function applyFilters() {
+    const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    let visible = 0;
+
+    cards.forEach(card => {
+        const text = getCardText(card).toLowerCase();
+        const matchSearch = !q || text.includes(q);
+        const matchTag = !activeTag || card.dataset.tags.includes(activeTag);
+        const show = matchSearch && matchTag;
+        card.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    // 날짜 그룹 헤더: 하위 카드 모두 숨겨지면 헤더도 숨김
+    dateGroups.forEach(group => {
+        const groupCards = Array.from(group.querySelectorAll('.card'));
+        const anyVisible = groupCards.some(c => c.style.display !== 'none');
+        group.style.display = anyVisible ? '' : 'none';
+    });
+
+    if (filterCount) filterCount.textContent = visible + '개';
+    if (noResults) noResults.style.display = visible === 0 ? 'block' : 'none';
+}
+
+if (searchInput) searchInput.addEventListener('input', applyFilters);
+
+// 태그 버튼
+document.querySelectorAll('.tag-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tag = btn.dataset.tag;
+        if (tag === '__clear__') {
+            activeTag = null;
+            document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+        } else if (activeTag === tag) {
+            activeTag = null;
+            btn.classList.remove('active');
+        } else {
+            activeTag = tag;
+            document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        applyFilters();
+    });
+});
+</script>
+</body>
+</html>

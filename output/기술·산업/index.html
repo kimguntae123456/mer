@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>메르 리더 — 기술·산업</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; background: #f5f5f0; color: #1a1a1a; line-height: 1.7; }
+a { color: inherit; text-decoration: none; }
+
+/* 상단 네비 */
+.nav { background: #1a1a1a; color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+.nav .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.5px; }
+.nav .back { font-size: 0.85rem; opacity: 0.6; }
+.nav .back:hover { opacity: 1; }
+
+/* 검색/필터 바 */
+.filter-bar { max-width: 780px; margin: 0 auto; padding: 16px 24px 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.search-input { flex: 1; min-width: 200px; padding: 9px 14px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 0.9rem; background: #fff; outline: none; }
+.search-input:focus { border-color: #1a1a1a; }
+.filter-count { font-size: 0.8rem; color: #aaa; white-space: nowrap; }
+.tag-filter-bar { max-width: 780px; margin: 0 auto; padding: 10px 24px 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-btn { font-size: 0.75rem; background: #f0f0ea; color: #555; padding: 4px 10px; border-radius: 20px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+.tag-btn:hover { background: #e0e0d8; }
+.tag-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.tag-btn.clear-btn { background: #fff; border-color: #ddd; color: #999; }
+
+/* 날짜 그룹 헤더 */
+.date-group-header { font-size: 0.78rem; font-weight: 700; letter-spacing: 1px; color: #aaa; padding: 20px 0 8px; text-transform: uppercase; }
+
+/* 결과 없음 */
+.no-results { text-align: center; padding: 60px 24px; color: #aaa; font-size: 0.95rem; display: none; }
+
+/* 인덱스 페이지 */
+.index-hero { padding: 60px 24px 40px; max-width: 900px; margin: 0 auto; }
+.index-hero h1 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+.index-hero p { color: #666; font-size: 0.95rem; }
+.folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 900px; margin: 0 auto; padding: 0 24px 60px; }
+.folder-card { background: #fff; border-radius: 12px; padding: 24px; border: 1px solid #e8e8e0; cursor: pointer; transition: box-shadow 0.2s, transform 0.2s; }
+.folder-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); transform: translateY(-2px); }
+.folder-card .folder-name { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
+.folder-card .folder-sub { font-size: 0.8rem; color: #888; margin-bottom: 12px; }
+.folder-card .folder-count { font-size: 1.8rem; font-weight: 800; color: #1a1a1a; }
+.folder-card .folder-count span { font-size: 0.85rem; font-weight: 400; color: #888; margin-left: 4px; }
+
+/* 타임라인 페이지 */
+.timeline-header { padding: 40px 24px 24px; max-width: 780px; margin: 0 auto; }
+.timeline-header h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+.timeline-header .sub { color: #888; font-size: 0.85rem; margin-top: 4px; }
+.timeline { max-width: 780px; margin: 0 auto; padding: 0 24px 80px; }
+
+/* 카드 */
+.card { background: #fff; border-radius: 12px; border: 1px solid #e8e8e0; margin-bottom: 16px; overflow: hidden; transition: box-shadow 0.2s; }
+.card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.card-header { padding: 20px 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.card-header-left { flex: 1; }
+.card-date { font-size: 0.78rem; color: #999; margin-bottom: 6px; letter-spacing: 0.3px; }
+.card-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.3px; line-height: 1.5; }
+.card-tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 0.75rem; background: #f0f0ea; color: #555; padding: 3px 8px; border-radius: 20px; }
+.card-toggle { font-size: 1.2rem; color: #ccc; flex-shrink: 0; margin-top: 2px; transition: transform 0.2s; }
+.card.open .card-toggle { transform: rotate(180deg); }
+
+/* 카드 본문 */
+.card-body { display: none; border-top: 1px solid #f0f0ea; padding: 24px; }
+.card.open .card-body { display: block; }
+
+.section { margin-bottom: 24px; }
+.section-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #aaa; margin-bottom: 10px; }
+
+/* 도입 */
+.intro-text { font-size: 0.95rem; color: #333; line-height: 1.8; }
+
+/* 단락 */
+.para { margin-bottom: 16px; }
+.para-title { font-size: 0.85rem; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; padding-left: 10px; border-left: 3px solid #1a1a1a; }
+.para-body { font-size: 0.9rem; color: #444; line-height: 1.8; }
+
+/* 주석 */
+.annotations { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.annotation { font-size: 0.82rem; background: #f7f7f2; border-radius: 6px; padding: 8px 12px; color: #555; line-height: 1.6; }
+.annotation .ann-type { font-weight: 700; color: #888; margin-right: 6px; font-size: 0.75rem; }
+.annotation .ann-target { font-weight: 700; color: #333; margin-right: 4px; }
+
+/* 질문 + 답 */
+.question-box { background: #1a1a1a; color: #fff; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+.question-box .q-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; color: #888; margin-bottom: 6px; }
+.question-box .q-text { font-size: 0.92rem; line-height: 1.6; }
+.answer-box { background: #f7f7f2; border-radius: 10px; padding: 16px 20px; }
+.answer-box .a-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; color: #aaa; margin-bottom: 6px; }
+.answer-box .a-text { font-size: 0.92rem; color: #333; line-height: 1.6; }
+
+/* 원본 링크 */
+.source-link { margin-top: 16px; font-size: 0.8rem; color: #aaa; }
+.source-link a { color: #888; text-decoration: underline; }
+.source-link a:hover { color: #333; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="logo">메르 리더</span>
+  <a href="../index.html" class="back">← 전체 목록</a>
+</nav>
+<div class="timeline-header">
+  <h1>기술·산업</h1>
+  <div class="sub">반도체·AI·기술 · 배터리·전기차 · <span id="filterCount">57개</span> 글</div>
+</div>
+<div class="filter-bar">
+  <input id="searchInput" class="search-input" type="text" placeholder="제목·태그 검색...">
+</div>
+<div class="tag-filter-bar">
+  <button class="tag-btn clear-btn" data-tag="__clear__">전체</button><button class="tag-btn" data-tag="#삼성전자">#삼성전자</button><button class="tag-btn" data-tag="#반도체">#반도체</button><button class="tag-btn" data-tag="#AI">#AI</button><button class="tag-btn" data-tag="#TSMC">#TSMC</button><button class="tag-btn" data-tag="#엔비디아">#엔비디아</button><button class="tag-btn" data-tag="#양자컴퓨터">#양자컴퓨터</button><button class="tag-btn" data-tag="#HBM">#HBM</button><button class="tag-btn" data-tag="#SK하이닉스">#SK하이닉스</button><button class="tag-btn" data-tag="#삼성SDI">#삼성SDI</button><button class="tag-btn" data-tag="#SK온">#SK온</button><button class="tag-btn" data-tag="#구글">#구글</button><button class="tag-btn" data-tag="#나트륨이온배터리">#나트륨이온배터리</button><button class="tag-btn" data-tag="#CATL">#CATL</button><button class="tag-btn" data-tag="#대만">#대만</button><button class="tag-btn" data-tag="#인광석">#인광석</button><button class="tag-btn" data-tag="#LFP배터리">#LFP배터리</button><button class="tag-btn" data-tag="#하이NA">#하이NA</button><button class="tag-btn" data-tag="#전고체배터리">#전고체배터리</button><button class="tag-btn" data-tag="#토요타">#토요타</button><button class="tag-btn" data-tag="#이차전지">#이차전지</button><button class="tag-btn" data-tag="#희귀가스">#희귀가스</button><button class="tag-btn" data-tag="#LG에너지솔루션">#LG에너지솔루션</button><button class="tag-btn" data-tag="#중국">#중국</button><button class="tag-btn" data-tag="#AI전쟁">#AI전쟁</button><button class="tag-btn" data-tag="#트럼프">#트럼프</button><button class="tag-btn" data-tag="#일론머스크">#일론머스크</button><button class="tag-btn" data-tag="#윌로우">#윌로우</button><button class="tag-btn" data-tag="#양자우위">#양자우위</button><button class="tag-btn" data-tag="#중국반도체">#중국반도체</button><button class="tag-btn" data-tag="#창신메모리">#창신메모리</button>
+</div>
+<div class="timeline" style="margin-top:16px">
+
+<div class="date-group">
+  <div class="date-group-header">2024년 1월 · 1개</div>
+  
+<div class="card" data-title="중국 인산암모늄 수출 통제 개시 — LFP 급증으로 2026년 공급난 예고" data-tags="#인산암모늄 #인광석 #LFP배터리 #수출통제 #요소수사태 #PPA" data-date="2024-01-03">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-01-03</div>
+      <div class="card-title">중국 인산암모늄 수출 통제 개시 — LFP 급증으로 2026년 공급난 예고</div>
+      <div class="card-tags"><span class="tag">#인산암모늄</span><span class="tag">#인광석</span><span class="tag">#LFP배터리</span><span class="tag">#수출통제</span><span class="tag">#요소수사태</span><span class="tag">#PPA</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 1월, 중국이 인산암모늄 수출 통제를 시작했다. 질소비료의 원료이자 LFP 배터리 공급망의 핵심인 인산암모늄을 중국이 통제하면, 한국은 요소수 사태의 배터리 버전에 직면한다. 인광석 685억 톤 중 500억 톤 이상을 모로코·서사하라가 보유하고 중국이 세계 생산의 54%를 담당하는 구조가 이 취약점의 근원이다.</p><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">인산암모늄(MAP·DAP)</span>인광석에서 추출한 인산과 암모니아를 결합한 화학 비료. LFP 배터리 양극재(인산리튬철) 제조에도 정제 인산(PPA)의 전단계 원료로 쓰인다.</div></div></div>
+    <div class="section"><div class="para"><div class="para-title">하버공정과 인광석 — 식량·배터리를 동시에 쥔 자원</div><div class="para-body">질소비료는 하버-보슈 공정으로 공기 중 질소를 암모니아로 고정해 만든다. 인광석은 비료의 인(P) 성분 공급원으로, 전 세계 685억 톤 매장량 중 500억 톤 이상이 모로코·서사하라에 집중돼 있다. 중국의 매장량은 30억 톤으로 세계의 약 4%에 불과하지만, 가공·정제 능력 덕분에 세계 인산암모늄 생산의 54%를 담당한다. 즉 중국은 인광석을 직접 캐는 나라가 아니라 가공을 장악한 나라다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">하버-보슈 공정</span>공기 중 질소(N₂)와 수소(H₂)를 고온·고압에서 반응시켜 암모니아(NH₃)를 합성하는 공정. 20세기 식량 생산 폭발의 핵심 기술로 현대 비료 산업의 근간.</div></div></div><div class="para"><div class="para-title">LFP 배터리 급성장이 인산 수요를 잠식 — 2026년 PPA 공급난</div><div class="para-body">LFP 배터리 수요가 급증하면서 인산 소비에서 배터리용 비중이 빠르게 올라가고 있다. 1GWh LFP 배터리 생산에는 양극재 2,500톤, 양극재 1톤에 인광석 4.3톤이 필요하다. LFP 시장이 2028년까지 5배 성장하면 배터리용 인광석 수요도 5배 증가한다. 업계는 2026년부터 고순도 정제 인산(PPA) 공급 부족이 시작될 것으로 예상하고 있다. 중국의 인산암모늄 수출 통제는 이 공급난을 앞두고 자국 물량을 우선 확보하려는 선제 조치다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">PPA(정제 인산, Purified Phosphoric Acid)</span>인광석에서 불순물을 제거한 고순도 인산. LFP 배터리 양극재(LiFePO₄) 제조의 핵심 원료로, 순도가 배터리 성능에 직결된다.</div></div></div><div class="para"><div class="para-title">한국의 구조적 취약성 — 인산암모늄 95% 중국 의존</div><div class="para-body">한국은 인산암모늄 수입의 95%를 중국에서 조달한다. 2021년 요소수 사태 때 중국이 요소 수출을 제한하자 한국 물류가 마비 직전까지 갔던 구조가 인산암모늄에도 그대로 반복될 수 있다. 한국 배터리 3사는 LFP보다 삼원계(NCM) 배터리에 집중해왔지만, LFP로 시장 중심이 이동하면 결국 중국발 인산 공급망에 종속되는 문제가 생긴다. 모로코 인광석을 직접 확보하거나 폐배터리 재활용으로 인 회수 루트를 만들지 않으면 구조적 취약성은 해소되지 않는다.</div><div class="annotations"><div class="annotation"><span class="ann-type">맥락</span>중국은 2023년부터 모로코에 LFP 공장 건설에 투자하기 시작했다. 원재료(모로코 인광석)를 가공 공장(중국 투자 모로코 공장)으로 연결하면 중국은 원료-가공-배터리를 일괄 장악하게 된다.</div></div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">인산암모늄 수출 통제가 요소수 사태처럼 한국 배터리·농업 공급망을 동시에 타격하는 레버리지가 되는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">레버리지가 될 수 있다. 요소수는 물류(트럭)에 집중됐지만 인산암모늄은 식량(비료)과 배터리를 동시에 건드린다. 한국이 두 경로 모두 대안 공급선을 확보하지 못한 상태에서 중국이 통제를 강화하면 협상력의 비대칭이 커진다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223313000000" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 2월 · 2개</div>
+  
+<div class="card" data-title="삼성 평택 5공장 중단이 하이 NA EUV와 연결되는 이유" data-tags="#삼성전자 #EUV #반도체 #하이NA" data-date="2024-02-22">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-02-22</div>
+      <div class="card-title">삼성 평택 5공장 중단이 하이 NA EUV와 연결되는 이유</div>
+      <div class="card-tags"><span class="tag">#삼성전자</span><span class="tag">#EUV</span><span class="tag">#반도체</span><span class="tag">#하이NA</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 2월 기준, 삼성전자 평택 5공장(P5)의 공사가 중단되며 여러 추측이 제기되고 있다. 하이 NA EUV 장비 도입과 연관되어 있는 이 중단은 삼성의 장기 전략에 중대한 영향을 미칠 수 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">삼성전자 평택 5공장 중단 배경</div><div class="para-body">삼성물산은 반도체 5공장의 공사 중단을 알리며 ‘속도 조절’이라는 어조를 사용하고 있다. 생산 공정의 중단은 반도체 제조의 핵심인 EUV 장비 도입과 관련이 있으며, 이는 중국의 자립 전략에도 큰 영향을 미칠 것이다.</div></div><div class="para"><div class="para-title">하이 NA EUV의 역할과 중요성</div><div class="para-body">하이 NA EUV는 2나노 미만의 공정에 필수적인 차세대 장비로, 삼성전자는 이 장비 도입을 통해 경쟁력을 갖추려 하고 있다. 그러나 해당 장비의 공급이 불확실하여 삼성전자의 공사는 계획대로 진행되지 않고 있다.</div></div><div class="para"><div class="para-title">EUV 전체 시장과 삼성의 미래</div><div class="para-body">EUV 장비의 공급 제한으로 인해 삼성전자는 시장의 혼란을 겪고 있으며, 빠른 대응이 요구된다. 삼성은 2025년 2나노, 2027년 1.4나노를 목표로 하고 있지만, 하이 NA EUV를 적시에 도입해야만 이 계획이 실현될 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">삼성전자가 이처럼 급변하는 반도체 시장에서 경쟁력을 유지하기 위한 전략은 무엇일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">삼성전자는 기술 혁신과 장비 도입 일정에 따라 경쟁력을 유지해야 한다. 하이 NA EUV의 도입 시점이 삼성의 미래 성과에 중대한 영향을 미칠 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223359180890" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="벤츠 전기차 전환 5년 연기 — EU 우경화·캐즘·EPA 완화 3중 역풍" data-tags="#벤츠전기차 #캐즘 #EU의회선거 #IRA #전기차전환연기 #바이든EPA" data-date="2024-02-27">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-02-27</div>
+      <div class="card-title">벤츠 전기차 전환 5년 연기 — EU 우경화·캐즘·EPA 완화 3중 역풍</div>
+      <div class="card-tags"><span class="tag">#벤츠전기차</span><span class="tag">#캐즘</span><span class="tag">#EU의회선거</span><span class="tag">#IRA</span><span class="tag">#전기차전환연기</span><span class="tag">#바이든EPA</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 2월, 벤츠가 2030년 전기차 전용 브랜드 전환 목표를 2035년으로 5년 연기한다고 발표했다. 2019년에 스스로 내연기관의 종말을 선언했던 벤츠가 후퇴한 것이다. EU 의회 우경화, 전기차 캐즘, 바이든의 EPA 기준 완화가 3중으로 작용한 결과다.</p><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">캐즘(Chasm)</span>제프리 무어의 기술 채택 모델에서 얼리어답터와 대다수 소비자 사이의 수요 정체 구간. 전기차 시장에서는 초기 충전 인프라 부족·가격·주행거리 불안이 일반 소비자 진입을 막는 구간으로 쓰인다.</div></div></div>
+    <div class="section"><div class="para"><div class="para-title">2019년 종말 선언에서 2024년 후퇴까지</div><div class="para-body">벤츠는 2019년 스스로 '내연기관차 종말'을 선언하고 2030년 전기차 전용 브랜드 전환을 공표했다. 그러나 2023~2024년 들어 전기차 수요가 예상을 밑돌았다. 유럽 전기차 판매 증가율이 한 자릿수로 꺾였고, 전기차 재고가 쌓이기 시작했다. 결국 2024년 2월 벤츠는 전환 목표를 2035년으로 미뤘다. 다른 유럽 완성차(포드·GM 등)도 비슷한 시기에 전기차 투자 속도 조절을 발표했다.</div></div><div class="para"><div class="para-title">EU 의회 우경화 — 친환경 354석이 흔들리다</div><div class="para-body">24년 6월 EU 의회 선거를 앞두고, 중도·우파 정당의 지지율이 상승하고 있었다. EU 의회 내 친환경 연합(녹색당·좌파·사민당)은 354석이었지만, 선거에서 37석 감소가 예상됐다. 우크라이나 곡물 수입에 반발한 동유럽 농민 시위가 친환경 반발로 확산됐고, 에너지 비용 상승에 지친 유권자들이 친환경 정책에 피로감을 보였다. EU의 2035년 내연기관 판매 금지 규정 자체가 EU 의회에서 재검토될 가능성이 열렸다.</div><div class="annotations"><div class="annotation"><span class="ann-type">맥락</span>2024년 6월 실제 선거 결과 친환경 진영은 354석에서 310석으로 44석 감소했다. 우경화 흐름이 예상보다 강하게 나타나 2035년 내연기관 금지 규정의 완화 논의가 본격화됐다.</div></div></div><div class="para"><div class="para-title">바이든 EPA 완화·트럼프 IRA 폐지 예고 — 미국 전기차 정책 후퇴</div><div class="para-body">바이든 행정부는 2030년까지 신차 판매의 67%를 전기차로 규정한 EPA 배기가스 기준을 2030년에서 2032년으로 유예했다. 완성차 업계의 공장 전환 속도가 따라오지 못한다는 로비를 반영한 결정이었다. 트럼프는 대선 과정에서 IRA(인플레이션감축법)의 전기차 세액공제 폐지를 공약으로 내걸었다. 유럽과 미국 양쪽에서 동시에 전기차 전환 속도를 늦추는 신호가 나오면서, 한국 배터리 3사의 미국·유럽 공장 투자 회수 일정에 불확실성이 커졌다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">IRA(인플레이션감축법)</span>2022년 미국 바이든 행정부가 통과시킨 법안. 북미산 전기차·배터리에 최대 7,500달러 세액공제를 제공해 한국 배터리 3사의 미국 투자 붐을 이끌었다.</div></div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">유럽·미국 동시 전기차 정책 후퇴가 한국 배터리 3사의 미국·유럽 공장 투자를 좌초시키는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">좌초까지는 아니지만 수익 회수가 지연된다. 이미 착공한 공장은 멈추기 어렵고, 전기차 수요는 줄어든 게 아니라 예상보다 느리게 늘어나는 것이다. 문제는 공장 가동률이 낮은 기간이 길어질수록 고정비 부담이 쌓인다는 점이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223354000000" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 3월 · 1개</div>
+  
+<div class="card" data-title="전고체 각사 타임라인 확정 — 프롤로지움 기가 공장·퀀텀스케이프 50만km 실증" data-tags="#전고체배터리 #삼성SDI #토요타 #프롤로지움 #퀀텀스케이프 #SK온" data-date="2024-03-13">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-03-13</div>
+      <div class="card-title">전고체 각사 타임라인 확정 — 프롤로지움 기가 공장·퀀텀스케이프 50만km 실증</div>
+      <div class="card-tags"><span class="tag">#전고체배터리</span><span class="tag">#삼성SDI</span><span class="tag">#토요타</span><span class="tag">#프롤로지움</span><span class="tag">#퀀텀스케이프</span><span class="tag">#SK온</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 3월, 전고체 배터리 주요 플레이어의 양산 타임라인을 정리한다. 삼성SDI S라인 2027년, 토요타 2027년 상용화·2028년 전기차 탑재, SK온-솔리드파워 2028년, 대만 프롤로지움 세계 최초 기가급 공장 준공, 미국 퀀텀스케이프-폭스바겐 50만km 주행 실증이 확인됐다. 가격(현재 삼원계 2배)이 마지막 숙제다.</p><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">전고체 배터리</span>전해질을 액체 대신 고체로 대체한 배터리. 가연성 전해액이 없어 화재 위험이 낮고, 덴드라이트 성장이 억제되며, 에너지밀도가 높다. 분리막도 필요 없어 셀 구조가 단순화된다.</div></div></div>
+    <div class="section"><div class="para"><div class="para-title">한국 3사의 전고체 타임라인 — 삼성SDI 2027년, SK온 2028년</div><div class="para-body">삼성SDI는 수원 S라인에서 전고체 배터리 시범 생산 중이며, 2027년 양산을 목표로 한다. 고객사는 BMW로 알려졌다. SK온은 미국 솔리드파워와 공동 개발 계약을 맺고 2028년 양산을 목표로 한다. LG에너지솔루션은 전고체보다 하이니켈·건식공정 고도화를 단기 과제로 두고 있어 전고체 타임라인이 경쟁사 대비 느리다. 한국 배터리 3사 중 전고체에서 가장 앞선 곳은 삼성SDI다.</div><div class="annotations"><div class="annotation"><span class="ann-type">맥락</span>삼성SDI가 2020년대 초에 특허를 집중 출원하고 설비투자를 선행한 덕분에 전고체에서 앞서 있다. 각형 배터리를 주력으로 하는 삼성SDI는 전고체도 각형 폼팩터로 개발 중이다.</div></div></div><div class="para"><div class="para-title">토요타·프롤로지움·퀀텀스케이프 — 글로벌 실증 가속</div><div class="para-body">토요타는 2027년 전고체 배터리 상용화, 2028년 전기차 탑재를 공식 목표로 한다. 충전 10분, 1,200km 주행을 목표 스펙으로 제시했다. 대만 프롤로지움은 세계 최초로 기가와트급 전고체 배터리 공장을 준공했다. 르노와 공동 개발 중이며, 프랑스에도 공장 설립 계획이다. 미국 퀀텀스케이프는 폭스바겐과 공동 실험에서 전고체 셀로 50만km 상당의 충방전 사이클을 통과했다고 발표했다. 배터리 용량 유지율 95% 이상이었다.</div></div><div class="para"><div class="para-title">가격이 최후 숙제 — 현재 삼원계 2배, 양산 전까지 해소 불확실</div><div class="para-body">전고체 배터리의 현재 제조 비용은 삼원계(NCM) 배터리의 2배 수준이다. 고체 전해질 소재(황화물계·산화물계·폴리머계) 가격이 높고, 고온·고압 공정으로 수율이 낮기 때문이다. 토요타는 2030년 전고체 배터리 가격을 현재 리튬이온 배터리 수준으로 낮추겠다고 했지만, 업계에서는 2030년대 초까지 가격 역전을 기대하기 어렵다는 시각이 많다. 전고체가 전기차 대중화를 이끌기 위해서는 가격 문제 해결이 선행돼야 한다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">황화물계 전해질</span></div></div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">전고체 배터리 양산이 현행 리튬이온 배터리 공급망을 실질적으로 대체하는 시점은 언제인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">2030년 이전 대규모 대체는 어렵다. 가격이 2배인 상태에서 틈새·프리미엄 시장 공략은 가능하지만, 주류 전기차 시장을 대체하려면 가격 격차가 해소돼야 한다. 현실적 대규모 전환 시점은 2032~2035년이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223380000000" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 4월 · 2개</div>
+  
+<div class="card" data-title="삼성이 평택 5공장 공사를 중단한 이유는 TSMC와의 경쟁 때문인가?" data-tags="#삼성전자 #반도체 #TSMC #하이NA #공사중단" data-date="2024-04-09">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-04-09</div>
+      <div class="card-title">삼성이 평택 5공장 공사를 중단한 이유는 TSMC와의 경쟁 때문인가?</div>
+      <div class="card-tags"><span class="tag">#삼성전자</span><span class="tag">#반도체</span><span class="tag">#TSMC</span><span class="tag">#하이NA</span><span class="tag">#공사중단</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 4월 기준, 삼성전자는 평택 4~5공장의 공사 중단 소식을 전하고 있다. 이는 TSMC의 투자 감소와 시장의 변화 때문으로 해석된다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">삼성전자의 셀 퍼스트 전략</div><div class="para-body">삼성전자는 TSMC와의 경쟁에서 우위를 점하기 위해, 제조 시설을 먼저 구축한 뒤 주문을 받는 '셀 퍼스트' 전략을 채택하고 있다. 이는 고위험 고수익 모델이지만, 주문이 없을 경우 공장이 가동되지 않게 된다.</div></div><div class="para"><div class="para-title">공사 중단의 배경</div><div class="para-body">2024년 1월, 삼성물산은 평택 4~5공장의 공사가 중단될 것이라고 발표했다. 그러나 구체적인 재개 일정은 아직 밝혀지지 않았다. 이러한 결정의 배경에는 하이 NA EUV 장비 도입 전략에 대한 고려가 포함되어 있다.</div></div><div class="para"><div class="para-title">인력 및 소득의 변화</div><div class="para-body">평택 공사 중단은 현장 노동자들에게 큰 영향을 미쳤다. 일용직 노동자들이 감소하며 소득이 급감하는 상황이 발생하고 있다. 삼성전자는 비용 절감을 위해 공사 속도를 조절하고 있는 것으로 보인다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">삼성전자가 TSMC와의 경쟁에서 survival을 위해 어떤 전략적 조정을 해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">삼성전자는 하이 NA EUV 도입과 같은 기술적 우위를 확보해야 한다. 이를 통해 경쟁력을 높이고 납품 일정에 맞출 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223409375538" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="각형 49%로 파우치 역전 — CATL 포드 라이선스로 미국 우회, 한국 해외생산 92%" data-tags="#각형배터리 #파우치형 #건식공정 #CATL미국진출 #이차전지 #삼성SDI" data-date="2024-04-18">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-04-18</div>
+      <div class="card-title">각형 49%로 파우치 역전 — CATL 포드 라이선스로 미국 우회, 한국 해외생산 92%</div>
+      <div class="card-tags"><span class="tag">#각형배터리</span><span class="tag">#파우치형</span><span class="tag">#건식공정</span><span class="tag">#CATL미국진출</span><span class="tag">#이차전지</span><span class="tag">#삼성SDI</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 4월, 이차전지 분기 업데이트다. 건식 공정 현황, 각형 vs 파우치 형태 전환, CATL의 미국 우회 진출, 한국 배터리 3사의 해외 생산 비중 급등을 정리한다. EU 기준으로 각형 배터리가 49%를 차지해 파우치(35%)를 역전했고, CATL은 포드와 기술 라이선스 계약으로 IRA를 우회해 미국 시장에 진입했다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">각형 vs 파우치 — 안전성·가성비로 유럽이 각형을 선택</div><div class="para-body">2019년에는 파우치형(46%)이 원통형(35%)·각형(19%)을 압도했다. 2023년 EU 기준으로는 각형(49%)·파우치(35%)·원통(16%)으로 역전됐다. 유럽 완성차(벤츠·BMW·포르쉐·아우디·폭스바겐)가 각형을 선주문하는 이유는 알루미늄 사각캔이 화재 시 격벽 역할을 하는 안전성과 NCM 각형의 에너지밀도 향상이다. 삼성SDI는 유일하게 헝가리 공장에서 각형을 생산해 순이익이 전년 대비 78% 증가했고, LG에너지솔루션 폴란드 법인(파우치)은 순이익이 84% 감소했다. 볼보와 르노닛산도 파우치에서 각형으로 전환 중이다.</div><div class="annotations"><div class="annotation"><span class="ann-type">맥락</span>SK온은 2023년 각형 배터리 생산에 성공해 고객사 확보를 추진 중이나, 현재는 파우치가 주력이다. EU 각형 선호 흐름에서 가장 유리한 포지션은 삼성SDI다.</div></div></div><div class="para"><div class="para-title">CATL의 미국 우회 진출 — 포드 공장에 기술 라이선스·로열티</div><div class="para-body">IRA는 중국 기업이 제조한 배터리에 세액공제를 허용하지 않는다. CATL은 포드가 미시간주에 건설 중인 배터리 공장에 기술 라이선스를 제공하고 로열티를 받는 방식으로 우회했다. 이 모델이 성공하자 CATL은 테슬라 등 미국 완성차와 유사한 방식을 확대 협의하고 있다. CATL 쩡위췬 회장은 '미국 행정부는 4~5년짜리 계약직'이라며 자신감을 내비쳤다. 미국 저가형 로보택시용 LFP 배터리 공급이 핵심이다.</div></div><div class="para"><div class="para-title">한국 배터리 3사의 딜레마 — 글로벌 매출 29% 성장, 한국 일자리는 없다</div><div class="para-body">2023년 한국 배터리 3사의 해외 생산 비중이 92.4%다. LG에너지솔루션은 폴란드 47.5%·중국 38.4%, 삼성SDI는 헝가리 77.2%, SK온은 중국 77.1%다. 국가별 배터리 수출 순위는 중국 1위·폴란드 2위·헝가리 3위로, 한국은 순위권 밖이다. 한국의 이차전지 수출액은 2015년 이후 처음으로 역성장(-1.5%)했다. 그러나 글로벌 매출은 전년 대비 29.6% 성장했다—해외 공장 생산분이 한국 통관을 거치지 않아 수출에 잡히지 않기 때문이다. 연구개발은 한국, 양산은 해외의 구조가 고착화되고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">CATL의 라이선스 방식 미국 진출이 한국 배터리 3사의 미국 투자를 위협하는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">실질적 위협이다. 한국 3사는 미국 완성차와 합작법인을 만들어 직접 생산하는 방식인데, 완성차 기업들이 CATL 기술 라이선스로 직접 생산을 선택하면 한국 3사의 납품 수요가 줄어든다. 중저가 전기차로 시장 중심이 이동할수록 LFP 가격경쟁력을 가진 CATL에 유리한 구도다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223418311259" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 5월 · 3개</div>
+  
+<div class="card" data-title="우크라 전쟁으로 바뀐 희귀 가스 공급망, 이제는 CCU로 해결하나" data-tags="#희귀가스 #우크라이나 #반도체 #CCU" data-date="2024-05-03">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-05-03</div>
+      <div class="card-title">우크라 전쟁으로 바뀐 희귀 가스 공급망, 이제는 CCU로 해결하나</div>
+      <div class="card-tags"><span class="tag">#희귀가스</span><span class="tag">#우크라이나</span><span class="tag">#반도체</span><span class="tag">#CCU</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 5월 기준, 우크라이나 전쟁 이후 희귀 가스 공급망의 변화가 이루어지고 있다. 전통적으로 한국 기업들이 의존해온 우크라이나의 아조우스탈 제철소가 파괴된 상황에서, 대안으로 CCU 같은 새로운 공급원이 떠오르고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">우크라이나 상황과 한국의 반도체 산업</div><div class="para-body">우크라이나 마리우폴의 아조우스탈 제철소는 한국 반도체 산업의 중요한 희귀가스 공급처였다. 하지만 우크라이나 전쟁으로 인해 이 제철소의 파괴로 한국 기업들은 새로운 공급망을 구축해야 하는 상황에 놓였다. 이는 반도체 제조에 필수적인 크립톤, 제논, 네온 등 희귀가스의 확보 문제로 직결된다.</div></div><div class="para"><div class="para-title">CCU의 도입과 재활용 계획</div><div class="para-body">포스코와 SK하이닉스는 CCU(이산화탄소 포집 및 활용) 기술을 활용해 탄산가스의 생산을 확대할 계획이다. CCU는 새로운 공급원을 통해 공급 안정성을 높이는 전략으로, 환경적인 이점까지 제공하는 방법으로 각광받고 있다. 이는 반도체 제조에 필요한 원자재 확보 문제를 해결하는 대신 촉진하는 효과를 기대할 수 있다.</div></div><div class="para"><div class="para-title">희귀 가스 시장의 가격 변동</div><div class="para-body">희귀가스 공급 부족으로 인해 중국의 독점 상황이 심화되고 있으며, 가격이 급등하는 현상이 발생하고 있다. 한국 기업들은 새로운 공급망 마련과 함께, 가격 변동성을 최소화하기 위한 다양한 대책을 모색해야 한다. 시장 상황의 변화는 향후 반도체 제조 수익성에 직접 영향을 미치게 될 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">우크라 전쟁으로 파괴된 아조우스탈 제철소와 CCU 기술 도입이 한국 반도체 산업에 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">아조우스탈의 파괴 상황은 한국 반도체 산업에 중대한 도전이다. 하지만 CCU 기술로 대체 공급원을 확보할 수 있다면, 장기적으로 안정적인 원자재 공급이 가능할 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223432137406" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="삼성전자 HBM3E, 엔비디아와의 밀당에서 신뢰를 쌓을 수 있을까" data-tags="#삼성전자 #HBM #엔비디아 #TSMC" data-date="2024-05-19">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-05-19</div>
+      <div class="card-title">삼성전자 HBM3E, 엔비디아와의 밀당에서 신뢰를 쌓을 수 있을까</div>
+      <div class="card-tags"><span class="tag">#삼성전자</span><span class="tag">#HBM</span><span class="tag">#엔비디아</span><span class="tag">#TSMC</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 5월 기준, 삼성전자의 HBM3E가 엔비디아에게 불합격 통보를 받은 상황이 긴장을 고조시키고 있다. 엔비디아는 이미 TSMC와의 관계로 다수의 선택지가 있는 만큼 업체 간의 치열한 경쟁이 예상된다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">삼성전자의 HBM3E 테스트 부진</div><div class="para-body">삼성전자 HBM3E가 엔비디아의 품질 검증에서 불합격 통보를 받은 상황은 우려를 자아낸다. 이로 인해 삼성전자는 임원급 대응 팀을 파견하며 급한 조정을 시도하고 있다. 엔비디아는 SK하이닉스와 마이크론의 공급을 먼저 우선적으로 받을 것이라는 결정이 불리하게 작용할 수 있다.</div></div><div class="para"><div class="para-title">차세대 HBM의 필요성과 공급 경쟁</div><div class="para-body">HBM 기술이 5세대에 접어들며 성능이 눈에 띄게 개선되고 있는 상황에서는 AI와 같은 분야에서 수요가 급증하고 있다. 기업들이 높은 성능을 요구하게 되면서 HBM의 비중이 높아지고, 삼성전자가 이를 놓치지 않기 위해 다시 역량을 집중하고 있는 흐름이다. 이러한 변화는 공급자 간의 치열한 경쟁을 더욱 격화시키고 있다.</div></div><div class="para"><div class="para-title">삼성전자의 전략적 선택과 향후 전망</div><div class="para-body">삼성전자가 HBM3E를 공급하기 위해 기존 전략을 수정하고 있다고 보인다. 일관된 대량 생산 기반의 '선생산 후주문' 방식에서는 벗어날 수밖에 없는 현재의 HBM 시장은 삼성전자가 선택한 전략에 변화를 요구하는 상황이다. 이로 인해 HBM 시장에서의 경쟁력은 앞으로의 매출 기여와 밀접하게 연결될 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">삼성전자가 HBM3E의 품질 개선을 통해 엔비디아와의 신뢰를 회복할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">아직 상황은 불확실하지만, 신뢰 회복은 가능하다. 삼성전자의 HBM3E 품질 개선이 성공한다면, 엔비디아는 삼성과의 관계를 다시 고려할 수 있을 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223450673120" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="삼성전자가 HBM3E 공급 경합에서 난관을 극복할 수 있을까?" data-tags="#삼성전자 #HBM3E #엔비디아 #반도체" data-date="2024-05-28">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-05-28</div>
+      <div class="card-title">삼성전자가 HBM3E 공급 경합에서 난관을 극복할 수 있을까?</div>
+      <div class="card-tags"><span class="tag">#삼성전자</span><span class="tag">#HBM3E</span><span class="tag">#엔비디아</span><span class="tag">#반도체</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 5월 기준, 삼성전자는 HBM3E 공급을 둘러싼 상황에서 기술적 난관에 직면하고 있다. 엔비디아와의 협력 속에서 경쟁 업체 SK하이닉스와의 대결을 피할 수 있을지의 여부가 주목받고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">삼성전자의 새로운 리더십과 HBM3E</div><div class="para-body">삼성전자는 반도체 사업의 수장을 교체하여 전영현 부회장이 새로 임명되었다. 이전 열린 대화와 신사업 TF팀을 중심으로 한 인사 변화가 HBM3E 성공에 어떤 영향을 미칠지 주목된다. 전 부회장은 재료와 기술에 대한 깊은 이해를 가진 인물로 평가되고 있다.</div></div><div class="para"><div class="para-title">HBM3E 공급을 향한 기술적 도전</div><div class="para-body">HBM3E의 테스트가 여전히 통과하지 못하고 있다는 소식이 전해지며, 삼성전자는 즉각 반박하는 보도자료를 배포했다. 그러나 테스트 실패는 성과 개선과 새로운 기자재 도입이 미치는 영향에 대한 의구심을 불러일으키고 있다. 이는 반도체 산업 경쟁의 치열함을 증명한다.</div></div><div class="para"><div class="para-title">펠리클과의 경쟁에서의 우위</div><div class="para-body">삼성전자는 HBM 생산을 위해 펠리클 개발에 투자 중이다. 하지만 덮개 소모품의 품질 확보 여부와 HBM의 성능 향상이 이들의 경쟁력에 결정적일 것이다. TSMC와의 경쟁에서 우위를 점할 수 있는 전략이 시급하다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">삼성전자가 HBM3E 공급에서 SK하이닉스와의 경쟁을 극복하기 위해 어떤 전략을 모색해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">HBM3E 공급에서 삼성전자는 기술력과 공급망 안정성 모두 강화해야 한다. 앞으로의 수익성과 글로벌 시장 점유율을 고려할 때 이는 중요한 결정사항이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223456858062" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 6월 · 1개</div>
+  
+<div class="card" data-title="LFP 급성장으로 인광석 2026년 공급난 예고 — 판다 보호구역도 쓰촨 광산에 양보" data-tags="#인광석 #LFP배터리 #모로코 #PPA공급난 #폐배터리재활용 #판다외교" data-date="2024-06-28">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-06-28</div>
+      <div class="card-title">LFP 급성장으로 인광석 2026년 공급난 예고 — 판다 보호구역도 쓰촨 광산에 양보</div>
+      <div class="card-tags"><span class="tag">#인광석</span><span class="tag">#LFP배터리</span><span class="tag">#모로코</span><span class="tag">#PPA공급난</span><span class="tag">#폐배터리재활용</span><span class="tag">#판다외교</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 6월, 판다 반환(푸바오)을 시작점으로 인광석의 지정학과 LFP 배터리 공급망을 추적한다. 2010년 중국이 쓰촨성 인광석 개발을 위해 판다 보호구역을 축소한 데서 인광석의 전략적 중요성이 드러난다. LFP 배터리 수요 급증으로 2026년부터 정제 인산(PPA) 공급난이 예상되고, LFP 폐배터리 재활용의 경제성 판단도 바뀌기 시작한다.</p><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">인광석(phosphate rock)</span>인산비료와 LFP 배터리 양극재의 원료. 동물 배설물이 수천 년 축적된 퇴적 광물로, 전 세계 매장량 720억 톤의 70% 이상이 모로코·서사하라에 집중되어 있다.</div></div></div>
+    <div class="section"><div class="para"><div class="para-title">인광석의 지정학 — 모로코 70%, 중국은 쓰촨성 광산 위해 판다 보호구역 축소</div><div class="para-body">전 세계 인광석 매장량 720억 톤 중 500억 톤 이상이 모로코·서사하라 지역에 집중돼 있다. 모로코 수출 상위 10대 품목 1위가 비료, 5위가 인산, 8위가 인산염일 정도로 국가 경제가 인광석에 의존한다. 스페인에서 독립한 모로코가 서사하라를 포기하지 않는 이유도 이 때문이다. 중국의 인광석 매장량은 19억 톤이지만 세계 생산의 54%를 담당한다. 2010년 중국은 쓰촨성 일대 인광석 개발을 위해 판다 보호구역 범위를 조정했다. 세계적으로 자랑하던 판다보다 인광석이 더 중요했다는 의미다.</div><div class="annotations"><div class="annotation"><span class="ann-type">맥락</span>판다 외교의 역사: 1972년 닉슨-마오쩌둥 수교 시 판다 2마리 선물, 1984년 덩샤오핑이 무상 증여에서 월 5만달러 임대 방식으로 전환. 해외 출생 판다는 만 4세 전 중국 반환 의무.</div></div></div><div class="para"><div class="para-title">LFP 배터리 급성장이 인광석을 잠식 — 2026년 PPA 공급난</div><div class="para-body">중국산 인광석의 71%는 비료 생산에 쓰이지만, LFP 배터리 수요가 빠르게 비중을 늘리고 있다. 1GWh LFP 배터리 생산에는 양극재 2,500톤이 필요하고, 양극재 1톤에 인광석 4.3톤이 들어간다. LFP 배터리 시장이 2021년 100억달러에서 2028년 500억달러로 5배 성장하면, 배터리용 인광석 수요가 현재 2천만 톤에서 1억 톤으로 5배 증가한다. 중국 자체 매장량(19억 톤)으로는 20년 안에 한계에 도달한다. 업계는 '2026년부터 정제 인산(PPA) 공급난이 시작된다'고 예상하고 있다. 중국이 인산암모늄 수출을 통제하기 시작한 것이 이 선제 대응이다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">PPA(정제 인산)</span>인광석에서 정제된 고순도 인산. 90%는 비료·사료·세제·제약에 쓰이고, 10%가 LFP 배터리 양극재용이지만 배터리 수요가 빠르게 늘고 있다.</div></div></div><div class="para"><div class="para-title">LFP 폐배터리 재활용 경제성 재평가</div><div class="para-body">기존에는 LFP 폐배터리 재활용이 경제성이 없었다. 금속 잔존가치가 kWh당 45달러로 NCM(68달러)·NCA(71달러)보다 낮아 재활용 비용을 충당하기 어려웠고, 중국은 LFP 배터리를 매립하고 있었다. 그러나 인광석 매장량이 줄고 PPA 공급난이 예고되면서 '인'도 재활용 가치 있는 자원으로 재평가되기 시작했다. 리튬 가격이 kg당 150위안(27,700원)을 넘기면 LFP 재활용 수익성이 나온다. 전 세계 전기차 폐차 대수는 2030년 411만 대에서 2040년 4,227만 대로 10배 증가 예상이라, 폐배터리 재활용 시장 자체가 급성장한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">LFP 배터리 급성장이 인광석 공급 한계를 구조적 병목으로 만드는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">2026~2028년 시점에서 구조적 병목이 될 가능성이 높다. 중국이 자국 인광석 채굴을 줄이고 모로코에 LFP 공장을 짓는 것은 이미 그 대비 행동이다. 한국은 인산염 92%를 중국에서 수입하고 있어, 요소수 사태의 LFP 배터리 버전이 반복될 위험이 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223493284693" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 7월 · 4개</div>
+  
+<div class="card" data-title="2차 전지 내장 산소 — 전기차 화재 소화 불가, 운반선 침몰·ESS 화재 39건" data-tags="#전기차화재 #2차전지 #ESS화재 #덴드라이트 #열폭주 #전고체" data-date="2024-07-07">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-07-07</div>
+      <div class="card-title">2차 전지 내장 산소 — 전기차 화재 소화 불가, 운반선 침몰·ESS 화재 39건</div>
+      <div class="card-tags"><span class="tag">#전기차화재</span><span class="tag">#2차전지</span><span class="tag">#ESS화재</span><span class="tag">#덴드라이트</span><span class="tag">#열폭주</span><span class="tag">#전고체</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 7월, 보이저 1·2호의 RTG 3차 전지를 출발점으로 2차 전지의 화재 취약성을 정리한다. NCM·LFP 배터리 모두 양극재에 산소(O)가 내장되어 있어 산소 차단으로 화재를 끄기 어렵다. 전기차 화재 진압의 현실적 방법은 차량을 물에 완전히 잠기게 하는 것뿐이며, 자동차 운반선 화재와 ESS 화재가 이를 증명했다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">2차 전지 화재의 구조적 원인 — 내장 산소와 덴드라이트</div><div class="para-body">일반 화재는 산소 차단으로 진화하지만, NCM·LFP 배터리는 양극재 자체에 산소가 내장되어 외부 산소를 차단해도 불이 잘 꺼지지 않는다. 전기차는 셀→모듈→팩으로 다층 포장되어 있어 물을 뿌려도 발화 지점에 도달하기 어렵다. 충방전을 반복하면 음극 표면에 덴드라이트(종유석처럼 자라는 리튬 결정)가 쌓이는데, 이것이 분리막을 찢으면 음극·양극 쇼트, 인화성 전해액 반응으로 화재·폭발이 발생한다. 교통사고 충격과 배터리 노화 모두 이 메커니즘으로 귀결된다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">덴드라이트(dendrite)</span></div></div></div><div class="para"><div class="para-title">자동차 운반선 두 번의 침몰 — 전기차 배터리가 원인</div><div class="para-body">2022년 2월 포르쉐·벤틀리·람보르기니 등 고급차 4천 대와 전기차 300대를 실은 운반선이 대서양에서 화재로 침몰했다. 차량 가치 4억 달러 이상이었지만 불을 끄지 못했다. 2023년 7월에도 차량 3천 대를 실은 운반선이 전소됐다. 두 화재 모두 전기차 리튬이온 배터리가 발화 원인으로 파악됐다. 유럽 해상안전청(SMSA)은 '대다수 선박 화재가 리튬이온 배터리 포함 화물 운반 중 발생했다'고 발표했다. 현대글로비스는 소화 덮개(1,500도 내화 섬유)를 씌워 산소 차단으로 초기 진압하는 시스템을 도입했다.</div></div><div class="para"><div class="para-title">ESS 화재 — 2018~2022년 39건, 원인 80%가 '불명'</div><div class="para-body">2018~2022년 한국 설치 ESS에서 39건의 화재가 발생했다. ESS는 수명이 다한 전기차 배터리를 재활용하는 경우가 많아 덴드라이트가 형성된 불량 배터리가 섞일 가능성이 높다. 셀들이 밀집된 구조에서 한두 개에 불이 나면 열폭주(thermal runaway)로 빠르게 확산된다. ESS 화재 후 전소가 대부분이라 원인 규명이 어려워 2022년 기준 화재 80%가 '원인 불명' 처리됐다. 화재 위험으로 주거지 인근 ESS 설치가 제한되어 ESS 확대 속도를 늦추고 있다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">열폭주(thermal runaway)</span>배터리 내부 발열이 냉각 속도를 초과해 온도가 급격히 상승하는 현상. 800℃ 이상까지 올라가며 인접 셀로 연쇄 반응이 전파된다.</div></div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">전기차·ESS 화재 리스크가 구조적으로 해소될 수 있는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">현행 2차 전지 구조에서는 해소되기 어렵다. 산소 내장 원리 자체가 화재 소화를 불가능에 가깝게 만들고, 사용이 늘수록 화재 건수도 비례해 증가한다. 분리막이 없어 덴드라이트 위험이 낮은 전고체 배터리가 확산되기 전까지, 전기차 전용 소화 설비와 운반·주차 규제가 병행 성장할 수밖에 없다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223503267808" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="금감원 검사가 진행 중인 초단타 거래 세계 — 위험과 기회는 어디에?" data-tags="#초단타거래 #금감원 #HFT #AI #교보증권" data-date="2024-07-08">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-07-08</div>
+      <div class="card-title">금감원 검사가 진행 중인 초단타 거래 세계 — 위험과 기회는 어디에?</div>
+      <div class="card-tags"><span class="tag">#초단타거래</span><span class="tag">#금감원</span><span class="tag">#HFT</span><span class="tag">#AI</span><span class="tag">#교보증권</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 7월, 한국 증시에 관한 금감원의 검사가 초단타 거래 시장을 뒤흔들고 있다. 초단타 거래는 속도와 기술이 결정적인 요소로 돈을 버는 기술적 기회를 쫓는 동시에 리스크를 동반하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">교보증권 광클맨의 등장</div><div class="para-body">교보증권 '광클맨'은 하한가가 풀리는 주식을 빠르게 매수하여 수익을 실현하는 투기성 자금 집단이다. 특히 영풍제지와 HLB를 대상으로 한 사례가 두드러지며, 이들은 매수 즉시 대량 매도를 통해 급격한 차익을 실현한다.</div></div><div class="para"><div class="para-title">HFT의 정의와 작전</div><div class="para-body">하이 프리퀀시 트레이딩(HFT)은 초고속으로 거래를 처리하는 방법이다. 이들은 시간이 경쟁 우위의 결정적 요소가 되며, 별도의 알고리즘을 사용하여 시장의 가격 변동을 실시간으로 추적·분석하여 거래를 진행한다.</div></div><div class="para"><div class="para-title">AI와의 경쟁</div><div class="para-body">주식 거래에 AI가 도입되면서 기존의 거래 방식에서 벗어나 더 정교한 분석과 판단을 통한 경쟁이 이루어지고 있다. 골드만삭스의 AI 프로그램은 이미 트레이더를 대체하고 있으며, 개인 투자자는 HFT와 AI의 속도를 따라가기가 점점 더 어려워지고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">금감원의 검사가 초단타 거래에 미칠 영향은 무엇일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">초단타 거래에 대한 규제가 강화된다면, 이는 시장의 공정성을 높일 수 있지만, 동시에 유동성이 줄어들고전략적으로 전환해야 할 필요가 있다. 불확실성이 커진 만큼, 투자자들은 신중히 접근해야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223504345832" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="삼성 평택 5공장 공사 중단, HBM 생산에 미치는 영향은?" data-tags="#삼성전자 #HBM #평택공장 #반도체" data-date="2024-07-21">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-07-21</div>
+      <div class="card-title">삼성 평택 5공장 공사 중단, HBM 생산에 미치는 영향은?</div>
+      <div class="card-tags"><span class="tag">#삼성전자</span><span class="tag">#HBM</span><span class="tag">#평택공장</span><span class="tag">#반도체</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 7월, 삼성전자 평택 4~5공장이 공사 중단 상태에 빠졌다. 공사 중단 이유는 하이 NA EUV 장비 공급 문제 등 복합적인 요소가 작용하며, 이는 반도체 산업 전반에 걸쳐 중대한 영향을 미칠 수 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">공사 중단의 배경과 영향</div><div class="para-body">삼성전자는 2025년 2나노, 2027년 1.7나노 반도체 양산을 목표로 하고 있으나, 현재 평택 5공장이 최초 공정 단계를 중단했다. TSMC와 달리 '셀 퍼스트' 전략을 채택한 삼성전자는 주문이 없을 경우 공장을 놀려야 하는 높은 리스크를 안고 있다. 그러므로 이번 공사 중단은 생산 계획에 큰 지장을 초래할 가능성이 크다.</div></div><div class="para"><div class="para-title">HBM과 D 램의 생산 변화</div><div class="para-body">2024년과 2025년 HBM3 및 HBM3E의 수요가 급증할 것으로 예상되는 가운데, 삼성전자는 평택 4공장을 D 램 전용으로 전환할 계획을 세우고 있다. 이는 범용 D 램 공급 부족 문제를 해결하며, HBM 생산능력 확대를 위한 전략으로 풀이된다. 주요 고객사인 엔비디아의 요구에 발맞춰 공급 능력을 2026년까지 6배까지 확대할 방침이다.</div></div><div class="para"><div class="para-title">삼성전자의 전략적 재조정</div><div class="para-body">삼성전자는 과거의 실패를 반복하지 않기 위해 신중한 접근을 선보이고 있다. 하이 NA EUV 도입과 함께 연구개발 시설을 구축하고, 2027년 대량 도입을 목표로 하며, 테스트와 준비를 철저히 할 예정이다. 이러한 조정이 성공적으로 이루어진다면, 1나노급 생산에서도 우위를 차지할 수 있을 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">삼성전자가 공사 중단과 재조정 속에서도 HBM 생산 능력을 끌어올릴 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">YES, 삼성전자가 HBM3와 HBM3E의 공급 능력을 증가시키고 있으며 이는 매출 증가로 이어질 것이다. 목표한 일정에 맞춰 조정하며 우위를 점할 가능성이 높다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223519123007" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="테슬라 4680 건식공정 수율 20% 4년째 — LG엔솔 오창 8월 습식 양산 개시" data-tags="#테슬라4680 #건식전극 #수율 #LG에너지솔루션 #배터리공정" data-date="2024-07-22">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-07-22</div>
+      <div class="card-title">테슬라 4680 건식공정 수율 20% 4년째 — LG엔솔 오창 8월 습식 양산 개시</div>
+      <div class="card-tags"><span class="tag">#테슬라4680</span><span class="tag">#건식전극</span><span class="tag">#수율</span><span class="tag">#LG에너지솔루션</span><span class="tag">#배터리공정</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 7월, 머스크가 사내 배터리팀에 '연말까지 LG에너지솔루션보다 저렴하게 생산 못 하면 4680을 접겠다'는 최후통첩을 내렸다는 보도가 나왔다. 4680 발표 4년이 지났지만 수율이 20%대를 벗어나지 못하고 있다. LG에너지솔루션은 8월 충북 오창에서 습식공정 4680 양산을 시작할 예정이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">건식 vs 습식 전극 공정 — 비용 17~30% 차이, 수율은 다른 문제</div><div class="para-body">배터리 전극 공정은 코팅 방식에 따라 습식과 건식으로 나뉜다. 습식은 액체 용매를 동박에 바른 후 200도 이상에서 건조하는 방식으로 표준화됐지만 전력 소비가 크다. 건식은 가스나 전자빔으로 코팅 소재를 입혀 용매가 필요 없다—전력 소비가 습식의 30% 수준이고 제조비용이 17~30% 낮다. 머스크가 배터리데이에서 '반값 배터리'를 자신한 근거 중 하나가 건식 공정이었다. 테슬라는 2019년 맥스웰테크놀러지를 인수해 건식 전극 기술을 확보했지만, 기술의 어려움으로 현재 음극에만 적용하고 양극은 습식을 유지 중이다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">수율</span>전체 생산품 중 합격품 비율. 수율 20%는 80%가 불량품이라는 뜻. 불량품은 원료 일부 회수 후 사실상 손실 처리되어, 수율이 낮을수록 매출원가에 불량 비용이 쌓인다.</div></div></div><div class="para"><div class="para-title">4년째 수율 20% — 조직 해고, 부사장 사임</div><div class="para-body">테슬라는 2024년 4월 배터리 소재사업부 직원 절반과 4680 사업부 직원 20% 이상(800명만 잔류)을 해고했다. 4680 발표를 주도한 바글리노 수석 부사장도 책임을 지고 물러났다. 목표 수율은 사이버트럭 연 2만 4천 대 분량이지만, 실제 생산량이 크게 미달이다. 건식 공정 외에 탭리스 용접 이슈도 해결 못하고 있다. LG에너지솔루션·삼성SDI에서 기술자를 스카우트했지만, 전체 공정을 커버하는 장인을 확보하지 못해 군데군데 빈틈이 있다.</div><div class="annotations"><div class="annotation"><span class="ann-type">맥락</span>일본 파나소닉은 18650→21700 전환 과정에서 수율을 80%까지 올리는 데 2년 이상, 수조원이 걸렸다. 배터리 수율은 동일한 장비로도 습도·물 등 환경 변수로 재현이 안 되는 '장인의 영역'이다.</div></div></div><div class="para"><div class="para-title">LG엔솔 8월 오창 양산 — 건식은 2028년 목표</div><div class="para-body">LG에너지솔루션은 2024년 8월 충북 오창에서 습식공정 4680 배터리를 전량 테슬라에 납품할 예정이다. 건식 공정은 2024년 4분기 테스트 생산 라인 완공, 2028년 본격 양산 계획이다. 한국 배터리사가 습식 양산에 돌입하자 테슬라 내부 긴장이 높아졌다는 해석이 나온다. 결국 수율을 잡지 못하면 테슬라는 외부 공급을 선택할 가능성이 높고, 그 수혜가 한국 배터리 3사로 돌아온다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">테슬라의 4680 자체 생산이 한국 배터리 3사에 위협인가, 아니면 기회인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">현재는 기회가 더 크다. 4년째 수율을 못 잡는 것은 배터리 제조가 기술 보유만으로 해결되지 않고 공정 장인이 필요하다는 방증이다. 테슬라는 배터리 회사가 아니며, 적정 가격에 공급이 가능하다면 자체 생산을 고집할 이유가 없다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223519968141" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 9월 · 2개</div>
+  
+<div class="card" data-title="인텔이 1.8나노로 반도체 시장에 뛰어들었지만, 실패로 이어진 이유는 무엇인가" data-tags="#인텔 #삼성전자 #TSMC #반도체" data-date="2024-09-08">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-09-08</div>
+      <div class="card-title">인텔이 1.8나노로 반도체 시장에 뛰어들었지만, 실패로 이어진 이유는 무엇인가</div>
+      <div class="card-tags"><span class="tag">#인텔</span><span class="tag">#삼성전자</span><span class="tag">#TSMC</span><span class="tag">#반도체</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 9월 기준, 인텔의 1.8나노 공정 도전은 예상 밖의 실패로 이어졌다. 미국 내 반도체 산업의 지원 우선순위가 인텔로 이동했지만, 과거의 성과 부족이 배경이 되었다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">인텔의 도전과 미국 정부의 지원</div><div class="para-body">인텔은 처음으로 1.8나노 공정에 도전하며 미국 정부의 지원을 받았다. 그러나 인텔의 과거 7나노 공정 실패가 걸림돌이 되며, 삼성전자와 TSMC는 이미 안정적인 생산 라인을 운영 중이다. 이러한 대조는 인텔의 경쟁력을 약화시키는 요인이 되었다.</div></div><div class="para"><div class="para-title">하이 NA EUV와 1.8나노의 불확실성</div><div class="para-body">인텔이 하이 NA EUV 장비를 도입했으나, 성공 가능성이 낮고 기존 EUV 장비로도 충분하다는 의견이 있다. TSMC는 하이 NA 도입을 연기하면서 인텔의 시도와 대비되는 전략을 유지하고 있어, 인텔의 불확실성이 더욱 부각되고 있다.</div></div><div class="para"><div class="para-title">시장 반응과 미래 전망</div><div class="para-body">인텔의 연이은 실패가 시장에서 비웃음을 사고 있으며, 앞으로의 전망도 어둡다. 2024년 3분기에는 적자 전환이 예상되며, 파운드리 사업부의 매각 이야기가 나오고 있다는 점에서 인텔의 위기는 지속되고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">인텔의 반도체 집중화가 실패했다면, 앞으로의 전략은 어떤 방향으로 가야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">인텔의 반도체 시장에서의 위치는 심각하게 흔들리고 있다. 과거의 실패를 교훈 삼아 새로운 경쟁력을 확보하지 않는 한, 지속적인 위기를 겪을 가능성이 높다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223570427399" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="우크라이나 전쟁이 촉발한 희귀가스 공급 전쟁, 한국은 어떻게 반응할까" data-tags="#희귀가스 #반도체 #SK하이닉스 #삼성전자 #중국" data-date="2024-09-30">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-09-30</div>
+      <div class="card-title">우크라이나 전쟁이 촉발한 희귀가스 공급 전쟁, 한국은 어떻게 반응할까</div>
+      <div class="card-tags"><span class="tag">#희귀가스</span><span class="tag">#반도체</span><span class="tag">#SK하이닉스</span><span class="tag">#삼성전자</span><span class="tag">#중국</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 9월 기준, 우크라이나 전쟁이 가져온 희귀가스 공급 불안정성이 한국 반도체 산업에 큰 영향을 미치고 있다. 아조우스탈 제철소의 파괴와 중국의 가격 인상 등 여러 변수들이 한국의 대응 전략을 재편하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">아조우스탈의 파괴와 희귀가스 부족</div><div class="para-body">우크라이나의 아조우스탈 제철소는 크립톤, 제논, 네온 등 희귀가스의 주요 공급원이었으나 전투로 완전히 파괴되었다. 이로 인해 한국 반도체 기업들은 중국에 의존하게 되며, 가격 인상이라는 새로운 문제에 직면하고 있다.</div></div><div class="para"><div class="para-title">중국의 가격 인상과 공급 불안정</div><div class="para-body">중국은 네온가스의 독점 공급자로서 가격을 10배 이상 올리며 시장을 교란하고 있다. 이러한 공급의존성은 삼성전자와 SK하이닉스의 경영에도 부담이 되어, 대체 공급원과 재활용 방안을 모색해야 하는 상황에 놓였다.</div></div><div class="para"><div class="para-title">한국 기업들의 대응 전략</div><div class="para-body">삼성전자와 SK하이닉스는 각각 네온가스 재활용 프로젝트를 진행하여, 2025년까지 필요한 물량의 75%를 재활용하겠다는 목표를 세우고 있다. 포스코는 희귀가스를 직접 생산하기 위한 공장을 착공하여 한국 내 자급을 목표로 하고 있으며, 이러한 노력이 성공할 경우 한국 반도체 산업의 위기 극복에 큰 도움이 될 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">희귀가스 공급 불안정 상황에서 한국 반도체 산업의 생존 전략은 무엇일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">한국 기업들이 재활용과 자급을 강화하는 방향으로 나아가는 한, 희귀가스 공급 위기는 장기적으로 해결될 가능성이 높다. 이러한 접근은 향후 공급망 안정성에도 기여할 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223596719781" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 12월 · 4개</div>
+  
+<div class="card" data-title="팔란티어가 러시아와 우크라이나 전쟁에서 AI를 이용해 전투를 주도하는 구조" data-tags="#팔란티어 #AI전쟁 #전쟁기술 #트럼프 #일론머스크" data-date="2024-12-03">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-12-03</div>
+      <div class="card-title">팔란티어가 러시아와 우크라이나 전쟁에서 AI를 이용해 전투를 주도하는 구조</div>
+      <div class="card-tags"><span class="tag">#팔란티어</span><span class="tag">#AI전쟁</span><span class="tag">#전쟁기술</span><span class="tag">#트럼프</span><span class="tag">#일론머스크</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 12월 기준, 팔란티어의 AI 프로그램 고담이 러시아-우크라이나 전쟁에서 전투의 패러다임을 변화시키고 있다. 전통적인 전투 방식에서 AI의 도입은 전투의 효율성과 정확성을 높이고 있으며, 이를 통해 우크라이나가 저비용으로 장애물을 극복하는 구조가 뚜렷해지고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">팔란티어 고담의 AI 활용</div><div class="para-body">우크라이나군이 팔란티어의 AI 프로그램 고담을 활용해 러시아의 군사 작전 정보를 실시간으로 분석하고 있다. 고담은 상용 인공위성, 열 감지기, 정찰 드론 데이터를 종합적으로 분석해 러시아 탱크와 포병의 위치를 직관적으로 제공한다. 현재 고담은 하루 평균 300개의 적 목표물을 찾아내고 있으며, 이는 우크라이나군의 최고 전략 자산으로 자리잡았다.</div></div><div class="para"><div class="para-title">팔란티어의 역사와 신뢰성</div><div class="para-body">팔란티어는 CIA와 FBI를 주요 고객으로 두고 있는 '비밀스러운 빅데이터 기업'으로 알려진 피터 틸의 기업다. 이 회사는 설립 초기부터 범죄 행위와 사이버 테러를 감지하기 위한 데이터 솔루션에 집중해 성장해왔다. 특히 911 테러와 관련된 분석 기술은 팔란티어의 신뢰성을 높이는 중요한 사례로 남아 있다.</div></div><div class="para"><div class="para-title">정치적 맥락에서 바라본 팔란티어의 현황</div><div class="para-body">팔란티어의 주가는 트럼프의 대통령 당선과 함께 급상승하고 있다. 이는 팔란티어의 기술이 국가 안보 강화에 기여하고 있다는 점에서 정치적 지지가 함께 작용한 결과로 볼 수 있다. 더불어, 일론 머스크와의 관계가 부각되며, AI 기술이 국방 예산의 중심으로 떠오르는 배경이 되고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">AI 기술이 전투에서 결정적인 역할을 하게 된다면, 향후 무기 체계의 구성은 어떻게 변화해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">AI 기술의 발전은 전통적인 무기 체계와의 통합을 요구한다. 따라서 이러한 변화에 대응하기 위해서는 AI 시스템의 효율성을 극대화하는 방향으로 전투 체계를 재편할 필요가 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223680068815" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="구글의 양자 우위, 이제 윌로우로 10셉틸리언년 문제도 해결?" data-tags="#양자컴퓨터 #구글 #윌로우 #양자우위" data-date="2024-12-20">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-12-20</div>
+      <div class="card-title">구글의 양자 우위, 이제 윌로우로 10셉틸리언년 문제도 해결?</div>
+      <div class="card-tags"><span class="tag">#양자컴퓨터</span><span class="tag">#구글</span><span class="tag">#윌로우</span><span class="tag">#양자우위</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 12월 기준, 구글이 발표한 양자 컴퓨터 '윌로우'는 10셉틸리언년 문제를 단 5분에 해결했다. 이는 기존 수퍼컴퓨터보다 비약적인 성능 개선을 의미하며, 에러 영역도 극복할 수 있는 가능성을 보여준다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">양자 컴퓨터의 기본 원리</div><div class="para-body">양자 컴퓨터는 양자 중첩과 양자 얽힘이라는 양자역학 이론을 활용하여 큐비트를 생성한다. 큐비트는 0과 1이 동시에 존재할 수 있어 기존 컴퓨터보다 병렬 처리가 가능하다. 이로 인해 양자 우위를 달성할 수 있다.</div></div><div class="para"><div class="para-title">구글의 성과와 경쟁</div><div class="para-body">큐비트 49개를 사용한 시커모어는 1만년이 걸리는 계산을 2분 30초 만에 수행한 바 있다. 그러나 IBM은 수퍼컴퓨터가 이를 이틀 만에 처리할 수 있다고 반박하며 경쟁우위를 주장했다. 구글의 최신 발표는 이러한 논란을 뛰어넘는 성과를 보여준다.</div></div><div class="para"><div class="para-title">미래의 가능성과 도전과제</div><div class="para-body">구글의 양자 컴퓨터는 알파큐빗이라는 오류 식별 시스템을 통해 에러를 줄일 수 있는 가능성을 가지고 있다. 만약 구글이 양자 컴퓨터를 상용화하는 데 성공한다면, 기존 컴퓨터로는 해결할 수 없는 문제를 해결할 수 있는 길이 열릴 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">구글의 윌로우가 기존 수퍼컴퓨터를 초월할 수 있는 가능성은 어느 정도일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">YES, 구글의 윌로우는 기존 수퍼컴퓨터의 성능을 크게 뛰어넘을 가능성이 높다. 비약적인 성능 개선은 새로운 혁신의 시작을 알릴 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223699243631" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국 반도체, 한국 기술 유출로 탄력 받는다" data-tags="#중국반도체 #창신메모리 #삼성전자 #기술유출" data-date="2024-12-24">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-12-24</div>
+      <div class="card-title">중국 반도체, 한국 기술 유출로 탄력 받는다</div>
+      <div class="card-tags"><span class="tag">#중국반도체</span><span class="tag">#창신메모리</span><span class="tag">#삼성전자</span><span class="tag">#기술유출</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 12월 기준, 한국의 반도체 인재들이 의대를 선호하는 흐름 속에서 중국은 전폭적인 정부 지원과 우수 인력이 몰리고 있는 상황이다. 이러한 배경에서 한국의 반도체 기술 유출 사건은 중국 반도체 산업에 새로운 기회를 제공하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">한국의 기술 유출 사건</div><div class="para-body">창신메모리에 입사한 삼성전자 전직 직원들 중 2명이 기밀 정보를 유출한 사건이 발생했다. 이 사건은 국정원이 정보를 입수한 뒤, 2023년 5월에 검찰에 수사를 의뢰했다. 기술 유출의 피해액은 수조원에 달하는 것으로 추정된다.</div></div><div class="para"><div class="para-title">중국의 반간첩법과 영향</div><div class="para-body">중국의 반간첩법에 따라 한국인이 구속된 사건이 발생함에 따라, 창신메모리에서 일어나는 정보 유출 사건은 더욱 주목받고 있다. 이는 한국과 중국 간의 반도체 전쟁이라는 측면에서도 중요한 성격을 가지게 된다.</div></div><div class="para"><div class="para-title">중국 반도체 업계 성장 추세</div><div class="para-body">중국의 반도체 업계는 인재 유치와 함께 급속히 성장하고 있으며, 신입사원 연봉도 2018년 대비 두 배로 상승했다. 이에 반해 한국는 고급 인재들이 의대를 선호하며 반도체 분야의 인력 충원이 어려워지고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국 반도체 시장의 급성장 속에서 한국의 기술 유출 사건은 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">한국에서의 기술 유출 사건은 중국의 반도체 경쟁력을 더욱 높일 수 있다. 반도체 분야에서의 한국과 중국 간 격차는 매우 빠르게 좁혀질 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223703137120" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국 반도체 성공 신화를 쏘아올리고, 화웨이가 주도할 수 있을까?" data-tags="#중국반도체 #화웨이 #삼성전자 #창신메모리" data-date="2024-12-24">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-12-24</div>
+      <div class="card-title">중국 반도체 성공 신화를 쏘아올리고, 화웨이가 주도할 수 있을까?</div>
+      <div class="card-tags"><span class="tag">#중국반도체</span><span class="tag">#화웨이</span><span class="tag">#삼성전자</span><span class="tag">#창신메모리</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 12월 기준, 중국은 반도체 굴기를 여전히 강화하고 있으며, 그 과정에서 화웨이가 중심적 역할을 하고 있다. 미국의 견제 속에서도 중국의 기술 독립과 새로운 반도체 기업의 성장은 계속되고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">반도체 굴기의 시작과 현재</div><div class="para-body">2018년 시진핑이 반도체 굴기를 선언한 이래, 기술 독립을 위한 노력은 가속화되었다. 미국의 수출 규제에도 불구하고 중국 정부의 지원 아래 화웨이가 대규모 반도체 기업으로 성장하고 있으며, 이를 통해 산업 기반이 더욱 견고해지고 있다.</div></div><div class="para"><div class="para-title">화웨이의 반도체 전략</div><div class="para-body">화웨이는 자신만의 반도체 생산라인을 구축하며 종합 반도체 회사로 변모하고 있다. 후공정을 전문으로 하는 자회사를 설립하고, 주요 반도체 설계회사인 하이실리콘을 강화해 나가고 있다. 이러한 발전은 중국의 기술 주권을 내세우는 데 기여하고 있다.</div></div><div class="para"><div class="para-title">창신메모리의 급성장</div><div class="para-body">창신메모리는 최근 DDR4 및 DDR5 메모리 생산에 성공하며 시장 점유율을 지속적으로 높이고 있다. 정부의 지원과 가격경쟁력을 무기로 하는 이 기업은 삼성전자와 SK하이닉스의 시장을 위협하고 있다. 창신메모리의 성장은 중국 반도체 산업의 미래 가능성을 보여준다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국과 경쟁 중인 삼성전자는 창신메모리의 성장을 어떻게 반격할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">중국 반도체 산업의 발전 속도가 잠재적인 위협이 될 수 있다. 이에 따른 삼성전자의 전략이 더욱 중요해진 상황이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223703089443" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 1월 · 4개</div>
+  
+<div class="card" data-title="DARPA의 비밀 프로젝트, 한국에 어떤 시사점을 주나?" data-tags="#DARPA #삼성전자 #레인보우로보틱스 #기술개발" data-date="2025-01-01">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-01-01</div>
+      <div class="card-title">DARPA의 비밀 프로젝트, 한국에 어떤 시사점을 주나?</div>
+      <div class="card-tags"><span class="tag">#DARPA</span><span class="tag">#삼성전자</span><span class="tag">#레인보우로보틱스</span><span class="tag">#기술개발</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 기준, DARPA는 미국의 국방 연구개발을 선도하면서 첨단 기술을 확보하는 중이다. 이 글은 DARPA의 주요 프로젝트와 그로 인한 파급 효과를 분석하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">DARPA의 역사와 역할</div><div class="para-body">DARPA는 2차 대전 후 미국이 첨단 무기 경쟁에서 우위를 점하기 위해 설립되었다. 그로부터 물리적 전투 기술 뿐만 아니라 인터넷, AI 등 다양한 혁신적 기술의 출발지가 되었다. 미국의 국방과 혁신 역량을 뒷받침하는 중요한 기관으로 자리 잡았다.</div></div><div class="para"><div class="para-title">DARPA의 프로젝트 성공 사례</div><div class="para-body">DARPA는 핵산 백신 개발에 있어 모더나와 협력하여 COVID-19 백신의 신속한 개발을 지원했다. 또한, 자율주행차 및 로봇 기술 개발 등에 투자하여 실제 전투와 산업에서의 활용 가능성을 높이고 있다. 이같은 성공 사례는 DARPA의 전략적 투자 방식이 가져오는 긍정적 결과를 보여준다.</div></div><div class="para"><div class="para-title">한국 기업에 주는 시사점</div><div class="para-body">한국은 DARPA와 같은 국가 차원의 연구개발 지원이 부족하지만, 민간 기업들이 기술 혁신 연계를 통해 성과를 내고 있다. 향후 한국도 장기적인 기술 개발에 대한 시각을 확장해야 할 필요성이 크다. 미국처럼 실패를 감수하고 도전하는 기업 생태계가 반드시 필요하다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">DARPA의 실패를 극복하고 성공하는 기술 혁신의 모델이 한국에도 적용될 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">YES, DARPA의 실패를 통해 얻은 교훈은 한국 기업들이 도전하는 데 중요한 자산이 될 수 있다. 장기적인 기술 투자와 실패를 용인하는 문화가 필요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223710592171" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="중국 AI, 14억 인구의 데이터로 챗GPT를 추월할 수 있을까?" data-tags="#AI #DeepSeek #ChatGPT #중국AI" data-date="2025-01-28">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-01-28</div>
+      <div class="card-title">중국 AI, 14억 인구의 데이터로 챗GPT를 추월할 수 있을까?</div>
+      <div class="card-tags"><span class="tag">#AI</span><span class="tag">#DeepSeek</span><span class="tag">#ChatGPT</span><span class="tag">#중국AI</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 1월 기준, AI 세계 패권전쟁은 심화되고 있으며, 특히 중국의 딥시크가 새로운 도전자로 부상하고 있다. 샘 올트먼의 발언과 오픈AI의 정치적 갈등, 중국의 데이터 정책까지 복합적인 요소들이 얽히고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">샘 올트먼과 오픈AI의 갈등</div><div class="para-body">샘 올트먼의 해고는 단순한 권력 다툼이 아닌 AGI 활용을 둘러싼 충돌을 반영한다. 올트먼은 '나쁜 사람들이 나쁜 AI를 만들기 전에 좋은 AI를 먼저 만들어야 한다'고 주장하며, 오픈AI의 목표가 수익화로 기울어졌다고 비판했다. 이는 AI 기술의 방향성이 무엇인지 다시금 생각하게 하는 요소다.</div></div><div class="para"><div class="para-title">중국의 데이터 전략과 AI 발전</div><div class="para-body">중국은 2022년부터 3년 동안 2천억 위안을 투자해 국가 데이터 허브를 만드는 중이다. 이를 통해 데이터의 표준화와 통제를 강화하고, 외부 데이터의 유출을 차단할 계획이다. 이러한 중앙집중형 정보 통제는 AI 개발에 큰 영향을 미친다.</div></div><div class="para"><div class="para-title">딥시크의 기술적 성과와 한계</div><div class="para-body">딥시크는 적은 비용으로 뛰어난 성능을 개발하고 있으며, 일부 성과는 오픈AI의 모델들을 초월하고 있다. 그러나 필터링된 데이터로 학습하는 한계가 존재하고, 특정 정보에 대한 편향 문제가 우려된다. 이런 한계가 실제로 딥시크의 능력에 어떤 영향을 미칠지는 앞으로의 관전 포인트다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국의 AI가 미국을 뛰어넘는 날이 올 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">가능성이 높다. 특히 중국은 데이터와 자원 면에서 유리하기 때문에, AI 발전이 가속화될 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223740031427" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="샘 올트먼 해고, AGI의 경계가 흔들린다" data-tags="#AI전쟁 #샘올트먼 #AGI #챗GPT" data-date="2025-01-28">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-01-28</div>
+      <div class="card-title">샘 올트먼 해고, AGI의 경계가 흔들린다</div>
+      <div class="card-tags"><span class="tag">#AI전쟁</span><span class="tag">#샘올트먼</span><span class="tag">#AGI</span><span class="tag">#챗GPT</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 1월 기준, AI 기술의 패권을 둘러싼 첨예한 갈등이 나타났다. 샘 올트먼이 오픈 AI에서 해고되는 사건이 발생하면서 그 배경에는 AGI의 위험성에 대한 우려가 자리하고 있다는 점이 주목된다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">샘 올트먼과 오픈 AI의 탄생</div><div class="para-body">샘 올트먼은 부유한 유대인 집안에서 태어나 스탠퍼드에서 컴퓨터 공학을 공부한 후, 소셜 네트워크 Loopt를 창립하였다. 그 후 Y Combinator의 사장이 되었고, 인공지능 연구기관인 오픈 AI를 설립했다. 오픈 AI는 비영리와 영리 기업으로 나뉘는 독특한 구조를 가지고 있다.</div></div><div class="para"><div class="para-title">AGI의 위험성과 해고 사건</div><div class="para-body">샘 올트먼이 AGI 기술 사용의 영리화 추진으로 오픈 AI에서 해고되었다. 이사회는 위험한 AGI의 존재를 우려하며 해고 사유로 이를 언급했다. 올트먼의 복귀는 AGI 개발이 인류의 안전과 지속 가능한 방향으로 나아가야 함을 강조한다.</div></div><div class="para"><div class="para-title">AGI에 대한 미래 전망</div><div class="para-body">앞으로 AI는 AGI에 도달할 가능성이 있으며, 이를 통제하는 얼라인먼트가 필요하다. 올트먼과 MS의 관계가 보다 맺어지면서, AGI에 대한 관리 및 규제가 더욱 중요해질 것이다. 이는 인류가 AI와 공존하기 위한 실질적인 방안을 찾는 과정으로 나아갈 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">AGI 시대에 이르면, 누구의 손에 AI의 통제가 놓이게 될까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">AGI의 도래는 인류에게 위협도 되지만, 동시에 혁신의 기회가 될 수 있다. 그러나 통제 문제는 근본적으로 해결해야 할 과제다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223739761028" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="양자통신이 양자컴퓨터보다 빠르게 상용화되고 있다는 증거" data-tags="#양자통신 #양자네트워크 #엔비디아 #젠슨황" data-date="2025-01-31">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-01-31</div>
+      <div class="card-title">양자통신이 양자컴퓨터보다 빠르게 상용화되고 있다는 증거</div>
+      <div class="card-tags"><span class="tag">#양자통신</span><span class="tag">#양자네트워크</span><span class="tag">#엔비디아</span><span class="tag">#젠슨황</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 1월 기준, 양자통신이 양자컴퓨터보다 상용화에 있어 훨씬 앞서 나가고 있다는 사실이 여러 연구와 기업의 움직임으로 확인되고 있다. 이는 정보 통신의 패러다임을 바꾸는 중요한 이정표가 될 것이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">양자 얽힘과 그 의미</div><div class="para-body">양자 얽힘은 두 입자가 서로 영향을 미치는 현상으로, 그 거리가 아무리 멀어도 즉시 연결된다. 이를 통해 정보 전달의 새로운 패러다임이 열리게 된다. 양자 정보 전송의 가능성은 '양자 인터넷'을 실현할 수 있는 기반이 된다.</div></div><div class="para"><div class="para-title">중국의 선도적 양자 기술</div><div class="para-body">중국은 양자암호통신에서 가장 앞서가고 있으며, '묵자'라는 양자 통신위성을 이용해 무선 양자 암호 통신에 성공하였다. 뿐만 아니라 여러 차례의 상용화 성과를 통해 양자 기술에 대한 신뢰성을 높이고 있다.</div></div><div class="para"><div class="para-title">미국과 EU의 대응 전략</div><div class="para-body">미국은 양자 전송과 네트워크 분야에서 앞서 나가고 있으며, 2022년도부터 국가 양자 인터넷 구축이 시작되었다. EU 또한 장기적인 퀀텀 투자 계획을 세우며 양자 암호 통신망을 구축 중이다. 이는 서방 국가들이 양자 기술 경쟁에서 빠르게 대응하고 있음을 보여준다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">양자통신의 상용화 속도가 빨라지는 가운데, 양자컴퓨터의 미래는 어떻게 전개될까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">양자통신이 빠르게 발전하고 있는 만큼, 양자컴퓨터의 상용화는 더욱 시간이 걸릴 가능성이 크다. 하지만 양자컴퓨터가 혁신적인 능력을 갖춘다면 결국 경쟁력을 갖출 수 있을 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223742398365" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 2월 · 1개</div>
+  
+<div class="card" data-title="미중 반도체 전쟁에서 엔비디아가 사용하는 '인해전술'은 무엇인가" data-tags="#반도체 #미국 #중국 #엔비디아" data-date="2025-02-01">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-02-01</div>
+      <div class="card-title">미중 반도체 전쟁에서 엔비디아가 사용하는 '인해전술'은 무엇인가</div>
+      <div class="card-tags"><span class="tag">#반도체</span><span class="tag">#미국</span><span class="tag">#중국</span><span class="tag">#엔비디아</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년을 맞아 미중 반도체 전쟁의 상황이 더욱 복잡해지고 있다. 미국의 규제를 피하기 위해 엔비디아는 저사양 칩을 활용해 중국 시장에서의 매출을 증가시켰고, 이는 중국의 반도체 성장을 저할 수 있는 전략으로 주목받고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국의 반도체 정책과 성과</div><div class="para-body">중국은 2015년 '중국 제조 2025' 계획을 세워 반도체 자급률을 높이고자 했으나, 실제 목표에 크게 미치지 못하고 있다. 2025년에는 목표 자급률인 70%에 비해 19.4%에 그칠 것으로 예상되며, 이로 인해 자국기업의 의존도가 여전히 높은 상황이다.</div></div><div class="para"><div class="para-title">엔비디아의 대중국 변혁</div><div class="para-body">미국의 규제 속에서 엔비디아는 성능이 낮은 A800을 개발하여 중국에 공급하였다. 이는 고성능 A100 칩의 수출을 피하면서도 매출을 유지하는 전략으로, 엔비디아는 이로 인해 중국 시장에서도 매출 증가를 기록하게 되었다.</div></div><div class="para"><div class="para-title">미국의 반도체 수출 규제 강화</div><div class="para-body">트럼프 행정부는 저사양 품목까지 수출 통제 범위를 확대하는 방안을 검토하고 있다. 이는 미국 기업의 이익을 보호하는 동시에 중국의 반도체 산업 성장을 저해하려는 의도로 보이며, 엔비디아는 이러한 변화를 예상하고 차기 GPU 모델에 대한 준비를 지속하고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">엔비디아가 저사양 반도체를 통한 매출 증가 전략을 지속할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">저사양 칩으로 중국 시장에서의 성과를 이어가는 한, 엔비디아는 이 전략을 지속할 가능성이 높다. 그러나 미국의 규제가 강화되면 그에 따른 대응이 필요할 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223742878807" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 4월 · 1개</div>
+  
+<div class="card" data-title="한미반도체가 SK하이닉스와 독점 거래를 끊고 보복에 나선 배경은?" data-tags="#한미반도체 #SK하이닉스 #TC본더 #소송" data-date="2025-04-19">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-04-19</div>
+      <div class="card-title">한미반도체가 SK하이닉스와 독점 거래를 끊고 보복에 나선 배경은?</div>
+      <div class="card-tags"><span class="tag">#한미반도체</span><span class="tag">#SK하이닉스</span><span class="tag">#TC본더</span><span class="tag">#소송</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 4월 기준, 한미반도체와 SK하이닉스 간의 독점 거래가 깨질 위험이 커지고 있다. 보복적인 가격 인상과 유지 보수 인력 철수가 그 신호탄이 되고 있으며, 한국 반도체 업계의 복잡한 이해관계가 그 배경을 설명한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">한미반도체와 SK하이닉스의 거래 역사</div><div class="para-body">한미반도체는 삼성전자와의 거래 종료 후, SK하이닉스를 고객으로 삼고 후공정 장비 시장에서 선두 자리를 차지하고 있다. 그러나 SK하이닉스의 공급망 다변화로 한미반도체의 독점이 깨지는 상황에 직면하게 되었다. 이 사건은 한미반도체의 매출에도 상당한 영향을 미칠 것으로 보인다.</div></div><div class="para"><div class="para-title">보복 조치의 실행</div><div class="para-body">한미반도체는 TC본더의 납품 가격을 25% 인상하는 한편, SK하이닉스에 상주하던 유지 보수 인력을 철수시키는 등 강력한 보복 조치를 취하고 있다. 이는 SK하이닉스로부터의 매출 의존도가 높은 한미반도체에게도 큰 리스크가 된다. 양사의 미래 관계는 여러 요인에 따라 달라질 가능성이 크다.</div></div><div class="para"><div class="para-title">미래의 불확실성과 반도체 시장의 긴장</div><div class="para-body">현재 한미반도체는 한화 세미텍과의 법적 갈등을 겪고 있으며, SK하이닉스와의 거래가 계속될지 불확실한 상황이다. 이러한 긴장 상태가 지속된다면 한국 반도체 업계 전반에 걸쳐 악영향을 미칠 수 있으며, 업계는 더욱 치열한 경쟁에 직면할 것으로 보인다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">한미반도체와 SK하이닉스의 갈등이 한국 반도체 생태계에 미칠 영향은 무엇인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">두 회사 간의 갈등은 반도체 시장의 미래에 악영향을 미칠 가능성이 크다. 특히 독점 공급에 대한 의존도가 높은 만큼, 공급망 다변화는 필수적으로 이루어져야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223838928676" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 6월 · 1개</div>
+  
+<div class="card" data-title="젠슨 황이 말하는 양자컴퓨터, 이제 실제 문제 해결이 가능해질까" data-tags="#양자컴퓨터 #양자통신 #젠슨황 #비트코인" data-date="2025-06-13">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-06-13</div>
+      <div class="card-title">젠슨 황이 말하는 양자컴퓨터, 이제 실제 문제 해결이 가능해질까</div>
+      <div class="card-tags"><span class="tag">#양자컴퓨터</span><span class="tag">#양자통신</span><span class="tag">#젠슨황</span><span class="tag">#비트코인</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 6월 기준, 양자 컴퓨터와 양자 통신 기술이 실용 단계에 접어들고 있다. 젠슨 황의 발언은 이 기술들이 실제 문제를 해결할 수 있는 날이 가까워진 것을 나타낸다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">양자역학의 이해</div><div class="para-body">양자역학의 근본 개념은 연속적이지 않다는 것이다. 원자는 전자가 궤도를 이동할 때 보이지 않게 사라졌다가 나타나는 형태로, 이는 양자의 세계에서의 특성을 보여준다. 이러한 이해는 양자 컴퓨터의 동작 원리를 이해하는 데 필수적이다.</div></div><div class="para"><div class="para-title">양자 통신의 발전</div><div class="para-body">양자 통신은 현재 세 가지 방향으로 상용화가 진행되고 있으며, 특히 중국이 양자 암호 통신에서 두각을 나타내고 있다. 양자 메시지는 겉으로 보기에는 통신 중 도청이 불가능하여, 이는 중요한 보안 기술로 자리잡고 있다.</div></div><div class="para"><div class="para-title">미국과 중국의 경쟁 구도</div><div class="para-body">미국은 양자 내성 암호 개발에 집중하고 있는 반면, 중국은 양자 암호키 분배 시스템 구축에 주력하고 있다. 양측은 각각의 기술력으로 주도권 싸움이 치열하다. 이 경쟁은 향후 세계 양자 통신 기술에 큰 영향을 미칠 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">양자 컴퓨터가 실제로 해결할 수 있는 문제가 무엇인지, 그것이 우리의 삶에 어떤 변화를 가져올 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">예, 양자 컴퓨터의 발달은 시작단계에서 실제 문제 해결로 이어질 것으로 보인다. 이는 기술의 진보에 따라 여러 산업에 큰 변화를 가져올 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223896918749" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 7월 · 5개</div>
+  
+<div class="card" data-title="아토초 과학이 반도체 혁신을 가져온다: SK하이닉스의 펨토초 그루빙" data-tags="#아토초 #펨토초 #SK하이닉스 #반도체" data-date="2025-07-11">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-07-11</div>
+      <div class="card-title">아토초 과학이 반도체 혁신을 가져온다: SK하이닉스의 펨토초 그루빙</div>
+      <div class="card-tags"><span class="tag">#아토초</span><span class="tag">#펨토초</span><span class="tag">#SK하이닉스</span><span class="tag">#반도체</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 7월 현재, 아토초 과학과 펨토초 기술의 발전은 반도체 산업에 큰 혁신을 일으키고 있다. SK하이닉스의 새로운 기술적 접근 방식은 생산성과 효율성을 높이는 데 중요한 역할을 하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">아토초 과학의 기본 개념</div><div class="para-body">아토초는 시간을 100경분의 1초로 나누는 단위로, 전자의 운동을 관찰하기 위한 핵심 기술이다. 미 에너지부에서 선정한 다섯 가지 Grand Challenges는 양자역학과 아토초 과학을 바탕으로 한 기술들이다. 이러한 기술들은 원자와 전자의 움직임을 실시간으로 연구할 수 있게 해준다.</div></div><div class="para"><div class="para-title">펨토초 기술의 적용</div><div class="para-body">SK하이닉스의 펨토초 그루빙 기술은 레이저를 활용하여 웨이퍼를 정밀하게 절단하는 방식으로, 기존 방식보다 수율을 높이는 데 기여할 것으로 기대된다. 반도체 웨이퍼의 두께가 얇아짐에 따라 새로운 절단 방법의 필요성이 강조되고 있다. 이러한 혁신은 벨류 체인을 개선하고 시장에서 경쟁력을 갖추는 데 중요한 요소가 될 것이다.</div></div><div class="para"><div class="para-title">아토초 과학의 미래</div><div class="para-body">아토초 과학은 반도체, 의학, 군사 등 다양한 분야에서 혁신적인 변화를 이끌 것으로 전망된다. 아토초 펄스를 이용한 정밀한 관찰이 가능해짐에 따라, 새로운 물질 개발 및 기존 시스템의 혁신이 촉진될 것이다. 이러한 기술들이 상용화된다면, 산업 전반에서 큰 패러다임 시프트가 일어날 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">아토초 기술이 반도체 산업의 미래를 어떻게 변화시킬까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">아토초 기술은 산업 전반에 걸쳐 혁신을 가져올 것이다. 특히 반도체 분야에서는 생산성과 정밀도를 높일 것으로 예상된다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223928647296" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="Naxtra 전시 확인·중국 나트륨 기술 수출 제한 — SK온 '전환 불가피' 발언" data-tags="#나트륨이온배터리 #CATL #Naxtra #노스볼트 #SIB #중국수출제한" data-date="2025-07-21">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-07-21</div>
+      <div class="card-title">Naxtra 전시 확인·중국 나트륨 기술 수출 제한 — SK온 '전환 불가피' 발언</div>
+      <div class="card-tags"><span class="tag">#나트륨이온배터리</span><span class="tag">#CATL</span><span class="tag">#Naxtra</span><span class="tag">#노스볼트</span><span class="tag">#SIB</span><span class="tag">#중국수출제한</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 7월, CATL 나트륨 배터리 현황을 중간 점검한다. 25년 4월 '성능 마사지' 우려를 열어뒀는데, 7월 18일 베이징 엑스포에서 납산 대체용 Naxtra가 예고한 일정대로 공개됐다. 같은 날 중국 정부는 나트륨이온 배터리 기술을 국가 수출 제한 목록에 올렸고, SK온 사장이 '나트륨 전환 불가피'를 언급했다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">Naxtra 공개 — 납산 교체 주기 3년→8년, 저온 1년 방치 후 시동</div><div class="para-body">CATL은 7월 18일 제3회 중국 국제공급망 엑스포에서 납산 배터리 대체용 Naxtra를 전시했다. 수명 8년(납산 3년), 1년 방치 후에도 정상 시동, 영하 40도~영상 70도 정상 작동이 특징이다. 가격은 납산보다 70% 비싸지만 수명이 길어 총비용은 납산의 61% 수준이라는 계산이다. 전기차용 Naxtro는 12월 출시 예정으로 8년 수명·충방전 1만 회를 보장한다고 밝혔다.</div></div><div class="para"><div class="para-title">글로벌 SIB 경쟁 — 노스볼트 550억달러 선주문, 유럽·미국도 진입</div><div class="para-body">CATL만이 아니다. 스웨덴 노스볼트가 160Wh/kg급 나트륨 배터리를 개발해 550억달러 선주문을 확보했다. 영국 Faradion(Reliance 인수), 프랑스 TIAMAT Energy, 미국 Natron Energy도 시장에 진입했다. 한국에서도 SIB 세미나(에코프로비엠·카이스트·에너지11 발표)가 열렸고, '대규모 양산 시 LFP 대비 24% 저렴한 가격 달성 가능'이라는 발표가 주목받았다. 글로벌 SIB 경쟁이 본격화되고 있다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">SIB(Sodium-ion Battery)</span>나트륨이온 배터리의 영문 약어. 기존 삼원계 배터리 양극재 생산 설비를 그대로 활용할 수 있어 전환비용이 적다.</div></div></div><div class="para"><div class="para-title">중국 기술 수출 제한과 SK온의 긴장</div><div class="para-body">7월 15일 중국 상무부·과학기술부는 나트륨이온 배터리 관련 기술을 국가 경제 안보·발전이익 수호 수출 제한 목록에 올렸다. 전기차용 양극재 제조 기술, 리튬 채굴·정제 기술, 희토류 제련 기술도 함께 포함됐다. 같은 날 SK온 이석희 사장은 비공식 자리에서 '나트륨으로 전환하지 않으면 중국의 압박을 감당하기 어렵다'고 발언했다. LG에너지솔루션은 2030년 이전 상용화를 목표로 하고 있다.</div><div class="annotations"><div class="annotation"><span class="ann-type">맥락</span>중국이 기술 수출을 제한하면서 CATL 생태계 외부에서 나트륨 배터리 기술을 독자 개발해야 하는 한국 업계의 비용과 시간이 늘어난다.</div></div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국 정부의 나트륨 기술 수출 제한이 한국 이차전지 업계의 독자 개발을 강제하는 계기가 되는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">강제하는 계기는 맞지만 시간이 문제다. 중국이 기술 이전을 막으면 한국은 독자 경로로 가야 하는데, LG에너지솔루션의 2030년 목표는 CATL 양산 시점에서 5년 후행이다. 독자 개발을 강제받더라도 그 격차가 줄어들 수 있는지는 기술 투자 속도에 달려 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223940014208" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="삼성이 3나노에서 수율을 잡지 못해 TSMC에 뒤처지게 될 위험" data-tags="#삼성전자 #TSMC #3나노 #반도체" data-date="2025-07-29">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-07-29</div>
+      <div class="card-title">삼성이 3나노에서 수율을 잡지 못해 TSMC에 뒤처지게 될 위험</div>
+      <div class="card-tags"><span class="tag">#삼성전자</span><span class="tag">#TSMC</span><span class="tag">#3나노</span><span class="tag">#반도체</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 7월 기준, 삼성전자의 3나노 수율 문제가 심각한 상황에 직면해 있다. TSMC와의 경쟁에서 기술 우위를 확보하기 위한 전략이 붕괴되고 있으며, 부적절한 수율 관리가 향후 시장 지배력에 악영향을 미칠 수 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">삼성의 기술 우위 전략</div><div class="para-body">삼성전자는 당장의 수익을 포기하고 기술 우위를 추구하는 전략을 세웠다. 공정 개발 후 양산 전환을 신속하게 하여 연속적으로 다음 공정 개발에 착수하는 것이 이 전략의 핵심이다. 이는 업계의 반도체 성능 향상 흐름에 발맞춘 것으로, 특히 나노 공정의 발전에서 두드러진다.</div></div><div class="para"><div class="para-title">3나노 수율 위기</div><div class="para-body">삼성이 3나노 공정에 진입하려는 시도가 있었으나 고질적인 수율 문제에 시달리고 있다. 수율이 낮다는 점은 불량품이 많다는 의미로, 이는 고객들에게 신뢰를 잃게 만들 수 있다. 삼성은 양산을 시작하기는 했지만 수율을 올리지 못하고 시험 생산이라는 새로운 표현을 쓰게 되었다.</div></div><div class="para"><div class="para-title">TSMC의 대응전략</div><div class="para-body">TSMC는 3나노 공정을 여러 단계로 나누어 적용하겠다고 밝히며, 각 고객의 니즈에 맞춘 제품을 단계적으로 공급하겠다는 계획을 세웠다. 이는 성능 변화가 느린 삼성과는 대조적인 전략으로, TSMC의 우위를 반복적으로 강화할 가능성을 높인다. 결과적으로 삼성이 TSMC에 뒤처질 위험이 존재한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">삼성이 수율 문제를 해결하지 못할 경우 TSMC에 시장에서 완전히 추월당할 가능성은 얼마나 될까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">삼성전자가 3나노 수율을 확보하지 못하면 TSMC와의 격차가 더욱 벌어질 것이다. 이는 결국 삼성의 시장 점유율에 심각한 영향을 미치게 된다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223951258353" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="삼성이 대세 반도체 시장에서 TSMC를 따라잡기 위해 필요한 전략은?" data-tags="#삼성전자 #TSMC #반도체 #파운드리" data-date="2025-07-29">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-07-29</div>
+      <div class="card-title">삼성이 대세 반도체 시장에서 TSMC를 따라잡기 위해 필요한 전략은?</div>
+      <div class="card-tags"><span class="tag">#삼성전자</span><span class="tag">#TSMC</span><span class="tag">#반도체</span><span class="tag">#파운드리</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 7월 기준, 삼성전자는 파운드리 사업 진출 이후 TSMC를 따라잡기 위해 여러 전략을 모색 중이다. 기술적 차이와 투자 규모의 격차로 인해 삼성의 도전은 쉽지 않지만, 시장의 변화를 반영한 전략이 그 해답이 될 수 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">삼성의 반도체 역사와 기술 선택</div><div class="para-body">삼성전자는 1987년에 일본 반도체 회사들과의 경쟁에서 스택 방식의 D램 개발을 선택하여 경쟁 우위를 점했다. 이건희 회장의 결정은 수율을 높이는 데 기여하였으며, 이는 삼성의 메모리 반도체 시장 장악에 중요한 요소가 됐다.</div></div><div class="para"><div class="para-title">메모리와 비메모리 시장의 변화</div><div class="para-body">반도체 시장은 D램 등 메모리 반도체에서 시스템 반도체로 방향을 전환하고 있다. 비메모리 시장에서는 CPU와 AP 같은 시스템 반도체의 비중이 점차 높아지며, 삼성은 이 분야에서도 성장 기회를 모색하고 있다.</div></div><div class="para"><div class="para-title">삼성과 TSMC 간의 투자 격차</div><div class="para-body">TSMC는 자본력으로 삼성의 투자를 초과할 만큼의 규모로 반도체 시장에 투자하고 있다. 삼성은 다른 사업 부문의 이익을 활용해 파운드리 사업에 자금을 조달하고 있지만, 이 연장선에서 한계에 봉착할 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">삼성이 TSMC와의 기술 격차를 좁히기 위해 가장 먼저 해결해야 할 문제는 무엇인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">삼성은 기술 격차를 빨리 좁혀야 한다. 계속해서 다른 사업부의 이익을 사용하는 것은 지속 가능하지 않기 때문이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223951228120" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="삼성전자, 테슬라와의 AI6 칩 수주로 새로운 기회를 잡다" data-tags="#삼성전자 #테슬라 #AI6 #반도체" data-date="2025-07-30">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-07-30</div>
+      <div class="card-title">삼성전자, 테슬라와의 AI6 칩 수주로 새로운 기회를 잡다</div>
+      <div class="card-tags"><span class="tag">#삼성전자</span><span class="tag">#테슬라</span><span class="tag">#AI6</span><span class="tag">#반도체</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 7월 기준, 삼성전자가 드디어 테슬라의 차세대 AI6 칩을 수주하게 되었다는 소식이 전해졌다. 이로 인해 미국 텍사스의 테일러 공장에서 진행될 반도체 생산에 큰 변화가 예상된다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">삼성전자의 3나노 수율 문제</div><div class="para-body">삼성전자는 3나노 수율을 확보하지 못하면서 평택공장에서의 생산에 지장이 생기기 시작했다. 이는 평택 4공장에서 2025년에 2나노 공정을, 2027년부터는 1.7나노 공정을 양산하겠다는 계획에 심각한 영향을 미치고 있다.</div></div><div class="para"><div class="para-title">테슬라의 선택과 삼성의 전략</div><div class="para-body">테슬라가 AI6 칩의 공급처로 삼성전자를 선택한 이유 중 하나는 TSMC에서의 불만족이었다. 일론 머스크는 TSMC의 갑질에서 벗어나기 위해 삼성전자와의 협업을 결정했으며, 이를 통해 삼성전자는 테일러 공장에서의 생산을 가속화할 것으로 보인다.</div></div><div class="para"><div class="para-title">미국의 반도체 공장 환경</div><div class="para-body">삼성전자는 미국 텍사스에 위치한 테일러 2공장을 통해 대규모 반도체 생산을 계획하고 있다. 그러나 고객 확보의 어려움과 생산 일정 지연으로 인해 공장 운영에 차질이 생기고 있다. 이러한 상황에서도 테슬라와의 협력을 통해 새로운 가능성을 만들어가고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">삼성전자가 테슬라와의 협력을 통해 얻는 경쟁력은 무엇일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">삼성전자는 테슬라와의 협력을 통해 생산 규모와 기술력 확보의 기회를 잡았다. 향후 수익성과 시장 점유율 확대에 긍정적인 영향을 미칠 것으로 기대된다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223951301937" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 8월 · 2개</div>
+  
+<div class="card" data-title="대만의 전력 부족, TSMC와 반도체 경쟁력에 미치는 영향은?" data-tags="#대만 #TSMC #전기요금 #반도체" data-date="2025-08-07">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-08-07</div>
+      <div class="card-title">대만의 전력 부족, TSMC와 반도체 경쟁력에 미치는 영향은?</div>
+      <div class="card-tags"><span class="tag">#대만</span><span class="tag">#TSMC</span><span class="tag">#전기요금</span><span class="tag">#반도체</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 8월 기준, 대만의 상호관세가 20%로 설정되면서 TSMC와의 관계가 주목받고 있다. 전기 부족 상황 속에서 반도체 산업의 경쟁력은 심각한 도전에 직면해 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">TSMC의 위탁 생산 구조</div><div class="para-body">TSMC는 반도체를 위탁 생산하는 모델로 고객과 경쟁하지 않겠다는 원칙을 세웠다. 이로 인해 애플과 같은 고객사들은 안심하고 TSMC에 위탁할 수 있으며, 이는 TSMC의 성장에 기여하게 된다. 후발 기업들이 TSMC와 같은 방식을 통해 역량을 쌓는 과정도 다수 존재한다.</div></div><div class="para"><div class="para-title">전력의 중요성과 대만의 현황</div><div class="para-body">TSMC의 성장이 전력 수요를 증가시키고 있으며, 이로 인해 대만 전체의 전력 예비율은 7%로 낮아졌다. 탈원전 정책으로 대만의 전미 발전량은 감소하고 있으며, LNG 의존도가 높아져 전력 부족 현상이 심각해지고 있다.</div></div><div class="para"><div class="para-title">산업 경쟁력과 중국의 해양 봉쇄</div><div class="para-body">대만은 전기 요금과 전력 부족으로 산업 경쟁력에 심각한 영향을 받게 될 것이다. 중국의 해양 봉쇄가 이루어진다면 LNG 의존 체계로 인해 대만은 에너지 위기에 직면할 수밖에 없다. 이는 국가안보에도 큰 위협 요소가 될 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">대만의 전력 부족이 TSMC의 반도체 경쟁력에 어떤 리스크를 초래할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">전력 부족 상황에서 TSMC의 경쟁력이 저하될 가능성이 크다. 이대로 간다면 반도체 산업의 미래는 불투명해질 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223961368566" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="BYD 아토3 한국 출시 — B2B 택시·렌터카부터, 어피니티의 렌터카 1·2위 인수" data-tags="#BYD #아토3 #중국전기차 #한국렌터카 #어피니티 #B2B전략" data-date="2025-08-17">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-08-17</div>
+      <div class="card-title">BYD 아토3 한국 출시 — B2B 택시·렌터카부터, 어피니티의 렌터카 1·2위 인수</div>
+      <div class="card-tags"><span class="tag">#BYD</span><span class="tag">#아토3</span><span class="tag">#중국전기차</span><span class="tag">#한국렌터카</span><span class="tag">#어피니티</span><span class="tag">#B2B전략</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 8월, BYD가 한국 전기차 시장에 공식 진출하며 아토3를 출시했다. 소형 SUV 아토3는 3,150만원(보조금 적용 시 2천만원대)으로 코나 일렉트릭 대비 1천만원 이상 저렴하지만, 주행거리(321km)와 배터리 용량(60.48kWh)은 뒤처진다. BYD는 중국차 부정 이미지를 감안해 택시·렌터카 B2B 시장을 먼저 공략한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">아토3 스펙과 가격 포지셔닝</div><div class="para-body">BYD 아토3는 일반 3,150만원·플러스 3,300만원으로 출시됐다. 전기차 보조금 적용 시 2천만원대 구매가 가능하다. 1회 충전 주행거리 321km로, 코나 일렉트릭(64.8kWh·406km·4,152~4,992만원)에 비해 성능은 떨어지지만 가격 차이가 크다. 안전성 측면에서는 유로 NCAP 별 5개를 받았고, 한국 내 12개 A/S 센터를 설립할 예정이다. 브랜드 인식 문제는 구조적으로 해소하기 어렵다—주변인에게 중국차 설명을 해야 하는 상황이 소유자에게 심리적 부담이 된다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">유로 NCAP</span>유럽의 신차 안전성 평가 프로그램. 별 5개가 최고 등급이며, 글로벌 판매를 위한 신뢰도 지표로 활용된다.</div></div></div><div class="para"><div class="para-title">B2B 전략 — 택시와 렌터카를 먼저 공략</div><div class="para-body">BYD는 개인 소비자보다 택시·렌터카 B2B 채널을 먼저 노린다. 법인택시 하루 250~300km, 개인택시 200km 기준으로 321km 주행거리는 간들간들하지만 시도해볼 만하다. 렌터카 중에서는 제주도가 핵심이다. 제주도는 관광 목적 하루 운전 거리가 150~200km이고, 6천 개 이상의 전기차 충전소가 있어 단거리 렌터카로 적합하다. 잠깐 빌리는 용도라면 중국차 거부감이 개인 구매보다 낮다. BYD는 롯데렌탈·SK렌터카와 협업을 추진하고 있다.</div></div><div class="para"><div class="para-title">어피니티의 렌터카 1·2위 동시 인수 — 중국계 자본 논란</div><div class="para-body">2024년 사모펀드 어피니티에쿼티파트너스가 SK렌터카(2위) 지분 100%를 8,200억원에 인수했고, 2025년에는 롯데렌탈(1위) 지분 56.2%를 1조 6,000억원에 인수했다. 한국 렌터카 1·2위가 동일한 사모펀드로 넘어간 것이다. 어피니티 창업주가 말레이시아 화교 탕콕유여서 '중국계 자본'이라는 프레임이 형성됐다. 어피니티는 글로벌 사모펀드라며 강하게 반박하고 있지만, BYD의 렌터카 협업 추진과 맞물려 시장에서 연결해 보는 시각이 생겼다.</div><div class="annotations"><div class="annotation"><span class="ann-type">맥락</span>어피니티의 렌터카 인수와 BYD 협업이 의도적 연결인지는 불명확하다. 그러나 결과적으로 BYD가 한국 렌터카 1·2위 채널을 통해 B2B 시장을 빠르게 파고들 수 있는 구조가 만들어진 것은 사실이다.</div></div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">BYD의 B2B 진출이 한국 내연기관·전기차 시장의 구조적 변화를 이끌 수 있는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">단기에 구조적 변화를 만들기는 어렵다. 주행거리·브랜드 인식·A/S 신뢰 문제가 남아 있고, 321km 주행거리는 택시 영업에도 빠듯하다. 관전포인트는 택시·렌터카 사용경험이 개인 구매로 연결되는지다—B2B 체험을 통해 거부감이 낮아지면 다음 단계가 달라질 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223973011829" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 10월 · 2개</div>
+  
+<div class="card" data-title="양자컴퓨터로 50배 오른 주식, 노벨 물리학상이 불러온 변화는 무엇인가" data-tags="#양자컴퓨터 #노벨물리학상 #큐비트 #투자기회" data-date="2025-10-09">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-10-09</div>
+      <div class="card-title">양자컴퓨터로 50배 오른 주식, 노벨 물리학상이 불러온 변화는 무엇인가</div>
+      <div class="card-tags"><span class="tag">#양자컴퓨터</span><span class="tag">#노벨물리학상</span><span class="tag">#큐비트</span><span class="tag">#투자기회</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 10월 기준, 노벨 물리학상 수상이 양자컴퓨터와 관련된 기술적 노력을 인정받았다. 이는 주식 시장에서 높은 관심으로 이어졌고, 주가는 1년 만에 50배 상승했다. 기술적 진보가 어떻게 시장에 영향을 미치는지를 잘 보여주는 사례다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">양자역학의 실제적 성과</div><div class="para-body">노벨 물리학상 수상자들은 양자역학을 공학적으로 활용하기 위한 실험을 1980년대에 수행하였다. 그들은 절연층을 통과하는 전자의 양자 터널링 현상을 밝혀내면서 초전도체 회로를 개발하였고, 이는 이후의 양자컴퓨터 설계에 기초가 되었다. 이 기술이 양자컴퓨터라는 혁신적인 장비의 출발점이 된 것이다.</div></div><div class="para"><div class="para-title">양자 중첩과 얽힘의 중요성</div><div class="para-body">양자컴퓨터의 기본 원리는 중첩과 얽힘이다. 큐비트는 0과 1의 상태를 동시에 가질 수 있으며, 하나의 큐비트 상태가 결정되면 연결된 다른 큐비트의 상태도 즉시 결정된다. 이로 인해 양자컴퓨터는 기존 컴퓨터보다 방대한 연산 능력을 발휘할 수 있다.</div></div><div class="para"><div class="para-title">소프트웨어와 하드웨어의 발전</div><div class="para-body">구글은 양자컴퓨터의 오류 인식 시스템인 알파큐빗을 개발하여 데이터를 안정적으로 처리하는 길을 열었다. 이를 통해 양자컴퓨터의 상용화 가능성이 높아지고 있으며, 양자 우위를 달성한 실험 결과 또한 주목받고 있다. 이러한 기술 발전이 주식 시장에도 긍정적인 영향을 미쳤다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">양자 컴퓨터가 상용화된다면, 시장에 미치는 영향은 어떤 변화로 이어질까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">양자컴퓨터의 발전은 기술 산업뿐만 아니라 전체 경제에 큰 영향을 미칠 가능성이 높다. 혁신적인 계산 능력과 데이터 처리 방식이 새로운 투자 기회를 창출할 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224034921131" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="양자컴퓨터의 시대가 성큼 다가왔다 — 구글의 윌로우는 한계를 뛰어넘었다" data-tags="#양자컴퓨터 #구글 #윌로우 #양자우위" data-date="2025-10-28">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-10-28</div>
+      <div class="card-title">양자컴퓨터의 시대가 성큼 다가왔다 — 구글의 윌로우는 한계를 뛰어넘었다</div>
+      <div class="card-tags"><span class="tag">#양자컴퓨터</span><span class="tag">#구글</span><span class="tag">#윌로우</span><span class="tag">#양자우위</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 10월 기준, 구글의 양자컴퓨터 윌로우가 현실의 계산 문제를 해결하며 양자 컴퓨터의 상용화 가능성을 선보이고 있다. 구글은 10셉틸리언년이 걸리는 계산을 5분 만에 수행하며 두 가지 혁신을 이뤘다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">양자컴퓨터의 혁신적 성능</div><div class="para-body">양자컴퓨터는 큐비트를 이용해 병렬 처리를 통해 기존 컴퓨터의 성능을 뛰어넘는다. 구글의 연구진은 윌로우에서 49개의 큐비트를 사용해 10자년이 걸리는 계산을 2시간 만에 수행한 결과를 발표했다. 이는 양자컴퓨터의 상용화 가능성을 실질적으로 보여주는 성과이다.</div></div><div class="para"><div class="para-title">오류 인식 기술의 발전</div><div class="para-body">구글은 알파큐빗 시스템을 개발하여 오류를 획기적으로 인식하고 제거하는 기술을 선보였다. 이는 양자컴퓨터가 기존 컴퓨터의 한계를 극복하는 데 필수적인 기술로, 에러율 감소에 기여하는 것으로 보여진다. 이러한 기술 발전은 양자 컴퓨터의 안정성을 높이는 중요한 요인이다.</div></div><div class="para"><div class="para-title">양자컴퓨터의 상용화 예고</div><div class="para-body">구글은 양자컴퓨터를 신약 개발 등 여러 분야에 응용할 계획을 밝힘으로써 연구의 상용화를 시도하고 있다. 이는 양자컴퓨터가 단순한 실험실의 도구가 아닌, 실제 산업에 투입될 수 있는 시기가 다가오고 있음을 시사한다. 양자컴퓨터의 실질적인 활용이 기대되는 시점이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">양자컴퓨터가 상용화된다면, 기존 컴퓨터가 지닌 한계는 어떻게 극복될 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">양자컴퓨터는 기존 컴퓨터의 성능을 압도하며 신약 개발과 같은 분야에 혁신을 가져올 수 있다. 이는 향후 기술의 발전 방향을 근본적으로 바꿀 가능성이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224055055179" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 11월 · 2개</div>
+  
+<div class="card" data-title="CATL 나트륨 배터리 국가인증 통과·Naxtra 8년 수명 — 중국 정부·기업 공조 구도" data-tags="#나트륨이온배터리 #CATL #Naxtra #중국배터리안전표준 #GB38031 #SK온" data-date="2025-11-05">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-11-05</div>
+      <div class="card-title">CATL 나트륨 배터리 국가인증 통과·Naxtra 8년 수명 — 중국 정부·기업 공조 구도</div>
+      <div class="card-tags"><span class="tag">#나트륨이온배터리</span><span class="tag">#CATL</span><span class="tag">#Naxtra</span><span class="tag">#중국배터리안전표준</span><span class="tag">#GB38031</span><span class="tag">#SK온</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 11월, CATL 나트륨 배터리의 중간 점검을 업데이트한다. 25년 4월 발표 당시 '성능 마사지' 우려가 있었는데, CATL은 국가 강제 표준인증(GB 38031-2025)을 통과했다고 공시했다. 전기차용 나트륨 배터리(Naxtro)의 12월 출시를 앞두고 납산 대체용 Naxtra가 전시됐고, 중국 정부는 나트륨 배터리 기술을 수출 제한 목록에 추가했다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국 정부 강제 안전표준 — 사전경보에서 무발화·무폭발로</div><div class="para-body">25년 4월 중국 공업정보화부는 '전기자동차용 동력 축전지 안전 요구사항'이라는 강제성 국가 표준을 발표했다. 2026년 7월 1일부터 신형 전기차에 적용되며, 기존 전기차는 2027년 7월까지 통과 필요다. 핵심은 세 가지 강화다. 첫째, 열폭주 테스트: 외부가열·바늘찔림·내부가열을 모두 통과해야 하고, 합선 발생 시에도 2시간 동안 60도 이상 상승 금지. 기존 표준이 '발화 5분 전 경보'(탈출 시간 확보)였다면, 이번은 발화·폭발 자체 금지다. 둘째, 바닥충격(150J·3회). 셋째, 300회 이상 고속충전 후 발화·폭발 없음. CATL은 이 표준 통과를 공시했고, 나트륨 배터리가 국가표준인증(GB 38031-2025)을 받았다고 발표했다.</div><div class="annotations"><div class="annotation"><span class="ann-type">맥락</span>CATL이 중국 정부 표준 발표와 맞물려 인증 통과를 공시하는 타이밍이 공조처럼 보인다. 정부 표준이 CATL 나트륨 배터리 사양에 맞춰 설계됐다는 해석이 가능하다.</div></div></div><div class="para"><div class="para-title">Naxtra vs Naxtro — 납산 대체와 전기차용 이원화</div><div class="para-body">CATL은 나트륨 배터리 제품군을 두 줄기로 나눴다. Naxtra는 기존 내연기관 자동차 납산 배터리 대체용이다. 수명 8년(납산 3년), 1년간 방치 후에도 정상 시동, 영하 40도~영상 70도 정상 작동, 납산보다 70% 비싸지만 수명이 길어 총비용은 61% 수준이라는 계산이다. Naxtro는 전기차용으로 12월 출시 예정이고, 8년 이상 수명과 충방전 1만 회를 보장한다고 발표됐다. 다만 9월 공시에서 스펙이 조정됐다—충방전 1만 회가 3,000회 초과로, 저온 효율이 -40도에서 90% 이상에서 -20도에서 85% 이상으로 수정됐다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">납산 배터리</span>내연기관·전기차 모두에 탑재되는 보조 배터리. 시동·블랙박스·전장부품용 전원 공급. 수명 약 3년으로 교체 주기가 짧다.</div></div></div><div class="para"><div class="para-title">나트륨 기술 수출 제한과 한국 업계 반응</div><div class="para-body">25년 7월 15일 중국 상무부·과학기술부는 '국가 경제 안보와 발전이익 수호를 위한 수출 금지·제한 기술 목록'에 나트륨이온 배터리 관련 기술, 전기차용 양극재 제조 기술, 리튬 채굴·정제 기술 등을 포함시켰다. 기술 유출 차단과 동시에 CATL 중심 공급망을 고착화하는 전략이다. SK온 사장은 비공식 자리에서 '나트륨으로 전환하지 않으면 중국의 압박을 감당하기 어렵다'고 발언했다. LG에너지솔루션은 2030년 이전 상용화를 목표로 하고 있으나, CATL의 12월 양산에 비해 5년 후행이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국 정부의 기술 수출 제한과 CATL 독주 구도가 한국 이차전지 업계에 탈출구를 남겨두는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">LFP 영역에서는 탈출구가 좁아지고 있다. 중국이 나트륨 배터리 기술을 수출 제한 목록에 넣은 것은 CATL 중심 LFP→나트륨 전환 생태계를 외부 참여자가 모방하기 어렵게 만드는 조치다. 삼원계 프리미엄 시장 집중이 한국의 현실적 대응이지만, LFP 시장이 무너지면 그 압박이 삼원계로 이어진다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224064288282" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="달파가 양자컴퓨터 개발을 향한 진전을 이끌고 있다" data-tags="#양자컴퓨터 #달파 #DARPA #기술혁신" data-date="2025-11-11">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-11-11</div>
+      <div class="card-title">달파가 양자컴퓨터 개발을 향한 진전을 이끌고 있다</div>
+      <div class="card-tags"><span class="tag">#양자컴퓨터</span><span class="tag">#달파</span><span class="tag">#DARPA</span><span class="tag">#기술혁신</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 11월, 달파가 선도하는 양자컴퓨터 개발 프로젝트가 승인됐다. 이는 고난이도의 오류수정 기술을 목표로 하며, 성공 시 산업적으로 유용한 양자컴퓨터 구현 가능성을 열어줄 수 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">둔감한 산업과 민간의 투자</div><div class="para-body">달파의 신규 프로젝트인 퀀텀 벤치마킹 이니셔티브(QBI)는 장기 연구과제로 많은 관심을 받고 있다. 하지만 민간기업은 단기 성과를 중시하여 연구개발 투자에 망설임이 크고, 이 때문에 장기적인 연구가 지연될 우려가 있다.</div></div><div class="para"><div class="para-title">양자컴퓨터의 높은 기술 장벽</div><div class="para-body">양자컴퓨터는 환경에 민감하여 오류가 발생하기 쉬운 어려운 기계이다. 이에 대한 오류수정 기술은 필수적이지만, 실현하기 어려운 이론적 과제를 동반한다. 달파의 프로젝트가 다루는 주제가 바로 이러한 고차원의 기술적 도전이다.</div></div><div class="para"><div class="para-title">IBM과 아이온Q의 협력</div><div class="para-body">IBM은 2024년부터 오류수정 연구에 참여하며, 전통적인 컴퓨터 제조업체와의 협업을 통해 양자컴퓨터의 상용화에 나선다. 이러한 협력으로 숙련된 제조업의 경험이 양자컴퓨터 개발에 긍정적 영향을 줄 것으로 기대된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">달파의 기술적 모토를 고려할 때, 양자컴퓨터의 상용화는 예상보다 더 오래 걸릴 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">그렇다. 달파의 프로젝트는 일반적으로 미완성이거나 오랜 시간이 걸리는 기술에 중점을 두기 때문에 양자컴퓨터의 상용화가 더뎌질 가능성이 있다. 이는 기존 연구의 한계를 뛰어넘는 어려운 과제를 의미한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224068824819" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 12월 · 1개</div>
+  
+<div class="card" data-title="대만 지진, TSMC 전력 부족의 국가적 리스크로 이어질까" data-tags="#대만 #TSMC #지진 #전력부족" data-date="2025-12-29">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-12-29</div>
+      <div class="card-title">대만 지진, TSMC 전력 부족의 국가적 리스크로 이어질까</div>
+      <div class="card-tags"><span class="tag">#대만</span><span class="tag">#TSMC</span><span class="tag">#지진</span><span class="tag">#전력부족</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 12월 28일, 대만 북동부에서 규모 7.0의 지진이 발생해 TSMC가 인력을 대피하게 했다. 대만은 지진 발생 빈도가 증가하는 상황과 함께, TSMC의 전력 소모 증가로 인한 전력 공급에 대한 우려가 커지고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">지진 발생과 TSMC의 대응</div><div class="para-body">대만에서 규모 7.0의 지진이 발생하여 TSMC는 인력을 실외로 대피시켰다. 이 지진은 대만에서 점차적으로 증가하는 지진 빈도의 일환으로 분석되고 있으며, TSMC의 웨이퍼 생산에 영향을 줄 수 있는 리스크로 보고된다. 이로 인해 반도체 생산 공정의 안정성 문제가 부각되고 있다.</div></div><div class="para"><div class="para-title">전력 사용량과 산업 경쟁력</div><div class="para-body">TSMC는 현재 대만 전체 전력의 12.5%를 소모하고 있으며, 이 수치는 2030년까지 24%로 증가할 것으로 예상된다. 대만의 반도체 산업은 에너지 소비가 많아, 전력 부족 문제가 산업 경쟁력에도 악영향을 미칠 수 있다. 또한 전기요금이 높은 상황에서 TSMC의 경쟁력 약화 우려가 커지고 있다.</div></div><div class="para"><div class="para-title">대만 에너지 믹스의 변화</div><div class="para-body">대만은 2016년부터 탈원전 정책을 추진하며, 원전은 급격히 감소하고 있다. 2025년까지 마지막 원전이 가동 중단될 예정으나, 신재생 에너지원에서 기대한 만큼의 발전량이 나오지 않고 있어 LNG에 의존하게 되는 구조다. 이에 따라 전력 공급의 불안정성이 증가하고 있으며, 지진으로 인한 피해 시 큰 리스크가 예상된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">중국의 해양 봉쇄 속에서 TSMC의 전력 부족이 대만에 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">전력 부족 문제는 TSMC뿐만 아니라 대만 경제 전반에 심각한 영향을 미칠 수 있다. 지진과 같은 자연재해가 잦은 대만에서 이러한 전력 리스크는 산업 지속 가능성에 대한 고민을 더욱 부각시킬 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224125107583" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2026년 1월 · 5개</div>
+  
+<div class="card" data-title="삼성전자 HBM 전쟁, 구글 TPU가 가로막고 있다" data-tags="#삼성전자 #HBM #TPU #AI" data-date="2026-01-01">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-01-01</div>
+      <div class="card-title">삼성전자 HBM 전쟁, 구글 TPU가 가로막고 있다</div>
+      <div class="card-tags"><span class="tag">#삼성전자</span><span class="tag">#HBM</span><span class="tag">#TPU</span><span class="tag">#AI</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 1월 1일 기준, 삼성전자는 HBM 시장에서 다시금 독점 경쟁에 뛰어들며 구글의 TPU와 마주하고 있다. HBM의 성능은 향상되었지만, 구글의 AI 연산에 특화된 TPU가 새로운 위협으로 떠오르고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">HBM의 발전과 삼성전자의 재진입</div><div class="para-body">HBM 기술은 3세대에 접어들며 24GB의 메모리로 성능이 급격히 개선되었다. AI 수요의 증가로 HBM의 필요성이 커지자, 삼성전자는 2019년 사업 철수 후 2021년 다시 개발을 시작했지만 2년의 공백이 발생했다.</div></div><div class="para"><div class="para-title">구글 TPU의 부상과 AI 경쟁</div><div class="para-body">구글의 TPU는 AI 연산에 최적화된 칩으로, 엔비디아 GPU보다 뛰어난 성능을 보인다. 이로 인해 메타와 같은 기업들이 TPU 도입을 검토하고 있어 HBM과 가격 경쟁에서 삼성전자가 불리한 위치에 놓이게 되었다.</div></div><div class="para"><div class="para-title">HBM 시장의 우려와 기회</div><div class="para-body">삼성전자는 HBM4 성능 테스트에서 긍정적인 결과를 얻었으나, 시장에서의 경쟁이 치열한 상황이다. HBM 기술이 발전하고 있는 동안, 구글 TPU의 급부상은 새로운 경쟁의 양상을 만들어가고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">삼성전자가 HBM 시장에서 구글 TPU의 위협을 극복할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">현재 구글 TPU의 저변 확대는 삼성전자의 HBM 시장 전략에 심각한 도전 과제가 되고 있다. 삼성전자가 기술력을 보유하고 있더라도 시장 경쟁은 쉽지 않아 보인다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224129404995" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="2026 CES, 피지컬 AI로 바뀌는 기술의 주인공은?" data-tags="#피지컬AI #CES2026 #엔비디아 #현대차" data-date="2026-01-07">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-01-07</div>
+      <div class="card-title">2026 CES, 피지컬 AI로 바뀌는 기술의 주인공은?</div>
+      <div class="card-tags"><span class="tag">#피지컬AI</span><span class="tag">#CES2026</span><span class="tag">#엔비디아</span><span class="tag">#현대차</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 CES에서는 피지컬 AI가 중요한 화두로 떠올랐다. 엔비디아 젠슨 황이 피지컬 AI 시대 선언과 함께 베라 루빈을 공개하며 새로운 기술의 전환점을 제시했다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">피지컬 AI의 핵심 선언</div><div class="para-body">CES 2026의 기조연설에서 젠슨 황은 'AI가 화면 밖으로 나왔다'며 피지컬 AI 시대의 개막을 선언했다. 이 개념은 AI가 물리적 세계에서 인간과 상호작용하게 만드는 것으로, 로봇공학과 연계된다. 화면 속에만 존재하던 AI가 실제 움직이는 로봇으로 변모함으로써 새로운 가능성이 열리게 된다.</div></div><div class="para"><div class="para-title">베라 루빈의 혁신</div><div class="para-body">베라 루빈 플랫폼은 피지컬 AI 시대의 핵심 인프라로 소개되었다. 이 플랫폼은 기존의 복잡한 케이블 문제를 해결하고, 고열 효율적 데이터센터 운영을 가능하게 하여 운영비용을 크게 절감할 것으로 기대된다. 이 기술은 청정 에너지를 재활용할 수 있는 장점도 가지고 있다.</div></div><div class="para"><div class="para-title">자동차와 로봇 산업의 새로운 미래</div><div class="para-body">현대차그룹은 CES 2026에서 AI 로보틱스의 새로운 비전을 발표하였다. 볼타지 카운터에 의한 로봇 아틀라스 제작 및 생산 계획이 공개되었고, AI 자율주행차의 혁신적 발전도 예고되었다. 이는 산업 내에서 피지컬 AI의 파급 효과를 시사한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">2026 CES에서 피지컬 AI가 기술의 중심으로 부상함에 따라, 이는 산업 전반에 어떤 변화를 가져올까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">피지컬 AI는 기술의 새로운 패러다임을 제시하고, 전통 산업의 혁신을 촉발할 것이다. 이는 기업의 경쟁력을 높이는 중요한 요소가 된다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224136528041" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="CATL 나트륨이온 배터리 양산 개시 — LFP 대비 30% 저렴, LFP 대체 가시권" data-tags="#나트륨이온배터리 #CATL #LFP대체 #이차전지 #SK온 #LG에너지솔루션" data-date="2026-01-10">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-01-10</div>
+      <div class="card-title">CATL 나트륨이온 배터리 양산 개시 — LFP 대비 30% 저렴, LFP 대체 가시권</div>
+      <div class="card-tags"><span class="tag">#나트륨이온배터리</span><span class="tag">#CATL</span><span class="tag">#LFP대체</span><span class="tag">#이차전지</span><span class="tag">#SK온</span><span class="tag">#LG에너지솔루션</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">26년 1월, CATL 나트륨이온 배터리 양산 현황을 업데이트한다. 25년 4월 발표 당시 '중국 성능 마사지' 가능성을 열어뒀지만, 25년 12월 예고대로 양산이 시작됐다. 에너지밀도 175Wh/kg·주행거리 500km·영하 40도~영상 70도 정상작동 스펙이 유지됐고, 가격은 LFP 대비 30% 저렴한 kWh당 40달러다.</p><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">나트륨이온 배터리</span>리튬 대신 나트륨(소금)을 이온 전달체로 사용하는 배터리. 나트륨 가격은 리튬의 1/50 수준(1kg당 270원). 저온 작동성과 화재 안전성이 강점이다.</div></div></div>
+    <div class="section"><div class="para"><div class="para-title">기술 완성도 — 에너지밀도·내구성 두 단점 동시 해소</div><div class="para-body">2021년 CATL의 1세대 나트륨 배터리는 에너지밀도가 낮고 충방전 내구성(6천 회)이 부족해 자동차용으로 쓰기 어려웠다. 이번 양산 버전은 175Wh/kg(LFP 수준)으로 에너지밀도가 높아졌고, 충방전 횟수도 1만 회 이상으로 개선됐다. 드릴 구멍·톱 절단 시험에서도 화재가 발생하지 않았다. 영하 40도 작동 가능이라는 LFP 대비 강점은 그대로다. 가격은 kWh당 40달러로 LFP(55~60달러) 대비 30% 저렴하고, CATL은 2030년 19~20달러까지 낮추겠다는 목표를 제시했다.</div></div><div class="para"><div class="para-title">공급망 완성 — LFP에서 나트륨으로 전환하는 중국 생태계</div><div class="para-body">CATL은 양극재 공급사 룽바이테크와 연간 사용량의 60%에 해당하는 구매계약을 체결했다. 퉁싱테크는 7천억원을 투자해 연 10만톤 규모의 나트륨 양극재 생산을 준비 중이고, 진투어리텐은 1.3조원을 투자해 기존 LFP 배터리 공장을 나트륨이온 배터리 전용 라인으로 전환했다. CATL의 글로벌 전기차 배터리 시장점유율은 38.1%(2025년 10월 기준)로, 공급망 전환이 결정되면 시장 대체 속도가 빠를 수밖에 없다.</div><div class="annotations"><div class="annotation"><span class="ann-type">맥락</span>CATL 38.1%, BYD 16.9%, LG에너지솔루션 9.3% 순서. CATL이 나트륨으로 전환할 경우 LFP 기반 시장 자체가 잠식된다.</div></div></div><div class="para"><div class="para-title">한국 업계 시사점 — 2030년이 목표, CATL은 이미 양산 중</div><div class="para-body">SK온 사장은 '시장은 결국 나트륨 배터리 쪽으로 갈 수밖에 없다'고 언급했다. 그러나 LG에너지솔루션이 개발 중인 나트륨 배터리 성능은 80Wh/kg대로 CATL의 175Wh/kg에 크게 뒤처진다. 한국 업계의 상용화 목표는 2030년으로 CATL보다 4~5년 후행이다. 삼원계에서는 한국이 여전히 경쟁력을 유지하지만, LFP 시장을 나트륨이 빠르게 잠식하는 구도에서 한국의 LFP 진입 기회가 좁아진다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">CATL의 나트륨이온 배터리 양산 성공이 한국 이차전지 업계에 구조적 위협인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">LFP 영역에서는 즉각적 위협이다. CATL은 시장점유율 38%에 가격·안전·저온 성능 모두 앞서는 나트륨이온 배터리 양산에 성공했고, 한국의 대응 목표는 2030년이다. 삼원계는 당장 위협받지 않지만, 한국이 LFP로 시장을 넓히려던 구도 자체가 먼저 막힌다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224141331015" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="비트코인을 전량 매도한 이유, 양자컴퓨터의 위험이 다가온다" data-tags="#제퍼리스 #비트코인 #양자컴퓨터 #암호화" data-date="2026-01-22">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-01-22</div>
+      <div class="card-title">비트코인을 전량 매도한 이유, 양자컴퓨터의 위험이 다가온다</div>
+      <div class="card-tags"><span class="tag">#제퍼리스</span><span class="tag">#비트코인</span><span class="tag">#양자컴퓨터</span><span class="tag">#암호화</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">26년 1월 17일, 제퍼리스의 우드는 비트코인을 전량 매도한 뒤 금, 금광주, 아시아 주식으로 포트폴리오를 재편성했다. 양자컴퓨터의 발전 속도가 빨라지면서 비트코인의 보안에 심각한 위험이 도사리고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">양자컴퓨터의 위협</div><div class="para-body">우드는 양자컴퓨터가 공개키 기반 암호 해독을 며칠 내로 가능하게 될 것이라고 주장한다. 이는 비트코인과 같은 암호화 자산의 안전성을 심각하게 위협한다. 비트코인은 공개키와 개인키를 통해 거래되기 때문에, 양자컴퓨터가 개인키를 역추론할 경우 많은 비트코인이 탈취될 수 있는 사태가 우려된다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">양자컴퓨터</span>고전 컴퓨터와는 다른 원리로 작동하여 특정 계산을 극히 빠르게 수행할 수 있는 컴퓨터.</div></div></div><div class="para"><div class="para-title">비트코인 보안의 미래</div><div class="para-body">2028년까지 비트코인의 보안이 강화되지 않는다면, 비트코인의 20~30%가 양자 해커에게 탈취될 위험이 존재한다. 양자컴퓨터에 대비하는 'BIP-360'이라는 암호체계 강화 방안이 있지만, 실행을 위해서는 다양한 이해관계자들의 동의가 필요하다. 이는 실현하기 어렵다는 점이 문제이다.</div></div><div class="para"><div class="para-title">비트코인 탈중앙화의 장단점</div><div class="para-body">비트코인은 주인이 없는 탈중앙 네트워크라는 장점이 있지만, 보안 체계 강화를 위한 결정은 쉽지 않다. 비트코인 보유자, 채굴자, 거래소 등의 합의가 필요하다는 점에서 비트코인의 성격상 의사결정이 혼란스러울 수 있다. 이로 인해 비트코인의 보안 강화를 위한 적절한 대응이 지연될 위험이 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">양자컴퓨터의 위협에 직면한 비트코인의 보안을 어떻게 강화할 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">비트코인의 보안 강화를 위한 합의 과정이 복잡하고 어렵다면, 위험이 현실화될 가능성이 크다. 현재 상황이면 대책 마련이 시급하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224154799083" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="전고체 배터리 수요처가 전기차에서 로봇으로 — 삼성SDI 2027년·토요타 2028년" data-tags="#전고체배터리 #삼성SDI #토요타 #휴머노이드로봇 #옵티머스 #아틀라스" data-date="2026-01-23">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-01-23</div>
+      <div class="card-title">전고체 배터리 수요처가 전기차에서 로봇으로 — 삼성SDI 2027년·토요타 2028년</div>
+      <div class="card-tags"><span class="tag">#전고체배터리</span><span class="tag">#삼성SDI</span><span class="tag">#토요타</span><span class="tag">#휴머노이드로봇</span><span class="tag">#옵티머스</span><span class="tag">#아틀라스</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">26년 1월, 전고체 배터리의 기술 현황과 새 수요처 변화를 업데이트한다. 삼성SDI는 정밀적층코팅 기술 특허를 등록하고 2027년 양산 로드맵을 확정했고, 토요타는 2027년 상용화·2028년 전기차 출시 계획을 발표했다. 전기차 시장 성장 둔화로 관심이 식었지만, 휴머노이드 로봇의 배터리 작동 시간 한계가 전고체의 핵심 수요처로 떠오르고 있다.</p><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">전고체(All-Solid-State) 배터리</span>양극·음극 사이 전해질을 액체 대신 고체로 채운 배터리. 분리막 간소화, 화재 위험 감소, 같은 면적에 2배 용량 탑재가 가능하다.</div></div></div>
+    <div class="section"><div class="para"><div class="para-title">전고체의 두 가지 강점 — 공간 효율과 안전성</div><div class="para-body">현재 삼원계 배터리는 분리막·모듈·팩 등 안전장치가 전체 공간의 절반을 차지한다. 전해질을 고체로 바꾸면 분리막을 간소화할 수 있고, 구조적으로 안정적이라 모듈·팩을 단순화해도 된다. 그 공간을 음극재·양극재로 채우면 같은 면적에 2배 가까운 용량이 들어간다. 음극재로 불안정해서 기피하던 리튬금속을 쓸 수 있어 용량을 추가로 늘릴 수도 있다. 문제는 고체 가루 전해질을 빈틈 없이 채우는 공법과 황화리튬·은 코팅 등으로 인한 높은 원가다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">황화물계 전고체</span>자동차 등 대형 배터리에 필요한 방식. 일본 무라타 등이 선점한 산화물계는 소형 가전(이어폰 수준)에 한정되며, 전기차·로봇은 황화물계가 필요하다.</div></div></div><div class="para"><div class="para-title">삼성SDI·토요타·중국 경쟁 구도</div><div class="para-body">삼성SDI는 메모리 반도체의 정밀적층코팅 기술을 전고체 배터리에 적용해 고체 가루를 빈틈 없이 채우는 기술을 개발했고, 특허 등록까지 마쳤다. 공법도 확정해 2027년 양산 로드맵을 공식화했다. 삼성전자(메모리 반도체 기술 보유)와의 계열 시너지가 비대칭 전력이 된다. 토요타는 2027년 상용화, 2028년 621마일(1,000km)·완충 10분 이내 전기차 출시를 발표했다. 중국은 CATL·BYD·완성차 3사가 참여하는 CASIP 플랫폼을 출범시켰고, 체리자동차가 2026년 전고체 탑재 차량 판매를 예고했다.</div></div><div class="para"><div class="para-title">로봇이 첫 시장 — 가격보다 가동 시간이 우선</div><div class="para-body">옵티머스 V3는 4680 배터리 2.3kWh 팩으로 완충 시 약 4시간 작동이 가능하다. 아틀라스는 2시간 충전에 1시간 작동으로, 배터리가 부족하면 스스로 충전소로 가서 교체하는 방식으로 운영된다. 공장·가정용 로봇은 한 시간마다 15분씩 충전소로 다녀오는 비효율이 핵심 병목이다. 전고체는 3원계 대비 2배 비싸지만 작동 시간이 2배 이상 나온다면, 가격보다 가동률이 우선인 로봇 시장에서 채택 동기가 충분하다. 전기차 목적으로 개발해온 전고체가 로봇에서 먼저 현실화될 가능성이 높아지고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">전고체 배터리의 첫 대량 수요처는 전기차가 아니라 휴머노이드 로봇인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">그럴 가능성이 높다. 전기차는 LFP로도 충분한 시장이 형성되어 있고 가격 민감도가 크지만, 로봇은 가동 시간이 핵심 스펙이라 프리미엄을 지불할 동기가 다르다. 삼성SDI의 2027년 양산 시점이 로봇 대량 배포 시점과 맞물리는 것도 이 방향을 지지한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224155985859" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2026년 2월 · 9개</div>
+  
+<div class="card" data-title="AI가 SW기업들을 위협하는 구조, 오픈AI의 딜레마는?" data-tags="#오픈AI #AGI #앤트로픽 #AI전망" data-date="2026-02-05">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-02-05</div>
+      <div class="card-title">AI가 SW기업들을 위협하는 구조, 오픈AI의 딜레마는?</div>
+      <div class="card-tags"><span class="tag">#오픈AI</span><span class="tag">#AGI</span><span class="tag">#앤트로픽</span><span class="tag">#AI전망</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 2월 현재, AI가 소프트웨어 기업에 미치는 영향이 불가피해지고 있다. 오픈AI의 복잡한 상업 구조와 AGI(강 인공지능) 개발 방향이 주목받고 있다. AGI 도달 시 투자자의 이익과 인류의 안전이라는 두 긴장이 엇갈리는 상황이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">오픈AI의 구조와 의사 결정</div><div class="para-body">오픈AI는 비영리 모회사와 영리 자회사로 나뉘어 있으며, 영리기업 Open AI LP는 수익의 상한이 있다. MS는 막대한 투자를 통해 지분을 확보했지만, 자회사의 구조로 주도권을 잃었다. AGI 개발은 인류 안전을 위협할 수 있는 요소로, 이사회의 최고 우선 사항은 AGI에 도달했는지를 판단하는 것이다.</div></div><div class="para"><div class="para-title">샘 올트먼 해고와 직원의 지지</div><div class="para-body">2023년 샘 올트먼의 해고 사건은 인공지능의 사용 목적이 AGI의 안전과 두 그룹 간의 대립으로 해석된다. 그는 AGI의 상업적 이용을 선호하는 입장이었고, 직원들의 지지로 인해 복귀하였다. 이 사건은 투자자와 기술 개발자 간의 갈등을 새롭게 드러냈다.</div></div><div class="para"><div class="para-title">앤트로픽의 배경과 목표</div><div class="para-body">앤트로픽은 오픈AI에서 퇴사한 핵심 인력들이 설립했으며, 안전하고 통제 가능한 AI를 목표로 한다. 이들은 AI 블랙박스 문제를 해결하는 기술을 발전시키며, 자율적이고 비현실적인 결정을 방지하려고 한다. 영업흑자 전환을 목표로 하는 앤트로픽의 모델은 소기업 중심의 접근이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">AGI 개발이 이루어질 경우, 오픈AI와 같은 기업의 수익 구조는 어떻게 될까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">AGI가 상업적 목적과 인류 안전 사이에서 갈등을 겪는다면, 오픈AI는 큰 리스크를 안게 될 것이다. 투자자의 이익을 중시하는 서구 기업 구조에서는 이 갈등이 더욱 심화될 가능성이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224171369464" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="일론 머스크, 스페이스X와 xAI를 합병해 우주 데이터센터 구축을 가속화한다" data-tags="#일론머스크 #스페이스X #xAI #우주데이터센터" data-date="2026-02-06">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-02-06</div>
+      <div class="card-title">일론 머스크, 스페이스X와 xAI를 합병해 우주 데이터센터 구축을 가속화한다</div>
+      <div class="card-tags"><span class="tag">#일론머스크</span><span class="tag">#스페이스X</span><span class="tag">#xAI</span><span class="tag">#우주데이터센터</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 2월 4일, 일론 머스크는 스페이스X와 xAI를 합병한다고 발표했다. 이는 두 기업이 협력하여 우주 데이터센터를 더욱 효과적으로 구축하려는 전략의 일환으로 해석된다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">페로브스카이트 태양전지의 혁신</div><div class="para-body">페로브스카이트 태양전지는 기존 실리콘과 비교해 가시광선, 적외선, 자외선을 넓게 흡수하는 특성을 가지고 있다. 이는 기존 태양전지의 26% 효율이 25%로 향상될 가능성을 시사한다. 상용화가 진행되면 비용 절감과 함께 다양한 활용이 기대된다.</div></div><div class="para"><div class="para-title">우주 태양광 발전의 미래</div><div class="para-body">일론 머스크는 우주 데이터센터와 태양광 발전의 핵심 기술로 페로브스카이트에 주목하고 있으며, 이는 우주에서의 전력 공급을 획기적으로 변화시킬 수 있다. 중국과의 경쟁에서 우위를 점하기 위한 미국의 전략적 움직임으로 볼 수 있다.</div></div><div class="para"><div class="para-title">합병의 재정적 동기</div><div class="para-body">스페이스X와 xAI의 합병은 자금 확보 차원에서도 의미가 있다. 대규모 위성 네트워크를 운영하기 위한 충분한 자본이 필요한 상황에서, 두 기업의 결합은 경쟁력을 크게 높일 것으로 예상된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">우주 데이터센터 구축 경쟁에서 머스크의 합병 전략이 가져올 미래의 변화는 무엇일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">합병은 우주 데이터센터와 태양광 발전의 효율성을 높일 것이다. 이는 미국의 우주 기술 경쟁력 강화로 이어질 가능성이 높다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224172879290" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="삼성전자 HBM4 납품, 최초 성공 — SK하이닉스와의 경쟁은 여전히 불투명하다" data-tags="#삼성전자 #HBM4 #엔비디아 #반도체" data-date="2026-02-13">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-02-13</div>
+      <div class="card-title">삼성전자 HBM4 납품, 최초 성공 — SK하이닉스와의 경쟁은 여전히 불투명하다</div>
+      <div class="card-tags"><span class="tag">#삼성전자</span><span class="tag">#HBM4</span><span class="tag">#엔비디아</span><span class="tag">#반도체</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 2월 기준, 삼성전자가 HBM4의 세계 최초 양산 출하에 성공하며 엔비디아 납품 경쟁에서 앞서고 있다. 하지만 SK하이닉스가 원가 측면에서 우위를 점하고 있어 향후 경쟁 상황은 불투명하다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">삼성전자가 HBM4 최초 양산 출하</div><div class="para-body">삼성전자는 HBM4를 세계 최초로 양산 출하하면서 기대되는 성능을 각인시켰다. 니즈에 응하는 공정 기술로 HBM4의 데이터 처리 속도를 11.7Gbps로 최적화했으며, 최대 13Gbps까지 구현할 수 있다고 밝혔다.</div></div><div class="para"><div class="para-title">SK하이닉스의 대응 전략</div><div class="para-body">SK하이닉스는 HBM4 경쟁에서 성능 기준을 맞추고 있지만, 제조원가에서 유리한 조건을 가졌다. 삼성전자는 높은 성능을 추구하지만 수율 문제와 높은 원가 부담이 이를 가로막고 있어 최종 경쟁 결과는 불확실하다.</div></div><div class="para"><div class="para-title">HBM 시장의 경쟁 구도</div><div class="para-body">엔비디아의 HBM 공급 비중에서 삼성전자는 30%, SK하이닉스는 60%로 알려져 있다. 그러나 삼성전자가 HBM4의 품질을 확보하고 있다는 점에서 장기적인 시각에서 시장 점유율 확보 가능성도 존재한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">삼성전자가 HBM4 최초 납품에 성공했지만, SK하이닉스와의 경쟁은 어떤 리스크를 내포하고 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">삼성전자는 HBM4 최초 납품이라는 성과를 올렸으나, SK하이닉스의 경쟁력은 원가 우위에 기인하고 있다. 따라서, 승부는 지속적으로 지켜봐야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224181612720" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="RTG 50년·베타볼트 BV100 — 3차전지 상용화의 현주소" data-tags="#3차전지 #RTG #베타전지 #베타볼트 #BV100 #니켈63" data-date="2026-02-17">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-02-17</div>
+      <div class="card-title">RTG 50년·베타볼트 BV100 — 3차전지 상용화의 현주소</div>
+      <div class="card-tags"><span class="tag">#3차전지</span><span class="tag">#RTG</span><span class="tag">#베타전지</span><span class="tag">#베타볼트</span><span class="tag">#BV100</span><span class="tag">#니켈63</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">26년 2월, 3차 전지의 최신 동향을 1편으로 정리한다. 보이저 1·2호가 50년째 전력을 공급하는 RTG 원리부터, 영국 브리스톨대의 베타전지 이론(2016), 중국 베타볼트의 상용 제품 BV100(2024년 7월)까지 계보를 추적한다. 출력이 코인셀의 1/6,000으로 극히 작지만, 수명 50년·충전 불필요라는 특성이 원격 센서 등 특수 영역에서 독자적 위치를 갖는다.</p><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">3차전지</span>연료를 주입받으면 스스로 전기에너지를 생산하는 전지. 1차(1회용 건전지)·2차(충전식 배터리)와 달리 외부 연료나 방사선으로 지속 발전한다.</div></div></div>
+    <div class="section"><div class="para"><div class="para-title">RTG — 플루토늄-238로 50년 작동</div><div class="para-body">보이저 1·2호는 천왕성 거리에서 태양광이 지구의 1/400 수준이라 태양전지를 쓸 수 없다. 플루토늄-238(반감기 87년)에서 나오는 방사선을 전력으로 변환하는 RTG를 탑재해 50년째 과학장비 3개를 작동 중이다. NASA는 2030년대 초반까지 최소 1개 장비를 유지하는 것이 목표다. 지구 내 사용을 자제하는 이유는 위험성 때문이다. 소련 해체 후 관리가 소홀해진 무인등대용 RTG에 3시간 피폭된 나무꾼이 방사선 궤양·폐손상으로 사망한 사례가 있다.</div><div class="annotations"><div class="annotation"><span class="ann-type">용어</span><span class="ann-target">RTG(방사성동위원소 열전발전기)</span>Radioisotope Thermoelectric Generator. 방사성 붕괴 시 발생하는 열을 전기로 변환하는 장치. 우주 탐사선과 일부 군용 장비에 사용된다.</div></div></div><div class="para"><div class="para-title">베타전지 — 영국 이론에서 중국 제품까지</div><div class="para-body">베타전지는 방사성 동위원소 붕괴 시 방출되는 베타입자로 전기를 생산한다. 베타선은 피부를 투과하지 못해 안전성이 높다. 2016년 영국 브리스톨대가 니켈-63(반감기 100년)을 이용한 베타전지 이론을 발표했고, 2024년 7월 중국 베타볼트가 이 논문을 기반으로 BV100을 출시했다. BV100은 3V/100µW 출력에 수명 50년이며, 수명 종료 후 니켈-63이 구리로 변환되어 환경오염이 없다. 출력은 CR2032 코인셀의 1/6,000 수준이라 스마트폰이나 전기차에 적용 불가능하지만, 원격 모니터링 센서에는 활용 가능하다.</div><div class="annotations"><div class="annotation"><span class="ann-type">맥락</span>베타볼트는 BV100보다 출력이 1만 배 높은 1W급을 준비 중이다. 영국 브리스톨대도 최근 니켈-63을 넘어선 나노 다이아몬드·트리튬 배터리를 발표했다(2편에서 이어짐).</div></div></div><div class="para"><div class="para-title">3차전지의 현재 한계와 적합 영역</div><div class="para-body">RTG와 베타전지 모두 출력 밀도가 극히 낮아, 대용량 전력이 필요한 전기차·로봇·가전의 주력 배터리를 대체하기는 불가능하다. 반면 수십 년간 교체 없이 작동해야 하는 우주 탐사선, 심해 장비, 의료 임플란트, 산간 원격 센서 등에서는 리튬 이차전지보다 구조적으로 우월하다. 베타볼트의 1W급이 현실화되면 적용 범위가 확대되겠지만, 아직 확인 단계다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">베타전지가 리튬 이차전지를 대체하는 시대가 올 수 있는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">주류 대체는 불가능하다. BV100의 출력은 코인셀의 1/6,000 수준으로, 가전·전기차·로봇이 요구하는 전력과 비교 자체가 안 된다. 다만 수명 50년·충전 불필요라는 특성은 우주·의료·원격 센서 등 틈새 시장에서 독점적 위치를 가지며, 1W급 개발 성공 여부가 다음 판단 기준이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224185539683" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="블루 아울 펀드 환매 중단, 사모대출 시장의 불안한 신호인가" data-tags="#블루아울 #사모대출 #데이터센터 #AI" data-date="2026-02-20">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-02-20</div>
+      <div class="card-title">블루 아울 펀드 환매 중단, 사모대출 시장의 불안한 신호인가</div>
+      <div class="card-tags"><span class="tag">#블루아울</span><span class="tag">#사모대출</span><span class="tag">#데이터센터</span><span class="tag">#AI</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 2월 기준, 블루 아울 캐피탈의 OBDC Ⅱ 펀드가 환매를 영구 중단하며 사모대출 시장의 불안함이 드러났다. 이는 소규모 투자자들에게 심리적 영향을 미칠 가능성이 크고, 사모대출 시장의 변화가 만만치 않음을 보여준다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">사모대출의 성장과 문제점</div><div class="para-body">사모대출 시장은 저금리 시대에 고수익 자금운용 수단으로 각광받으며 1.7조 달러 규모로 성장했다. 그러나 비적격 담보와 신용도가 낮은 기업에 대한 대출이 이뤄지면서 불확실성이 커지고 있다. 최근 사건은 이러한 문제점을 여실히 보여준다.</div></div><div class="para"><div class="para-title">블루 아울 캐피탈의 환매 중단 이유</div><div class="para-body">블루 아울의 OBDC Ⅱ 펀드는 대규모 환매 요구에 부응하지 못하면서 영구 중단을 결정했다. 이는 시장의 불안과 투자자들의 우려가 반영된 결정으로, 펀드의 구조적 문제가 부각된다. 이러한 상황은 더 큰 부실 가능성을 내포하고 있다.</div></div><div class="para"><div class="para-title">신용 시장의 긴장감</div><div class="para-body">현재 사모대출 시장에서 신용도가 낮은 기업에 대한 경고가 나오고 있다. 자금의 이동이 손쉬워진 현대, 과거보다 경제적 충격에 대한 저항력이 약해진 상황에서 이 같은 불안이 커질 수 있다. 이는 시장에 부정적 영향을 미칠 수 있는 요소다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">블루 아울 캐피탈의 환매 중단은 사모대출 시장의 신용도에 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">사모대출 시장에 대한 신뢰는 이미 훼손되었고, 추가적인 부실 문제가 발생할 가능성이 크다. 이는 투자자들에게 큰 부담이 될 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224188992845" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="AI 데이터센터는 전용시설이 필요하다는 현실" data-tags="#AI #데이터센터 #전력밀도" data-date="2026-02-21">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-02-21</div>
+      <div class="card-title">AI 데이터센터는 전용시설이 필요하다는 현실</div>
+      <div class="card-tags"><span class="tag">#AI</span><span class="tag">#데이터센터</span><span class="tag">#전력밀도</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 2월 현재 AI 데이터센터는 고유한 요구사항을 지니며, 전력과 냉각 시스템에서 기존 IDC와 큰 차이를 보인다. 이는 AI 및 대규모 언어모델의 발전이 데이터센터 설계에 미치는 영향을 반영하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">AI 데이터센터의 전력 소비 특성</div><div class="para-body">AI 데이터센터에서는 서버랙의 전력밀도가 60~120kW에 이르며, 이는 일반 데이터센터의 10배 이상의 전력을 요구한다. 이러한 높은 전력 소비는 더욱 강력한 냉각 시스템을 필요로 하며, 이는 기술적 제약으로 작용한다.</div></div><div class="para"><div class="para-title">운영비용과 설계의 변화</div><div class="para-body">AI 데이터센터는 고가의 설비와 공간 재설계를 필요로 하여 건설 비용이 크게 증가한다. 중소기업도 AI 데이터센터를 이용할 수 있지만, 단층 구조로 설계하는 추세가 늘어나는 것은 비용 절감의 필요에 기인한다.</div></div><div class="para"><div class="para-title">정치적 요인의 영향</div><div class="para-body">AI 데이터센터의 건설은 지역 정체성과 정치적 요인에 큰 영향을 받는다. 사용 승인과 관련하여 캔자스시티의 사례처럼 정치적 결정이 데이터센터 운영에 제약을 줄 수 있음을 알 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">전력 소비가 높은 AI 데이터센터가 지역 사회에 기피 시설로 내몰리는 현실, 어떻게 극복할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">AI 데이터센터의 필요성은 명확하지만, 지역 사회의 우려를 제대로 해소하지 않으면 설계 및 운영이 힘들어진다. 기술적 진보와 사회적 수용이 동시에 필요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224189798576" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="엔비디아 GPU 규제에도 딥시크가 보여준 반전은?" data-tags="#엔비디아 #딥시크 #반도체 #AI" data-date="2026-02-25">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-02-25</div>
+      <div class="card-title">엔비디아 GPU 규제에도 딥시크가 보여준 반전은?</div>
+      <div class="card-tags"><span class="tag">#엔비디아</span><span class="tag">#딥시크</span><span class="tag">#반도체</span><span class="tag">#AI</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 2월 현재, 엔비디아의 반도체 규제에도 불구하고 딥시크가 상승세를 보이고 있다. 딥시크는 저사양 칩을 활용해 예상 외의 성과를 달성하며, 반도체 자급률과 미국의 규제 변화에도 큰 영향을 받고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">중국 반도체 자급률의 현주소</div><div class="para-body">중국의 반도체 자급률은 2015년 6%에서 시작해 2025년 19.4%에 불과하며, 이는 미국의 규제가 장기간 영향을 미쳤음을 암시한다. TSMC와 삼성전자의 공장에서 생산된 반도체가 포함된 현재 자급률은 실질적으로 중국 기업의 능력이 떨어진다는 것을 보여준다.</div></div><div class="para"><div class="para-title">엔비디아의 새로운 대응 전략</div><div class="para-body">A100의 수출이 막혔음에도 불구하고 엔비디아는 미국의 규제를 준수하며 A800을 통해 매출 증대를 이루어냈다. 그럼에도 불구하고, 중국 시장에서의 H100 유입이 의심되며, 이는 암시장에서의 불법 거래와 관련된 허점을 드러낸다.</div></div><div class="para"><div class="para-title">딥시크의 부상과 잃어버린 고성능의 개념</div><div class="para-body">딥시크는 H800을 사용하여 인공지능 분야에서 경쟁력을 갖추었음에도, 과연 반도체의 성능과 가격이 기업에 필수적인가에 대한 의문을 제기하였다. 이제는 고가의 엔비디아 GPU 대신 저사양 대안을 통해 성과를 충분히 달성할 수 있다는 새로운 사실을 보여주고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">고성능 반도체 없이도 경쟁력을 유지할 수 있는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">가능하다. 딥시크가 보여준 결과는 저사양의 저비용 정책으로도 성과를 낼 수 있음을 증명했다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224195618395" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="오픈AI, 엔비디아 투자에 발목잡히고 있나?" data-tags="#오픈AI #엔비디아 #AI #투자" data-date="2026-02-25">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-02-25</div>
+      <div class="card-title">오픈AI, 엔비디아 투자에 발목잡히고 있나?</div>
+      <div class="card-tags"><span class="tag">#오픈AI</span><span class="tag">#엔비디아</span><span class="tag">#AI</span><span class="tag">#투자</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">26년 2월 기준, 오픈AI가 엔비디아로부터 천억 달러를 지원받는 MOU는 의혹과 경쟁 우위의 본질을 드러내고 있다. 이 거대한 투자 규모가 그만큼 오픈AI의 사업 성과에 부담을 주고 있다는 지적이 크다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">MOU의 실상과 의문</div><div class="para-body">2025년 9월, 오픈AI와 엔비디아는 천억달러짜리 MOU를 체결하였다. 이는 엔비디아가 오픈AI에 투자한 자금으로 자사 GPU를 구매하는 메커니즘이란 의혹도 제기되고 있다. 이런 자전거래가 실제로 이뤄진다면, 과연 오픈AI의 독립적인 사업 모델이 제대로 작동하는 것인지 의문을 남긴다.</div></div><div class="para"><div class="para-title">경쟁 위기와 수익 목표</div><div class="para-body">오픈AI는 앞으로의 매출 목표를 수정하면서도 여전히 AMD와 경쟁 중이다. AMD의 MI300 GPU는 엔비디아의 H100 대비 상대적으로 저렴한 가격을 제시하지만, 오픈AI는 여전히 투자자들에게 높은 매출 증가를 약속하고 있다. 하지만, 경쟁자들과의 격차가 급속히 좁혀지고 있어 이 목표 달성이 쉽지 않을 것이다.</div></div><div class="para"><div class="para-title">정치적 악재와 수익성 문제</div><div class="para-body">오픈AI는 최근 위기에 직면해 있으며, 'QuitGPT' 캠페인의 확산이 이를 더욱 악화시키고 있다. 이 캠페인은 정치적 요인에 의해 영향을 받고 있으며, 민주당 지지층을 중심으로 확산되고 있다. 또, 높은 운영비용이 계속해서 손실을 키우고 있는 상황에서 이러한 정치적 요소는 오픈AI의 미래에 좋지 않은 영향을 미칠 가능성이 크다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">오픈AI은 계속해서 투자자들의 신뢰를 유지할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">아직까지는 투자자들에게 매력적인 투자처로 여겨진다. 그러나 경쟁자들의 기세가 만만치 않아 지속적인 성장이 의심스럽다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224193608780" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="딥시크 V4, 블랙웰 칩 유출 의혹이 한국 반도체에 미칠 영향은?" data-tags="#딥시크V4 #블랙웰 #AI #트럼프" data-date="2026-02-26">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-02-26</div>
+      <div class="card-title">딥시크 V4, 블랙웰 칩 유출 의혹이 한국 반도체에 미칠 영향은?</div>
+      <div class="card-tags"><span class="tag">#딥시크V4</span><span class="tag">#블랙웰</span><span class="tag">#AI</span><span class="tag">#트럼프</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">26년 2월 기준, 중국 AI기업의 클로드 기능 불법 추출과 블랙웰 칩의 유출 의혹이 제기되고 있다. 두 이슈는 한국 반도체 산업에 중대한 영향을 미칠 수 있는 셈이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">딥시크 V4의 성능 과장 논란</div><div class="para-body">딥시크 V4는 기존 모델 대비 50% 이상 낮은 추론 비용을 예고하며, ChatGPT와 Gemini3를 앞선다는 유출 정보가 있었다. 그러나 이처럼 대담한 주장에는 과장된 측면이 있다는 반론이 일고 있다.</div></div><div class="para"><div class="para-title">중국 AI기업의 불법 데이터 추출</div><div class="para-body">엔트로픽은 중국의 세 개 AI기업이 클로드 기능을 무단으로 추출했다고 발표했다. 이러한 증류 행위는 미국 AI업계와의 경쟁에서 지속적인 리스크로 작용할 가능성이 있다.</div></div><div class="para"><div class="para-title">블랙웰의 중국 내 유출 의혹</div><div class="para-body">미국 정보기관의 고위관계자는 블랙웰 칩이 중국 내몽골에 설치된 데이터센터에서 사용되었을 가능성을 시사했다. 트럼프의 엔비디아 칩 수출 금지 발언과 상충하는 사건이 전개되고 있어 향후 정치적 파장이 우려된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">딥시크 V4와 블랙웰 칩의 이중 불법 거래가 한국 반도체 산업에 어떤 위협을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">현재로서는 부정적인 영향이 클 것으로 보인다. 한국 반도체 기업들이 저렴한 경쟁에 속수무책으로 당할 가능성이 높기 때문이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224195656904" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2026년 3월 · 2개</div>
+  
+<div class="card" data-title="호르무즈해협 봉쇄가 대만의 전력 공급에 미치는 심각한 영향" data-tags="#대만 #호르무즈해협 #TSMC #LNG" data-date="2026-03-11">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-03-11</div>
+      <div class="card-title">호르무즈해협 봉쇄가 대만의 전력 공급에 미치는 심각한 영향</div>
+      <div class="card-tags"><span class="tag">#대만</span><span class="tag">#호르무즈해협</span><span class="tag">#TSMC</span><span class="tag">#LNG</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">26년 3월 기준, 대만은 호르무즈해협 봉쇄로 인해 전력 공급에 심각한 위기를 맞고 있다. TSMC와 같은 반도체 산업이 전력 부족의 직격탄을 받을 가능성이 크다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">대만의 에너지 구조 변화</div><div class="para-body">대만은 2025년까지 원전을 단계적으로 폐쇄하고 LNG 비율을 높였다. 그러나 예상보다 신재생에너지 발전량이 저조해 LNG 의존도가 급증하고 있다.</div></div><div class="para"><div class="para-title">호르무즈해협의 영향</div><div class="para-body">호르무즈해협에서의 봉쇄로 인해 대만의 LNG 수입에 차질이 생기며, 전력 생태계가 위험에 처하고 있다. 특히 반도체 산업에 필수적인 전력 공급 문제가 심각하다.</div></div><div class="para"><div class="para-title">대만의 대응과 미래 전망</div><div class="para-body">대만은 LNG 현물거래를 통해 물량을 최대한 확보하고 있으며, 긴급한 조치가 필요하다. 현재는 한 달에서 한 달 반 정도 버틸 수 있지만, 상황이 악화되면 심각한 위기가 오게 될 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">호르무즈해협 봉쇄가 지속된다면, 대만의 에너지 공급 위기는 얼마나 심각해질까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">대만의 전력 공급 차질은 심각해질 것이다. TSMC와 같은 산업이 에너지 부족의 직접적인 영향을 받을 가능성이 높기 때문이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224211434862" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="구글 터보퀀트, 압축 기술의 새로운 이정표가 될까" data-tags="#구글 #터보퀀트 #압축기술 #AI" data-date="2026-03-27">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-03-27</div>
+      <div class="card-title">구글 터보퀀트, 압축 기술의 새로운 이정표가 될까</div>
+      <div class="card-tags"><span class="tag">#구글</span><span class="tag">#터보퀀트</span><span class="tag">#압축기술</span><span class="tag">#AI</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 3월 구글이 발표한 '터보퀀트'는 KV 캐시를 효율적으로 압축하는 새로운 기술로, 인공지능의 대화 시스템에 큰 영향을 미칠 것으로 예고된다. 이 기술은 기존 압축기술의 한계를 넘어서는 혁신의 가능성을 내포하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">터보퀀트의 기초가 되는 이론</div><div class="para-body">클로드 섀넌의 엔트로피 이론은 정보 압축의 한계를 설정하는 중요한 기초 이론이다. 섀넌은 압축의 이론적 경계를 제시하며, 엔트로피는 정보의 불확실성을 나타낸다. 이 이론이 오늘날의 압축 기술에 어떻게 적용되고 있는지를 알고 있는 것은 중요하다.</div></div><div class="para"><div class="para-title">터보퀀트의 압축 원리</div><div class="para-body">터보퀀트는 KV 캐시의 정보를 초기 단계에서 표준화하여 메모리에서 필요한 용량을 줄인다. 이를 통해 데이터의 표현을 단순화하고, AI의 성능에 부정적 영향을 미치지 않으면서 압축 효율을 높인다. 이는 다른 압축기술과의 차별점이 된다.</div></div><div class="para"><div class="para-title">미래의 가능성과 과제</div><div class="para-body">터보퀀트는 현재 기술과 비교하여 압축력이 뛰어나지만, 향후 초거대 LLM 모델에서의 적용 가능성을 검증해야 한다. ICLR에서의 동료 검증 이후 6월에 코드가 공개되면 이 기술의 진정한 성능이 드러날 전망이다. 이를 통해 AI 대화 시스템의 효율이 극대화될 가능성이 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">터보퀀트 기술이 향후 AI 대화 시스템의 성능에 어떤 변화를 가져올 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">터보퀀트는 현재까지의 압축기술에서 본질적인 진전을 이룰 가능성이 크다. 이 기술의 성공적인 적용은 인공지능의 미래를 뒤바꿀 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224230601948" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2026년 4월 · 2개</div>
+  
+<div class="card" data-title="삼성이 HBM 전쟁에서 놓친 기회를 다시 잡을 수 있을까?" data-tags="#HBM #삼성전자 #SK하이닉스 #AI" data-date="2026-04-03">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-04-03</div>
+      <div class="card-title">삼성이 HBM 전쟁에서 놓친 기회를 다시 잡을 수 있을까?</div>
+      <div class="card-tags"><span class="tag">#HBM</span><span class="tag">#삼성전자</span><span class="tag">#SK하이닉스</span><span class="tag">#AI</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 4월 기준, HBM 시장은 AI의 부각과 함께 급격한 변화를 맞이하고 있다. 삼성전자가 HBM 사업에서 뒤늦게 다시 뛰어들었지만, 이미 시장은 큰 변화가 있었고 경쟁도 치열하다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">HBM의 발전과 삼성전자의 대응</div><div class="para-body">HBM(고대역폭 메모리)은 데이터 처리 속도를 향상시키기 위해 여러 개의 D램을 수직으로 쌓는 구조로, 초기에는 성능과 가격의 비율이 좋지 않았다. 삼성전자가 2019년 HBM 사업을 철수한 이후에도 시장은 빠르게 발전하였고, HBM3의 등장으로 성능과 용량이 획기적으로 개선됐다. 그러나 삼성전자는 시장에서 입지를 잃고 다시 뛰어들기에 이르렀다.</div></div><div class="para"><div class="para-title">맞춤형 HBM의 등장과 베이스다이의 중요성</div><div class="para-body">HBM4부터는 고객이 직접 설계에 참여하는 맞춤형 HBM이 가능해졌다. 이러한 변화는 베이스다이가 단순한 통로가 아닌 데이터 관리의 콘트롤타워 역할을 하게 되면서 나타났다. 고급형 맞춤형 HBM을 요구하는 고객의 변화에 삼성전자가 적시에 대응할 수 있을지가 향후 경쟁의 중요한 포인트가 될 것이다.</div></div><div class="para"><div class="para-title">zHBM의 가능성과 시장 전망</div><div class="para-body">삼성전자가 개발 중인 zHBM은 GPU 위에 HBM을 배치하여 데이터 전송 속도를 4배 빠르게 하고 전력 소모를 줄이는 구조이다. 현재까지는 양산 적용 시점이 불확실하지만, 이 기술이 상용화될 경우 HBM 시장의 판도를 완전히 바꿀 잠재력을 지닌다. 경쟁업체와의 격차를 다시 좁힐 수 있는 기회가 될 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">삼성이 HBM 시장의 흐름에 적시에 다시 합류할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">YES, 삼성전자가 새로운 기술과 맞춤형 생산을 통해 경쟁력을 회복할 여지는 있다. 그러나 신속한 대응이 매우 중요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224238633380" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="텐센트, AI Lab 해체하고 ‘혼원’으로 통합 R&D 가속화" data-tags="#텐센트 #AI #게임규제 #황금주" data-date="2026-04-05">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-04-05</div>
+      <div class="card-title">텐센트, AI Lab 해체하고 ‘혼원’으로 통합 R&D 가속화</div>
+      <div class="card-tags"><span class="tag">#텐센트</span><span class="tag">#AI</span><span class="tag">#게임규제</span><span class="tag">#황금주</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 4월 5일 기준, 텐센트는 역사적인 변화를 겪고 있다. AI Lab 해체와 함께 새로운 AI 모델로 전환하기로 결정한 것이다. 이는 기존 연구 방식에서 벗어나 AI 성능을 극대화하려는 전략으로 해석된다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">텐센트의 게임 사업과 규제 변화</div><div class="para-body">텐센트는 중국 정부의 엄격한 게임 규제에 직면해 있다. 청소년을 대상으로 한 게임 시간 제한과 실명 확인 절차 강화는 핵심 사업에 큰 영향을 미쳤다. 정부의 이러한 조치는 젊은 세대의 게임 중독을 방지하기 위한 노력이었다.</div></div><div class="para"><div class="para-title">AI Lab의 해체와 새로운 조직의 출범</div><div class="para-body">텐센트는 AI Lab을 해체하고 칭화대학교 출신의 야오 순위를 수석 과학자로 영입하여 새로운 조직을 구성했다. 이 조직은 ‘혼원’이라는 단일 AI 프로젝트에 모든 역량을 집중할 예정이다. 이는 연구원 다수를 해고하면서까지 효율성을 추구하는 새로운 접근 방식을 뜻한다.</div></div><div class="para"><div class="para-title">AI 기술 통합과 미래 전망</div><div class="para-body">텐센트의 결정이 성공할지는 불확실하다. 27세의 젊은 인재인 야오 순위가 이끌게 될 AI 연구 개발의 방향이 주목받고 있다. 기업은 인력 대신 AI 성능을 높이는 방향으로 전환하여 새로운 과제를 안고 있는 상황이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">텐센트의 AI 통합 전략이 진정한 혁신을 이끌어낼 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">성공 여부는 불확실하다. 청년 리더십 아래 AI 성능 향상에만 집중하기 보다는 기술적 완성도를 보장해야 할 필요가 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224232148996" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+</div>
+<div class="no-results" id="noResults">검색 결과가 없습니다.</div>
+<script>
+// 카드 펼치기
+document.querySelectorAll('.card-header').forEach(h => {
+    h.addEventListener('click', () => h.closest('.card').classList.toggle('open'));
+});
+
+// 검색 + 태그 필터
+const searchInput = document.getElementById('searchInput');
+const filterCount = document.getElementById('filterCount');
+const noResults = document.getElementById('noResults');
+const cards = Array.from(document.querySelectorAll('.card'));
+const dateGroups = Array.from(document.querySelectorAll('.date-group'));
+let activeTag = null;
+
+function getCardText(card) {
+    return card.dataset.title + ' ' + card.dataset.tags + ' ' + card.dataset.date;
+}
+
+function applyFilters() {
+    const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    let visible = 0;
+
+    cards.forEach(card => {
+        const text = getCardText(card).toLowerCase();
+        const matchSearch = !q || text.includes(q);
+        const matchTag = !activeTag || card.dataset.tags.includes(activeTag);
+        const show = matchSearch && matchTag;
+        card.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    // 날짜 그룹 헤더: 하위 카드 모두 숨겨지면 헤더도 숨김
+    dateGroups.forEach(group => {
+        const groupCards = Array.from(group.querySelectorAll('.card'));
+        const anyVisible = groupCards.some(c => c.style.display !== 'none');
+        group.style.display = anyVisible ? '' : 'none';
+    });
+
+    if (filterCount) filterCount.textContent = visible + '개';
+    if (noResults) noResults.style.display = visible === 0 ? 'block' : 'none';
+}
+
+if (searchInput) searchInput.addEventListener('input', applyFilters);
+
+// 태그 버튼
+document.querySelectorAll('.tag-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tag = btn.dataset.tag;
+        if (tag === '__clear__') {
+            activeTag = null;
+            document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+        } else if (activeTag === tag) {
+            activeTag = null;
+            btn.classList.remove('active');
+        } else {
+            activeTag = tag;
+            document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        applyFilters();
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+[4] 대왕고래들의 암호화폐거래소 블록필즈 출금 중단 사태
+
+날짜: 2026. 2. 14 | 링크: https://blog.naver.com/ranto28/224182988123
+
+--------------------------------------------------------------------------------
+
+​
+​
+​
+​
+​
+​
+1. 2026년 2월 12일(한국시간), 블록 필즈 홈페이지에 공지 하나가 올라옴.
+​
+Crypto Trading Solutions and Technology | BlockFills
+Crypto Trading Solutions and Technology | BlockFills
+Crypto Trading Solutions and Technology firm with Liquidity Solutions, OTC Trading, Crypto Options, SaaS Solutions, FIX API, REST API & more.
+www.blockfills.com
+​
+​
+2. 공지는 아래 내용임.
+​
+​
+​
+In light of recent market and financial conditions, and to further the protection of clients and the firm, BlockFills took the action last week of temporarily suspending client deposits and withdrawals.  Clients have been able to continue trading with BlockFills for the purpose of opening and closing positions in spot and derivatives* trading and select other circumstances.
+BlockFills is committed to transparency in its communications and to the protection of its clients. Management has been working hand in hand with investors and clients to bring this issue to a swift resolution and to restore liquidity to the platform. The firm has also been in active dialogue with our clients throughout this process, including information sessions and an opportunity to ask questions of senior management. BlockFills is working tirelessly to bring this matter to a conclusion and will continue to regularly update our clients as developments warrant.
+​
+최근의 시장 및 금융 상황을 고려하여, 그리고 고객과 회사를 더욱 보호하기 위해 블록 필즈(BlockFills)는
+고객의 입금과 출금을 일시적으로 중단하는 조치를 취했습니다.
+고객들은 블록 필즈에서 현물 및 파생상품 거래와 특정한 다른 상황에서 포지션을 개설하거나 청산하는 목적으로 계속 거래를 할 수 있었습니다.
+블록 필즈는 커뮤니케이션의 투명성과 고객 보호에 전념하고 있습니다. 경영진은 투자자 및 고객과 긴밀히 협력하여 이 문제를 신속히 해결하고
+플랫폼의 유동성을 회복하기 위해 노력하고 있습니다.
+블록 필즈는 이 문제를 해결하기 위해 끊임없이 노력하고 있으며, 상황이 진전되는 대로 고객들에게 정기적으로 업데이트를 제공할 것입니다.
+​
+​
+​
+​
+​
+3. 은행을 예로 들면, 입출금을 일시적으로 중단하겠다는 말임.
+​
+​
+​
+​
+4. 플랫폼의 유동성을 회복하기 위해 노력하고 있다고 하니, 유동성에 문제가 생긴 것임.
+​
+​
+​
+​
+5. 블록 필즈는 조속한 시일 내에 출금재개 시점을 공지할 예정이라고 하니, 아직 출금재개 시점도 알수 없다는 말임.
+​
+​
+​
+​
+6. 암호화폐 가격 급락으로 인한 대규모 청산으로 거래소의 유동성이 부족하니, 일단 출금을 단속하고 시간을 벌어보겠다는 의미임.
+​
+​
+​
+​
+​
+​
+​
+​
+7. 어디서 많이 본 것 같은 느낌이 쎄한 장면임.
+​
+​
+​
+​
+​
+8. 블록 필즈는 잔잔 바리 고객들과 거래하는 곳이 아님.
+​
+​
+​
+​
+9. 블록 필즈는 1천만 달러(140억 원) 이상의 대왕고래급 자산 보유자에 한정해서 거래를 트고 있음.
+​
+© CoolPubilcDomains, 출처 OGQ
+​
+​
+​
+​
+​
+10. 헤지펀드, 자산운용사, 비트코인 채굴기업 등이 주요 고객으로, 95개국 2,000명의 고객이 연간 600억 달러 정도 거래를 하고 있음.
+​
+​
+​
+​
+11. 블록 필즈는 2017년 미국 시카고에서 설립되었고, CME 그룹(시카고 선물거래소 운영)의 자금이 들어오며 빠르게 성장한 거래소임.
+​
+​
+​
+​
+12. 사태 발생 원인은 비트코인 가격의 급락임.
+​
+​
+© MeshCube, 출처 OGQ
+​
+​
+​
+​
+13. 비트코인 급락으로 대규모 레버리지 청산이 발생하며 현금이 유출되자, 기관투자자들이 겁을 먹고 출금을 요구하기 시작함.
+​
+​
+​
+​
+14. 거래소는 고객 돈을 두 가지 방법으로 운용을 함.
+​
+​
+​
+​
+15. 거래소 내부에 보관하는 현금성 자금이 있고, 회원들에게 대출을 해주는 등 수익을 내기 위해 돌리는 자금이 있음.
+​
+​
+​
+​
+16. 내부에 보관하는 현금성 자산 이상으로 출금 요구가 들어왔고, 빌려준 돈은 바로 회수가 힘든 게 원인으로 보임.
+​
+​
+​
+​
+17. 대출은 만기까지 갚지 않고 쓸 수 있는 기한의 이익이 있음.
+​
+​
+​
+​
+18. 만기가 되거나, 연체등으로 기한의 이익이 상실되기 전까지는 갚지않고 쓸 수 있는 권리를 대출자가 보유함.
+​
+​
+​
+​
+19. 자금 미스매칭이 생겨서 일시적으로 유동성이 부족해지는 것은, 뱅크런이 발생했을 때 은행에서도 자주 보이는 장면임.
+​
+​
+​
+20. 블록 필즈는 일단 출금을 막고, 대출 만기가 돌아오는 대로 회수를 해서 돌려주자는 판단을 하게 된 것으로 보임.
+​
+​
+​
+© 차분한 호랑이, 출처
+​
+​
+​
+​
+21. 풀장에 물이 차 있을 때는 누가 옷을 입고 있고, 누가 벗고 있는지를 잘 모름.
+​
+​
+​
+​
+22. 물이 빠지면, 확실하게 구분이 됨.
+​
+​
+​
+​
+23. 출금이 몰려서 일시적으로 유동성이 부족한 정도인지, 아니면 다른 문제가 있는지는 돈이 빠지고 나면 알게 될 것 같음.
+​
+​
+​
+​
+24. 블록 필즈가 질의응답에서 내부 감사를 언급했다는 점이 찝찝한 상황임.
+​
+​
+"블록 필즈는 이번 조치가 비정상적인 시장 환경에서 시스템을 보호하고 자산의 안전성을 점검하기 위한 결정이라고 설명했다. 회사 측은
+내부 감사와 시스템 고도화 작업이 진행 중
+이며 이는 고객들의 자산을 보다 안전하게 관리하기 위한 선제적 방어 조치라는 점을 분명히 했다."
+​
+​
+​
+​
+​
+​
+​
+​
+​
+​
+​
+​
+​
+​
+​
+​
+​
+한 줄 코멘트. 암호화폐 거래소 하나가 출금을 중단함. 아직 정확한 출금 중단 사유는 밝히지 않고 있음. 기관 전용 거래소라서 크게 이슈가 되는곳은 아닌듯함. 비트코인 하락으로 인한 레버리지 청산등의 파편이 여기저기 튀는 것에는 주목할 필요가 있어보임.
+
+================================================================================

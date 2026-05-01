@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>메르 리더 — 부동산</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; background: #f5f5f0; color: #1a1a1a; line-height: 1.7; }
+a { color: inherit; text-decoration: none; }
+
+/* 상단 네비 */
+.nav { background: #1a1a1a; color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+.nav .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.5px; }
+.nav .back { font-size: 0.85rem; opacity: 0.6; }
+.nav .back:hover { opacity: 1; }
+
+/* 검색/필터 바 */
+.filter-bar { max-width: 780px; margin: 0 auto; padding: 16px 24px 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.search-input { flex: 1; min-width: 200px; padding: 9px 14px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 0.9rem; background: #fff; outline: none; }
+.search-input:focus { border-color: #1a1a1a; }
+.filter-count { font-size: 0.8rem; color: #aaa; white-space: nowrap; }
+.tag-filter-bar { max-width: 780px; margin: 0 auto; padding: 10px 24px 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-btn { font-size: 0.75rem; background: #f0f0ea; color: #555; padding: 4px 10px; border-radius: 20px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+.tag-btn:hover { background: #e0e0d8; }
+.tag-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.tag-btn.clear-btn { background: #fff; border-color: #ddd; color: #999; }
+
+/* 날짜 그룹 헤더 */
+.date-group-header { font-size: 0.78rem; font-weight: 700; letter-spacing: 1px; color: #aaa; padding: 20px 0 8px; text-transform: uppercase; }
+
+/* 결과 없음 */
+.no-results { text-align: center; padding: 60px 24px; color: #aaa; font-size: 0.95rem; display: none; }
+
+/* 인덱스 페이지 */
+.index-hero { padding: 60px 24px 40px; max-width: 900px; margin: 0 auto; }
+.index-hero h1 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+.index-hero p { color: #666; font-size: 0.95rem; }
+.folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 900px; margin: 0 auto; padding: 0 24px 60px; }
+.folder-card { background: #fff; border-radius: 12px; padding: 24px; border: 1px solid #e8e8e0; cursor: pointer; transition: box-shadow 0.2s, transform 0.2s; }
+.folder-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); transform: translateY(-2px); }
+.folder-card .folder-name { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
+.folder-card .folder-sub { font-size: 0.8rem; color: #888; margin-bottom: 12px; }
+.folder-card .folder-count { font-size: 1.8rem; font-weight: 800; color: #1a1a1a; }
+.folder-card .folder-count span { font-size: 0.85rem; font-weight: 400; color: #888; margin-left: 4px; }
+
+/* 타임라인 페이지 */
+.timeline-header { padding: 40px 24px 24px; max-width: 780px; margin: 0 auto; }
+.timeline-header h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+.timeline-header .sub { color: #888; font-size: 0.85rem; margin-top: 4px; }
+.timeline { max-width: 780px; margin: 0 auto; padding: 0 24px 80px; }
+
+/* 카드 */
+.card { background: #fff; border-radius: 12px; border: 1px solid #e8e8e0; margin-bottom: 16px; overflow: hidden; transition: box-shadow 0.2s; }
+.card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.card-header { padding: 20px 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.card-header-left { flex: 1; }
+.card-date { font-size: 0.78rem; color: #999; margin-bottom: 6px; letter-spacing: 0.3px; }
+.card-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.3px; line-height: 1.5; }
+.card-tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 0.75rem; background: #f0f0ea; color: #555; padding: 3px 8px; border-radius: 20px; }
+.card-toggle { font-size: 1.2rem; color: #ccc; flex-shrink: 0; margin-top: 2px; transition: transform 0.2s; }
+.card.open .card-toggle { transform: rotate(180deg); }
+
+/* 카드 본문 */
+.card-body { display: none; border-top: 1px solid #f0f0ea; padding: 24px; }
+.card.open .card-body { display: block; }
+
+.section { margin-bottom: 24px; }
+.section-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #aaa; margin-bottom: 10px; }
+
+/* 도입 */
+.intro-text { font-size: 0.95rem; color: #333; line-height: 1.8; }
+
+/* 단락 */
+.para { margin-bottom: 16px; }
+.para-title { font-size: 0.85rem; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; padding-left: 10px; border-left: 3px solid #1a1a1a; }
+.para-body { font-size: 0.9rem; color: #444; line-height: 1.8; }
+
+/* 주석 */
+.annotations { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.annotation { font-size: 0.82rem; background: #f7f7f2; border-radius: 6px; padding: 8px 12px; color: #555; line-height: 1.6; }
+.annotation .ann-type { font-weight: 700; color: #888; margin-right: 6px; font-size: 0.75rem; }
+.annotation .ann-target { font-weight: 700; color: #333; margin-right: 4px; }
+
+/* 질문 + 답 */
+.question-box { background: #1a1a1a; color: #fff; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+.question-box .q-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; color: #888; margin-bottom: 6px; }
+.question-box .q-text { font-size: 0.92rem; line-height: 1.6; }
+.answer-box { background: #f7f7f2; border-radius: 10px; padding: 16px 20px; }
+.answer-box .a-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; color: #aaa; margin-bottom: 6px; }
+.answer-box .a-text { font-size: 0.92rem; color: #333; line-height: 1.6; }
+
+/* 원본 링크 */
+.source-link { margin-top: 16px; font-size: 0.8rem; color: #aaa; }
+.source-link a { color: #888; text-decoration: underline; }
+.source-link a:hover { color: #333; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="logo">메르 리더</span>
+  <a href="../index.html" class="back">← 전체 목록</a>
+</nav>
+<div class="timeline-header">
+  <h1>부동산</h1>
+  <div class="sub">부동산·건설·PF · <span id="filterCount">58개</span> 글</div>
+</div>
+<div class="filter-bar">
+  <input id="searchInput" class="search-input" type="text" placeholder="제목·태그 검색...">
+</div>
+<div class="tag-filter-bar">
+  <button class="tag-btn clear-btn" data-tag="__clear__">전체</button><button class="tag-btn" data-tag="#부동산PF">#부동산PF</button><button class="tag-btn" data-tag="#부동산">#부동산</button><button class="tag-btn" data-tag="#아파트">#아파트</button><button class="tag-btn" data-tag="#태영건설">#태영건설</button><button class="tag-btn" data-tag="#전세자금대출">#전세자금대출</button><button class="tag-btn" data-tag="#상업용부동산">#상업용부동산</button><button class="tag-btn" data-tag="#서울아파트">#서울아파트</button><button class="tag-btn" data-tag="#시멘트">#시멘트</button><button class="tag-btn" data-tag="#미분양">#미분양</button><button class="tag-btn" data-tag="#롯데건설">#롯데건설</button><button class="tag-btn" data-tag="#공실률">#공실률</button><button class="tag-btn" data-tag="#레미콘">#레미콘</button><button class="tag-btn" data-tag="#1기신도시">#1기신도시</button><button class="tag-btn" data-tag="#워크아웃">#워크아웃</button><button class="tag-btn" data-tag="#신세계건설">#신세계건설</button><button class="tag-btn" data-tag="#KKR">#KKR</button><button class="tag-btn" data-tag="#저축은행">#저축은행</button><button class="tag-btn" data-tag="#생활형숙박시설">#생활형숙박시설</button><button class="tag-btn" data-tag="#에어비앤비">#에어비앤비</button><button class="tag-btn" data-tag="#물류센터">#물류센터</button><button class="tag-btn" data-tag="#브리지론">#브리지론</button><button class="tag-btn" data-tag="#구조조정">#구조조정</button><button class="tag-btn" data-tag="#모래">#모래</button><button class="tag-btn" data-tag="#금융위기">#금융위기</button><button class="tag-btn" data-tag="#층간소음">#층간소음</button><button class="tag-btn" data-tag="#HUG">#HUG</button><button class="tag-btn" data-tag="#전세사기">#전세사기</button><button class="tag-btn" data-tag="#친환경">#친환경</button><button class="tag-btn" data-tag="#부동산대책">#부동산대책</button><button class="tag-btn" data-tag="#사모펀드">#사모펀드</button>
+</div>
+<div class="timeline" style="margin-top:16px">
+
+<div class="date-group">
+  <div class="date-group-header">2024년 1월 · 4개</div>
+  
+<div class="card" data-title="태영건설 워크아웃, 신세계건설과의 연관성은?" data-tags="#태영건설 #워크아웃 #신세계건설 #부동산PF" data-date="2024-01-03">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-01-03</div>
+      <div class="card-title">태영건설 워크아웃, 신세계건설과의 연관성은?</div>
+      <div class="card-tags"><span class="tag">#태영건설</span><span class="tag">#워크아웃</span><span class="tag">#신세계건설</span><span class="tag">#부동산PF</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 1월 3일 기준, 태영건설의 워크아웃 상황이 심각해지고 있으며 신세계건설과 연결된 복잡한 금융상황도 부각되고 있다. 태영건설의 부채가 4조대에서 9조대로 증가했으며, 이는 회사의 미래에 대한 불확실성을 더욱 키운다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">태영건설의 재무위기</div><div class="para-body">태영건설이 현재 워크아웃에 들어갔다는 것은 회사가 극심한 재무 위기를 겪고 있음을 나타낸다. 부채가 급증한 것은 책임준공과 같은 항목들이 부채로 인식되면서 발생한 일이며, 이는 부정적인 평가는 물론, 채권단과의 관계에도 영향을 미친다.</div></div><div class="para"><div class="para-title">신세계건설과의 연결점</div><div class="para-body">신세계건설은 태영건설과 부동산 프로젝트 파이낸싱(PF)에서 유사한 어려움을 겪고 있다. 2023년에도 신세계건설은 적자를 기록했으며, 대구 지역 아파트에서 미분양이 심화되고 있다. 이를 테면, 최근의 부채비율 상승은 신세계건설의 재무 건전성에 경고 신호를 보내고 있다.</div></div><div class="para"><div class="para-title">워크아웃의 앞날과 여파</div><div class="para-body">태영건설이 워크아웃을 포기하고 기업회생으로 가는 결정은 다양한 영향을 초래할 수 있다. 특히, 정치적 압박과 주주들의 요구가 적절히 조정되지 않는다면 태영건설 뿐만 아니라 신세계건설 또한 금융위기 속에서 더 큰 리스크에 직면할 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">태영건설의 워크아웃과 신세계건설의 재무상황은 서로 어떤 식으로 연결되어 있는가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">YES, 태영건설의 워크아웃은 신세계건설에도 상당한 압박으로 작용할 것이다. 두 건설사 간의 경제적 연관성을 고려해야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223310867063" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="태영건설 회생, KKR이 우위를 점하는 경로는?" data-tags="#태영건설 #KKR #워크아웃 #사모펀드" data-date="2024-01-09">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-01-09</div>
+      <div class="card-title">태영건설 회생, KKR이 우위를 점하는 경로는?</div>
+      <div class="card-tags"><span class="tag">#태영건설</span><span class="tag">#KKR</span><span class="tag">#워크아웃</span><span class="tag">#사모펀드</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 1월 기준, 태영건설의 회생 과정을 둘러싼 금융권의 결정이 기업의 미래를 좌우할 상황이다. KKR이라는 사모펀드가 주도권을 잡을 수 있는 요소들이 복잡하게 얽혀 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">태영건설의 회생 전략</div><div class="para-body">태영건설은 현재 KKR의 자금을 통해 기업 회생을 모색하고 있다. KKR은 태영그룹의 에코비트 지분을 담보로 대출을 제공한 상태인데, 이는 그룹이 부채를 상환하기 위한 중요한 수단이 될 수 있다. 태영건설이 워크아웃 대신 회생 절차로 들어가면, KKR은 기간 안에 자산을 통제하게 되어 더 큰 리스크를 안게 된다.</div></div><div class="para"><div class="para-title">KKR의 투자 구조와 리스크</div><div class="para-body">KKR의 투자 방식은 일반적인 사모펀드와는 차별화된 점이 있다. 태영건설의 기업회생 절차가 시작되면 KKR은 담보로 제공한 에코비트의 50% 지분을 몰수할 수 있는 권리를 가지게 된다. 이는 KKR에게 유리한 구조지만, 태영그룹에게는 큰 부담이 될 것이다.</div></div><div class="para"><div class="para-title">금융당국의 역할과 태영그룹의 대응</div><div class="para-body">현재 태영그룹은 채권단의 압박 속에서 기업 회생이 아닌 워크아웃을 목표로 하고 있다. 금융당국의 개입이 KKR과 태영그룹 간의 패권 다툼에서 중요한 변수로 작용할 가능성이 크다. 태영건설이 회생 절차에 들어가면, 금융당국은 태영그룹의 모든 거래와 자산을 면밀히 감시할 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">태영건설의 기업 회생이 KKR의 수익성을 보장하는 동시에, 태영그룹에게 어떤 후폭풍을 가져올까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">기업 회생이 이루어지면 KKR은 큰 이익을 실현할 가능성이 있지만, 태영그룹은 심각한 재정적 문제를 겪게 될 수 있다. 상황이 악화된다면 태영건설과 부실채권자 간의 관계가 더욱 악화될 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223315659749" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="부동산 PF 위기가 롯데건설과 태영건설에 미치는 영향은?" data-tags="#부동산PF #롯데건설 #태영건설 #유동성위기" data-date="2024-01-11">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-01-11</div>
+      <div class="card-title">부동산 PF 위기가 롯데건설과 태영건설에 미치는 영향은?</div>
+      <div class="card-tags"><span class="tag">#부동산PF</span><span class="tag">#롯데건설</span><span class="tag">#태영건설</span><span class="tag">#유동성위기</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 1월 기준, 부동산 PF의 위험이 점차 가시화되며 롯데건설과 태영건설이 힘든 상황에 놓였다. 특히, 증대하는 미분양 아파트의 문제는 건설사에게 심각한 압박 요인으로 작용하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">증가하는 미분양 아파트의 영향</div><div class="para-body">전국의 준공 후 미분양 아파트가 급격히 증가하고 있으며, 이는 건설사에 직접적인 재정적 문제를 초래할 수 있다. 롯데건설은 금융기관과의 관계에서 채무보증 등의 책임을 지게 되고 있으며, 미분양이 발생한 아파트는 분양가 하락으로 이어져 금융사의 손실 가능성이 높아진다.</div></div><div class="para"><div class="para-title">채무보증 및 책임준공의 복잡성</div><div class="para-body">부동산 PF에서 건설사가 금융기관에 지는 여러 가지 책임 중 유독 채무보증 및 책임준공이 문제를 심화시키고 있다. 특히, 책임준공의 경우 미분양 아파트가 발생하더라도 건설사는 책임을 피할 수 없는 구조여서 이로 인해 부담이 가중될 수 있다.</div></div><div class="para"><div class="para-title">유동성 위기와 롯데그룹의 복잡한 상황</div><div class="para-body">롯데건설은 유동성 위기에 직면하게 되었고, 이 문제는 그룹 전반에 영향을 미칠 가능성이 크다. 일본 롯데와의 관계가 복잡하게 얽혀 있어, 계열사의 지원도 쉽지 않은 상황으로, 신동주 부회장이 이를 이용해 자신의 입지를 강화하려고 하는 양상이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">롯데건설의 유동성 문제는 그룹의 지배권에도 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">예, 롯데건설의 유동성 위기는 신동주 부회장이 힘을 받을 기회를 제공할 수 있으며, 이는 신동빈 회장의 지배구조에 중대한 위협이 될 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223317794428" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="부동산 PF 부실 정리, 신세계건설의 다음 행보는?" data-tags="#부동산PF #신세계건설 #저축은행 #충당금" data-date="2024-01-29">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-01-29</div>
+      <div class="card-title">부동산 PF 부실 정리, 신세계건설의 다음 행보는?</div>
+      <div class="card-tags"><span class="tag">#부동산PF</span><span class="tag">#신세계건설</span><span class="tag">#저축은행</span><span class="tag">#충당금</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 1월, 금융당국이 부동산 PF 부실 정리를 본격화할 조짐을 보이고 있다. 신세계건설의 대규모 미분양 사태와 저축은행의 충당금 적립 압박이 결합된 복합적 위기 상황이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">신세계건설의 부실화와 미분양 문제</div><div class="para-body">신세계건설은 대구에서 진행 중인 '빌리브 헤리티지' 프로젝트의 PF 만기 연장에 실패하며 부실화하고 있는 상황이다. 분양율은 17%에 불과하고, 미분양 아파트 공매가 불가피해졌다. 저조한 분양율은 부실채권과 연결되어 추가적인 손실을 초래할 것으로 보인다.</div></div><div class="para"><div class="para-title">금융당국의 부동산 PF 정리 조치</div><div class="para-body">금융당국은 부동산 PF 부실 정리를 위해 브리지론의 충당금을 100% 쌓도록 지시하고, 대규모 부동산 PF의 심사와 정리 작업을 지속적으로 진행하고 있다. 저축은행은 44.5%에 달하는 요주의 여신에 대해 손실을 현재보다 두 배로 잡아야 하는 상황이다.</div></div><div class="para"><div class="para-title">부실채권 매각 및 금융기관의 대응</div><div class="para-body">저축은행은 부실채권 매각을 통해 연체율을 낮추려 할 것이며, 이 과정에서 손실은 발생하지만 장부에서 부실이 청산될 가능성이 있다. 그러나 이는 개인사업자와 대출자의 상황을 더욱 악화시킬 위험을 내포하고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">부동산 PF 부실 정리가 계속된다면, 신세계건설은 과연 어떻게 회복할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">부동산 PF에 대한 감독당국의 정리 조치는 피할 수 없는 상황이다. 신세계건설은 그룹 지원 등으로 버틸 가능성은 있으나, 근본적인 해결책이 없다면 장기적인 재무적 어려움에 직면할 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223336124234" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 2월 · 4개</div>
+  
+<div class="card" data-title="미국 은행주 폭락, 상업용 부동산의 그림자에 가려진 리스크" data-tags="#미국은행 #상업용부동산 #NYCB #리스크" data-date="2024-02-02">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-02-02</div>
+      <div class="card-title">미국 은행주 폭락, 상업용 부동산의 그림자에 가려진 리스크</div>
+      <div class="card-tags"><span class="tag">#미국은행</span><span class="tag">#상업용부동산</span><span class="tag">#NYCB</span><span class="tag">#리스크</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 2월, 미국의 지역은행인 NYCB가 폭락하며 상업용 부동산의 위기가 본격화되고 있다. 상업용 부동산의 가치 하락은 단순한 침체가 아닌 심각한 금융 리스크를 초래할 수 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">상업용 부동산의 가치 저하 요인</div><div class="para-body">상업용 부동산은 임대 수익이 있어야만 가치를 유지하기 때문에, 공실률이 높아지면 가치가 떨어진다. 최근 재택근무가 대세가 되면서 오피스 빌딩의 공실률이 증가하고 있으며, 이는 상업용 부동산 전체에 부정적인 영향을 미치고 있다.</div></div><div class="para"><div class="para-title">은행 대출의 본질적 리스크</div><div class="para-body">상업용 부동산 투자에는 대출이 대부분 포함되며, 대출금리 인상이 문제를 악화시키고 있다. 고정금리가 아니라 변동금리에 의존하는 대출 구조는 금리가 상승할수록 취약해지며, 이는 은행의 손실로 이어질 수 있다.</div></div><div class="para"><div class="para-title">전 세계적 문제의 시작</div><div class="para-body">상업용 부동산의 불황은 미국에 국한되지 않으며, 전 세계 주요 도시의 공실률이 상승하고 있다. 한국의 금융회사들도 해외 투자에 위험에 처해 있으며, 상업용 부동산에 대한 의존도가 높아질수록 문제가 심화될 전망이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">상업용 부동산의 문제는 금융 시스템 전반에 어떤 영향을 미칠 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">문제는 심각하다. 상업용 부동산의 가치 하락과 금융 시스템의 연결고리는 위험 신호로 작용할 가능성이 크다. 이를 해결하기 위한 조치가 시급하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223341586945" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="지식산업센터 공급 과잉이 부른 부동산PF 위기" data-tags="#지식산업센터 #부동산PF #공실대란" data-date="2024-02-14">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-02-14</div>
+      <div class="card-title">지식산업센터 공급 과잉이 부른 부동산PF 위기</div>
+      <div class="card-tags"><span class="tag">#지식산업센터</span><span class="tag">#부동산PF</span><span class="tag">#공실대란</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 2월 현재, 지식산업센터의 공급 과잉이 심각한 상황에 놓여 있다. 금리 상승과 함께 공실이 급증하고 있으며, 이에 따른 투자 위험이 커지고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">지식산업센터 공급과 수요의 불일치</div><div class="para-body">2018년 이후 지식산업센터는 급격히 증가하여 2024년에는 약 1,529동에 달한다. 그러나 이는 산업단지와 대형 수요처가 없는 경우가 많아 실질적인 수요를 충족하지 못하고 있다.</div></div><div class="para"><div class="para-title">금리 상승과 공실 문제</div><div class="para-body">미국의 금리 인상으로 인해 이자 부담이 증가하면서 지식산업센터는 심각한 공실 문제에 직면하게 되었다. 신축된 센터가 임차인을 찾지 못하는 상황이 이어지고 있다.</div></div><div class="para"><div class="para-title">부동산 투자자의 어려움</div><div class="para-body">지식산업센터에 투자한 소규모 투자자들 역시 어려움을 겪고 있다. 예상했던 월세 수익이 낮아지고, 매매 가격이 하락하면서 경제적 손실을 겪고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">지식산업센터의 공급이 과도해진 현 상황에서, 앞으로의 투자 관점은 어떤 방향으로 나아가야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">투자자는 현재 상황을 철저히 분석해야 한다. 과거의 기대에 비해 수요가 감소한 상태이므로, 신중하게 접근하는 것이 필요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223352591525" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="생활형 숙박시설, 정책 변화 속에서의 불법 숙박 시장의 한계" data-tags="#생활형숙박시설 #에어비앤비 #부동산규제" data-date="2024-02-15">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-02-15</div>
+      <div class="card-title">생활형 숙박시설, 정책 변화 속에서의 불법 숙박 시장의 한계</div>
+      <div class="card-tags"><span class="tag">#생활형숙박시설</span><span class="tag">#에어비앤비</span><span class="tag">#부동산규제</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 2월 기준, 생활형 숙박시설은 에어비앤비와 관련된 불법 숙박 영업 문제로 주목받고 있다. 정부의 규제가 강화되면서 생숙의 위치와 역할이 변화를 겪고 있으며, 현재 직면한 도전들이 어떻게 현실화되고 있는지를 살펴본다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">생활형 숙박시설의 불법성 문제</div><div class="para-body">한국의 에어비앤비는 거의 불법으로 간주되며, 주거용 건물에서의 숙박 영업은 금지되어 있다. 일반 오피스텔로 숙박업을 운영하다 적발될 경우에 상당한 벌금이 부과된다. 이러한 상황에서도 외국인 관광객의 수요는 증가하고 있으며, 이에 따라 제도적 개선이 필요하다.</div></div><div class="para"><div class="para-title">정책 변화와 주민등록 이슈</div><div class="para-body">생활형 숙박시설은 청약저축이 없어도 분양이 가능하다는 장점이 있지만, 정부의 규제로 인해 주거용으로의 전환이 금지되었다. 그럼에도 불구하고 불법 숙박업에 대한 규제와 동시에 시가표준액의 10%를 이행강제금으로 내야 하는 문제로 갈등이 커지고 있다.</div></div><div class="para"><div class="para-title">정치적 관심 부족과 사회적 이슈화의 한계</div><div class="para-body">생활형 숙박시설의 문제는 지식산업센터보다 더 심각하지만, 이해관계자가 많지 않아 사회적 이슈로 부각되지 않고 있다. 정치인들이 이 문제에 대한 관심을 가지기 어려운 상황이며, 일상적인 불법 숙박 운영으로 인해 막대한 벌금이 발생하고 있는 현실이 굳어지고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">생활형 숙박시설에 대한 규제가 강화되는 가운데, 정부가 이 문제를 해결하기 위한 정책적 대안을 마련하지 않는다면 어떤 결과가 초래될 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">규제 강화는 시장 혼란을 가중시킬 것이며, 위법 상태에서 운영되는 경우가 늘어나게 될 것이다. 이러한 상황은 결국 불법 숙박업을 더욱 확산시키는 결과를 초래한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223353712000" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="저온 물류센터 공실 증가, 부동산 PF 부실로 이어질까" data-tags="#부동산PF #저온물류센터 #공실률 #물류센터" data-date="2024-02-16">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-02-16</div>
+      <div class="card-title">저온 물류센터 공실 증가, 부동산 PF 부실로 이어질까</div>
+      <div class="card-tags"><span class="tag">#부동산PF</span><span class="tag">#저온물류센터</span><span class="tag">#공실률</span><span class="tag">#물류센터</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 2월 기준, 저온 물류센터의 공급과잉 현상으로 인해 공실률이 증가하고 있다. 이 현상은 부동산 PF 부실로 이어질 우려가 있으며, 지식산업센터와 생활형 숙박시설과 함께 부실 3대장으로 지목되고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">저온 물류센터의 중요성과 공급 과잉</div><div class="para-body">신선식품 배송 시장의 성장과 함께 저온 물류센터의 수요는 증가했다. 하지만 2022년 이후 다수의 저온 물류센터가 동시에 건설되면서 공급이 과잉 상태에 이르렀다. 이로 인해 공실률이 높아지며 시장의 불안을 초래하고 있다.</div></div><div class="para"><div class="para-title">임차인 우위 시장의 전개</div><div class="para-body">2022년부터 물류센터 시장은 임차인 우위로 변화하고 있다. 임대료가 하락하고 금리가 오르며, 금융비용이 증가하는 등 부동산 PF에 악영향을 미치고 있다. 특히, 수도권에서의 저온 물류센터 공실률은 급격히 증가하고 있다.</div></div><div class="para"><div class="para-title">부동산 PF의 부실 확산</div><div class="para-body">저온 물류센터의 공급 과잉과 임대료 하락은 부동산 PF의 전체적인 부실을 악화시킬 수 있다. 특히, 2023년 수도권의 A급 물류센터 공실률이 17%로 증가하였고, 이는 건설사의 부실로 이어질 가능성이 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">저온 물류센터의 공급 과잉이 부동산 PF에 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">공급 과잉으로 인해 저온 물류센터의 공실률이 상승하고, 이는 부동산 PF의 부실로 이어질 것이다. 시장의 신뢰도가 저하되고, 금융비용 부담이 커지고 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223354621578" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 3월 · 1개</div>
+  
+<div class="card" data-title="태영건설이 자본잠식에 빠진 이유와 향후 전망은?" data-tags="#태영건설 #자본잠식 #부동산PF #출자전환" data-date="2024-03-17">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-03-17</div>
+      <div class="card-title">태영건설이 자본잠식에 빠진 이유와 향후 전망은?</div>
+      <div class="card-tags"><span class="tag">#태영건설</span><span class="tag">#자본잠식</span><span class="tag">#부동산PF</span><span class="tag">#출자전환</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 3월 기준, 태영건설이 완전 자본잠식에 빠지며 주식 거래가 정지된 상황이다. 자본잠식 문제로 추가적인 자금 조달이 어려운 가운데, 건설업계 전체에 미칠 영향이 우려되는 시점이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">태영건설의 자본잠식 현황</div><div class="para-body">태영건설은 2022년 자기자본 7천4백억 원이 2023년에는 마이너스 5천6백억 원으로 감소했다. 이는 추가 손실 발생이 재무제표에 제대로 반영되지 않아서 생긴 현상이다. 이러한 자본잠식에 의해 상장폐지 장벽이 초과될 가능성이 커졌다.</div></div><div class="para"><div class="para-title">자본 조달의 어려움</div><div class="para-body">금융사들은 추가 자금을 태영건설에 제공할 의향이 없다. 특히 담보로 내놓은 SBS 주식 매각이 선택될 것으로 보인다. 주식 매각으로 확보 가능한 자금이 자본잠식을 해결하기에는 부족하다.</div></div><div class="para"><div class="para-title">향후 전망과 추가 조치</div><div class="para-body">출자전환이 가장 가능성이 높아 보이며, 주주총회에서 이미 의결 사항이 나왔다. 주식 수가 급증할 경우, 태영건설의 향후 부활 가능성이 낮아질 수 있음을 시사한다. 이로 인해 건설업계의 불확실성이 더욱 확대될 전망이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">태영건설의 자본잠식 문제를 해결하지 못한다면, 부동산PF에 의존하는 다른 건설사들도 유사한 위기에 처할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">YES. 태영건설의 사례는 부동산PF의 불안정성을 잘 보여준다. 부동산PF에 의존하는 다른 건설사들도 자산 가치를 신중히 살펴야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223385827211" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 4월 · 4개</div>
+  
+<div class="card" data-title="CR 리츠 부활, 부동산 PF의 긴장 속에 숨은 기회" data-tags="#부동산PF #CR리츠 #브리지론 #미분양아파트" data-date="2024-04-01">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-04-01</div>
+      <div class="card-title">CR 리츠 부활, 부동산 PF의 긴장 속에 숨은 기회</div>
+      <div class="card-tags"><span class="tag">#부동산PF</span><span class="tag">#CR리츠</span><span class="tag">#브리지론</span><span class="tag">#미분양아파트</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 4월 1일 기준, 금융감독원이 부동산 PF 평가기준을 변경하면서 부실이 현실화되고 있다. 여기에 CR 리츠의 부활 가능성이 부동산 시장에 새로운 변화를 불러일으키고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">부동산 PF의 부실 현실화</div><div class="para-body">금융감독원은 저축은행, 신탁사 등 부동산 PF에 물려있는 금융사들에 대한 부실을 현실화하기 시작했다. 올해 상반기 내 부동산 PF 평가기준을 변경하는 태스크포스(TF)가 진행 중이며, 기존 3단계 분류에서 4단계로 세분화할 계획을 갖고 있다. 부실이 심화됨에 따라 손실 충당금이 대폭 늘어나면서 금융회사의 순이익에 부정적인 영향을 미치고 있다.</div></div><div class="para"><div class="para-title">CR 리츠의 부활과 시장 반응</div><div class="para-body">이번 CR 리츠는 준공 후 미분양 아파트, 생활형 숙박시설 등이 대상이 되며, 역경매 방식으로 부동산을 매입하게 된다. 10년 만에 부활하는 CR 리츠가 시장에 미치는 영향은 기존 부동산 PF 구조조정에 긍정적인 역할을 할 가능성이 있다. 하지만, 부동산 경기가 회복되지 않는다면 성공적인 운영이 어렵다는 우려도 제기되고 있다.</div></div><div class="para"><div class="para-title">미분양 아파트와 경매 시장의 변화</div><div class="para-body">2024년 1월, 법원 경매 신청 건수가 1만 619건으로 두 배 가까이 증가했다. 큼지막한 물량이 경매시장에 나올 것으로 예상되며, 이는 낙찰가에 부정적인 영향을 미칠 것으로 보인다. 흔한 물건이 되면 시장 가격이 낮아지는 '흔싸귀비' 원리가 적용될 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">부동산 PF 부실이 심화되는 가운데, CR 리츠가 제 역할을 할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">CR 리츠는 부동산 부실을 줄일 수 있는 유력한 방안이다. 그러나 부동산 경기가 활성화되지 않는 한 실효성이 떨어질 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223400383911" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="사우디, 2조 달러 네옴시티에 무슨 돈으로 대출받을까" data-tags="#사우디 #네옴시티 #아람코 #부동산PF" data-date="2024-04-15">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-04-15</div>
+      <div class="card-title">사우디, 2조 달러 네옴시티에 무슨 돈으로 대출받을까</div>
+      <div class="card-tags"><span class="tag">#사우디</span><span class="tag">#네옴시티</span><span class="tag">#아람코</span><span class="tag">#부동산PF</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 사우디의 네옴시티 프로젝트는 2조 달러에 달하는 대규모 투자 계획을 포함하고 있으며, 그 재정적 기반에 대한 의문이 제기된다. 사우디의 정부 예산과 아람코의 배당금 등이 실질적인 재원 부족 문제를 드러내고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">사우디 재정 상황</div><div class="para-body">사우디 정부는 2023년 예산으로 3,300억 달러를 설정했지만, 아람코에서 들어오는 배당금만으로는 부족한 상황이다. 아람코의 영업이익률이 80%에 달하더라도, 국가의 지출이 많아 실제 재정 여력이 낮다.</div></div><div class="para"><div class="para-title">빈 살만의 미래 계획</div><div class="para-body">'비전 2030'의 일환으로 빈 살만 왕세자는 네옴시티 건설을 통해 사우디의 석유 의존 경제를 탈피하고자 한다. 하지만 대규모 투자에 대한 재정과 실제 이행 가능성은 불투명하다.</div></div><div class="para"><div class="para-title">네옴시티의 투자가치</div><div class="para-body">네옴시티는 초고층 건물과 다양한 시설을 포함한 거대한 프로젝트로, 안봉지나 건설비 부담이 클 것으로 전망된다. 외국인 투자자를 유치해야 하지만, 전국민의 소득층과 경제적 여건을 고려하면 어려움이 예상된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">사우디는 어떻게 2조 달러 규모의 네옴시티 프로젝트를 감당할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">현재 상황을 고려할 때, 사우디가 자체적으로 감당할 재원은 불충분하다. 네옴시티 프로젝트의 성공 여부에 강한 의문이 드는 상황이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223414927037" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="서울 아파트, 레미콘 가격 인상 속에서 잃어가는 건설 원가의 비밀" data-tags="#서울아파트 #레미콘 #시멘트 #건설원가" data-date="2024-04-16">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-04-16</div>
+      <div class="card-title">서울 아파트, 레미콘 가격 인상 속에서 잃어가는 건설 원가의 비밀</div>
+      <div class="card-tags"><span class="tag">#서울아파트</span><span class="tag">#레미콘</span><span class="tag">#시멘트</span><span class="tag">#건설원가</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 4월 기준, 서울 아파트의 건설 원가가 지속적으로 상승하고 있는 이유가 레미콘과 시멘트 가격 인상에서 비롯되고 있다. 이 글에서는 이를 파악하는 데 필요한 주요 원인과 결과를 정리한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">레미콘과 시멘트 가격 상승의 배경</div><div class="para-body">지난 2년 간 레미콘 운송비가 24.5% 상승했으며, 시멘트 가격은 무려 75% 급등하였다. 이러한 변화는 아파트 건설 원가에 직접적인 압박을 가하고 있다. 특히, 시멘트 가격은 전체 건설비에 큰 영향을 미치며, 10% 상승시 전체 건설비가 1% 오른다는 구조적인 특징을 지닌다.</div></div><div class="para"><div class="para-title">서울시 레미콘 공장의 상황 변화</div><div class="para-body">삼표레미콘 성수 공장이 폐쇄됨에 따라 서울 내 레미콘 생산 능력이 절반으로 줄어들 전망이다. 이로 인해 남은 세 개 소규모 레미콘 공장에 대한 의존도가 높아지며, 이는 공급 부족을 초래할 수 있다. 공급망의 압박이 심화되면 이후에도 건설 원가 인상이 불가피할 것으로 보인다.</div></div><div class="para"><div class="para-title">부동산 시장에 미치는 영향</div><div class="para-body">비용 상승 속에서 아파트 분양가는 높아질 수 없는 상황이다. 신규 공급이 줄어들고, 미분양 리스크가 증가하면서 기존 아파트의 상대적 가치가 상승할 가능성이 커진다. 이는 부동산 시장의 전반적인 구조에도 긍정적인 영향을 미칠 수 있음을 시사한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">비용 상승이 지속된다면, 서울 아파트 시장에서 기존 주택의 가치는 결국 어떻게 변화할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">아파트 건설 원가의 지속적 상승은 기존 주택의 상대적 가치 상승을 초래할 것이다. 신축 아파트 분양가가 높아지는 상황에서 기존 아파트의 선호가 늘어날 것이라 본다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223415637270" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="태영건설이 부실에서 벗어나기 어려운 이유는 무엇인가?" data-tags="#태영건설 #부동산PF #브리지론 #KKR" data-date="2024-04-20">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-04-20</div>
+      <div class="card-title">태영건설이 부실에서 벗어나기 어려운 이유는 무엇인가?</div>
+      <div class="card-tags"><span class="tag">#태영건설</span><span class="tag">#부동산PF</span><span class="tag">#브리지론</span><span class="tag">#KKR</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 4월 기준 태영건설은 워크아웃에 들어가며 극복의 가능성이 희박한 상황이다. 브리지론 및 부동산PF가 얽힌 복잡한 구조에서 대출 연장과 자산 매각이도 경제 상황과 맞물린 시한폭탄으로 작용하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">브리지론과 부동산PF의 위험 구조</div><div class="para-body">브리지론은 시한폭탄과 같으며, 시간이 지남에 따라 상황이 악화되고 있다. 태영건설의 토지 처리 및 본PF 진행 지연은 금융당국의 우려로 이어졌으며, 이로 인해 연쇄적인 금융 파장이 우려되고 있다.</div></div><div class="para"><div class="para-title">워크아웃으로의 진입과 대출자의 반응</div><div class="para-body">태영건설의 워크아웃은 채권단 간의 이익 충돌을 가져오고 있다. KKR과의 협력 하에 진행되는 자산 매각 및 대출 조치로 가장 큰 리스크는 일반 주주와 금융권의 손실로 귀결될 수 있다.</div></div><div class="para"><div class="para-title">태영건설의 미래와 금융권의 위기</div><div class="para-body">태영건설의 자산 정리가 마무리되지 않으면, 한국 금융시장에서 중소형 건설사들의 부도 가능성이 고조될 것이다. 이 과정에서 금융사들이 단기적 대응을 할 수 있는 능력에 자신해야 하며, 지속적인 감시가 필요하다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">태영건설이 워크아웃에 들어갔음에도 불구하고 금융권은 왜 걱정해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">태영건설이 부실에서 벗어나지 못하면, 연체율 증가와 함께 금융권의 신뢰성이 훼손될 수 있다. 이로 인해 중소형 건설사로의 위기가 연결될 가능성이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223420244150" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 5월 · 1개</div>
+  
+<div class="card" data-title="부동산 PF 경공매 시작, 이게 부실 구조 조정의 신호인가" data-tags="#부동산PF #경공매 #부실우려 #구조조정" data-date="2024-05-13">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-05-13</div>
+      <div class="card-title">부동산 PF 경공매 시작, 이게 부실 구조 조정의 신호인가</div>
+      <div class="card-tags"><span class="tag">#부동산PF</span><span class="tag">#경공매</span><span class="tag">#부실우려</span><span class="tag">#구조조정</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 5월 13일, 부동산 PF 시장에서 230조원의 규모를 감당하기 위한 새로운 정책이 발표되었다. 이번 조치는 부실 우려 사업장에 대한 경공매를 시작하는 신호일 수 있으며, 금융기관의 역할이 중대해진 상황이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">부동산 PF 시장의 재편</div><div class="para-body">부동산 PF 전체 규모가 기존의 135조원에서 230조원으로 확대될 예정이다. 이에 따라 새로운 대출 방식과 관리 방안을 도입해 시장의 건전성을 확보하겠다는 취지이다. 이는 부실 문제에 적극적으로 대처하기 위한 첫 걸음으로 볼 수 있다.</div></div><div class="para"><div class="para-title">사업장 평가 기준의 변화</div><div class="para-body">사업장 평가등급이 기존 3단계에서 4단계로 세분화된다. 부실 우려가 확인된 사업장은 즉각 충당금을 쌓고 경매나 매각 절차를 추진함으로써 조기 처리할 계획이다. 이렇게 강화된 기준은 부실 우려를 정확하게 파악하고 대응하기 위한 전략으로 이해된다.</div></div><div class="para"><div class="para-title">부실 우려 사업장의 경공매 계획</div><div class="para-body">최대 7조원의 부실 우려 사업장은 경공매의 원칙으로 정리된다. 6개월 이상의 연체 사업장은 즉시 매각해 빠르게 시장에서 정리할 예정이다. 이는 빠른 구조 조정으로 시장의 신뢰를 회복하려는 시도로 특히 주목된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">부실 우려 사업장의 경공매가 본격적으로 시작되면 부동산 PF 시장은 어떤 변화를 겪게 될까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">부실 사업장의 경공매 진행은 무거운 부실 자산을 시장에서 제거할 기회를 줄 것으로 보인다. 이는 다른 사업장에도 긍정적인 영향을 미친다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223445162150" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 6월 · 2개</div>
+  
+<div class="card" data-title="상업용 부동산 투자 위기, SREIT 환매 제한의 이면" data-tags="#SREIT #상업용부동산 #부동산위기 #투자" data-date="2024-06-03">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-06-03</div>
+      <div class="card-title">상업용 부동산 투자 위기, SREIT 환매 제한의 이면</div>
+      <div class="card-tags"><span class="tag">#SREIT</span><span class="tag">#상업용부동산</span><span class="tag">#부동산위기</span><span class="tag">#투자</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 6월 3일 현재, 세계 최대 부동산펀드 SREIT가 환매를 제한하면서 상업용 부동산 시장의 위기가 부각되고 있다. 과거의 안정적인 수익률이 사라지고, 투자자들의 손실 요구가 커지고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">상업용 부동산 시장의 변화</div><div class="para-body">상업용 부동산은 2016년부터 투자자들 사이에서 인기를 끌었으나, 최근 고금리 속에서 가치 하락과 공실률 증가가 문제로 떠오르고 있다. 재택근무와 다른 소비 패턴 변화는 이러한 현상을 가속화하고 있다.</div></div><div class="para"><div class="para-title">SREIT의 환매 제한</div><div class="para-body">SREIT는 고객 요청에 따른 환매를 어려워하며, 이는 미국 상업용 부동산의 평가 하락과 대출 리스크가 겹쳐서 발생한 현상이다. 이 펀드는 유동성에 심각한 제약이 생겼고, 수백억 달러의 대출 상환 압박이 심각하다.</div></div><div class="para"><div class="para-title">한국 금융사들의 해외 투자 리스크</div><div class="para-body">한국 금융업계에서도 해외 부동산 투자가 증가세였으나, SREIT 사건이 터진 지금은 큰 리스크를 내포하고 있다. 특히 2금융권과 공제회가 투자한 상업용 부동산의 위기가 우려된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">상업용 부동산의 불황 속에 한국 금융사들은 어떤 대응 전략을 마련해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">재택근무의 확산과 고금리는 부동산 시장에 심각한 영향을 미치고 있다. 따라서 한국 금융사들은 투자 포트폴리오를 재점검하고 리스크를 최소화해야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223464969403" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="시멘트와 모래가 바꾸는 한국 건설의 미래, 일본과 미국의 자원은 무엇인가" data-tags="#시멘트 #모래 #반도체 #환경문제" data-date="2024-06-05">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-06-05</div>
+      <div class="card-title">시멘트와 모래가 바꾸는 한국 건설의 미래, 일본과 미국의 자원은 무엇인가</div>
+      <div class="card-tags"><span class="tag">#시멘트</span><span class="tag">#모래</span><span class="tag">#반도체</span><span class="tag">#환경문제</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 6월 현재, 시멘트와 모래의 중요성이 건설 산업에서 계속 강조되고 있다. 최근 채굴과 공급의 변화가 한국의 건설산업에 큰 영향을 미칠 것으로 보인다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">시멘트의 역사와 현대적 변화</div><div class="para-body">시멘트는 유래가 깊은 건축 자재로, 고대 이집트와 로마에서부터 사용되어 현대에 이르고 있다. 현대식 시멘트의 개발 이후, 한국에서도 시멘트 산업이 국가 산업으로 발전하였으나, 환경오염이 주요 문제로 부각되고 있다.</div></div><div class="para"><div class="para-title">모래의 공급과 수요 문제</div><div class="para-body">모래는 건축에 필수적인 자원임에도 불구하고, 세계적으로 모래 부족 현상이 발생하고 있다. 특히 중국이 가장 많은 모래를 소비하고 있고, 사우디와 북한은 외부 수입을 고려하는 상황이다.</div></div><div class="para"><div class="para-title">반도체와 자원산업의 연결</div><div class="para-body">모래 속 석영은 반도체 제조에 필수적인 원료로, 미국과 일본의 자원이 결합하여 세계 시장에서 강력한 경쟁력이 되고 있다. 중국의 경쟁 우위 확보가 쉽지 않은 이유도 바로 여기에 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">시멘트와 모래의 공급 변화가 한국 건설산업에 미치는 경제적 영향을 어떻게 고려해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">현재 상황에서 시멘트 산업의 친환경적 변화는 필수적이다. 모래 부족 상황은 건설 생태계를 압박할 것이므로, 대체재 개발에 박차를 가해야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223468989937" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 8월 · 5개</div>
+  
+<div class="card" data-title="한국 인구 증가 비결은 외국인이 만든다 — 저출산의 역설" data-tags="#인구주택총조사 #저출산 #외국인 #부동산" data-date="2024-08-01">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-08-01</div>
+      <div class="card-title">한국 인구 증가 비결은 외국인이 만든다 — 저출산의 역설</div>
+      <div class="card-tags"><span class="tag">#인구주택총조사</span><span class="tag">#저출산</span><span class="tag">#외국인</span><span class="tag">#부동산</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 7월 기준, 2023년 인구주택총조사 결과가 발표되며 한국 인구의 감소가 중단되고 8만명이 증가한 것으로 나타났다. 특히, 한국인의 수는 줄어드는 가운데 외국인이 증가하는 현상이 두드러진다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">인구 증가의 직접적인 원인</div><div class="para-body">통계청의 조사 결과에 따르면, 2023년 한국인은 22년보다 10만명이 줄어들었지만 외국인이 18만명 증가하면서 전체 인구가 8만명 증가했다. 외국인 비율은 2010년 1.2%에서 2023년 3.7%로 상승해, 외국인의 유입이 인구 증가의 핵심이 됐다.</div></div><div class="para"><div class="para-title">노령화와 유소년 인구 감소</div><div class="para-body">저출산 현상 속에 한국의 유소년 인구가 줄어드는 반면, 노령층 인구는 빠르게 증가하고 있다. 2023년에는 65세 이상 인구가 961만명에 달해, 한국 사회의 구조적인 변화가 심각해지고 있다. 이는 외국인 유입 외에도 부동산 시장에 미치는 영향이 크다.</div></div><div class="para"><div class="para-title">부동산 시장에 미치는 영향</div><div class="para-body">서울에서 외국인 비율이 높은 영등포구 등의 사례처럼, 부동산 시장은 외국인 거주자 증가와 밀접하게 연결된다. 1인가구의 증가와 함께 외국인의 아파트 매수가 이루어지는 가운데, 이는 장기적인 부동산 수요에 긍정적인 영향을 미칠 가능성이 크다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">한국의 저출산과 노령화가 진행되는데, 외국인 유입이 부동산 시장에 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">외국인의 유입이 지속된다면, 부동산 수요는 증가할 가능성이 높고 이는 시장에 긍정적인 신호로 작용한다. 한국의 인구 구조가 변화함에 따라 이러한 흐름은 더욱 중요해진다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223532019614" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="전기차 화재, 아파트 주차장의 안전을 위협하다" data-tags="#전기차 #화재 #아파트 #지하주차장" data-date="2024-08-07">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-08-07</div>
+      <div class="card-title">전기차 화재, 아파트 주차장의 안전을 위협하다</div>
+      <div class="card-tags"><span class="tag">#전기차</span><span class="tag">#화재</span><span class="tag">#아파트</span><span class="tag">#지하주차장</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 8월 4일 인천의 한 아파트에서 발생한 벤츠 전기차 폭발 사고로, 해당 아파트 주민들은 4일째 단전·단수에 시달리고 있다. 이 사건은 전기차의 안전성과 관련한 우려를 더욱 부각시키고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">폭발 사건의 경과</div><div class="para-body">이번 사고는 지난 4일 발생한 벤츠 전기차의 화재로 시작되었다. 1500세대 규모의 아파트에서 수도와 전기가 차단되어 거주 환경이 극도로 열악해졌다. 구청에 따르면, 복구에는 최소 2~3일이 더 걸릴 것으로 예상된다.</div></div><div class="para"><div class="para-title">전기차 화재의 확산 우려</div><div class="para-body">전기차 화재가 잇따르고 있으며, 특히 중국 배터리가 장착된 차량에서 발생하는 경우가 많다. 이러한 사건들은 전기차에 대한 불안감을 증폭시키며, 주민들은 지하주차장 사용을 금지하자는 목소리가 커지고 있다.</div></div><div class="para"><div class="para-title">전기차 화재의 원인 및 해결책</div><div class="para-body">전기차 화재는 배터리의 덴드라이트 형성과 관련이 있으며, 오래된 배터리에서 발생할 가능성이 높다. 안전 솔루션으로는 지상 주차 공간 확보 및 전기차 전용 소방 장비의 개발이 필요하다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">전기차 화재 사건이 계속된다면 아파트 지하주차장 사용의 안전성은 어떻게 될 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">전기차 화재 문제는 심각하다. 주차장 안전성 확보 없이는 전기차 확대에 큰 장애가 될 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223536649603" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="롯데그룹 신용등급 하락, 이러다 구조조정 불가피한가?" data-tags="#롯데그룹 #신용등급 #구조조정 #롯데건설" data-date="2024-08-28">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-08-28</div>
+      <div class="card-title">롯데그룹 신용등급 하락, 이러다 구조조정 불가피한가?</div>
+      <div class="card-tags"><span class="tag">#롯데그룹</span><span class="tag">#신용등급</span><span class="tag">#구조조정</span><span class="tag">#롯데건설</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 8월, 롯데그룹의 주요 계열사 신용등급이 하락하며 구조적 위기에 직면하고 있다. 롯데건설과 롯데케미칼의 부실 우려가 높아지고 있으며, 이는 전체 그룹의 신용도에 악영향을 미칠 가능성이 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">롯데그룹의 신용등급 하락 배경</div><div class="para-body">롯데그룹의 신용등급 하락은 롯데건설의 부동산 PF(프로젝트 파이낸싱)와 롯데케미칼의 재무적 어려움에 기인한다. 롯데건설은 부동산PF 우발채무가 4조 3100억원에 달하고, 이는 자기자본보다 큰 규모로 심각한 부담으로 작용하고 있다. 이러한 재무적 압박은 그룹의 신용도에 부정적인 영향을 미치고 있다.</div></div><div class="para"><div class="para-title">롯데그룹의 향후 전망</div><div class="para-body">신용등급 하락이 계속된다면, 그룹 자금을 조달하는 데 어려움이 커질 것이다. 특히 롯데케미칼의 재무 상태가 악화되는 가운데, 롯데그룹은 비상경영을 선언했다. 하지만 안정적인 자산과 부동산을 보유하고 있는 만큼, 즉각적인 위기는 피할 가능성이 높다.</div></div><div class="para"><div class="para-title">구조조정의 필요성</div><div class="para-body">구조조정은 회피할 수 없는 상황으로 예상된다. 사모펀드가 롯데그룹의 비주력 계열사에 관심을 보이며, 알짜 계열사가 시장에 나올 가능성이 있기 때문이다. 이는 롯데가 직면한 부채와 신용위기의 해소에도 기여할 수 있을 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">롯데그룹이 신용등급 하락으로 인해 구조조정을 피할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">구조조정은 불가피하다. 롯데그룹의 신용등급 하락이 지속된다면, 자금 조달과 운영에 더 큰 어려움을 겪게 될 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223562900622" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="에어비앤비 규제로 한국 숙박 시장, 공백이 생길까?" data-tags="#에어비앤비 #숙박시설 #생활형숙박시설" data-date="2024-08-29">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-08-29</div>
+      <div class="card-title">에어비앤비 규제로 한국 숙박 시장, 공백이 생길까?</div>
+      <div class="card-tags"><span class="tag">#에어비앤비</span><span class="tag">#숙박시설</span><span class="tag">#생활형숙박시설</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월부터 에어비앤비의 영업신고증 제출 의무화가 시행된다. 이는 한국의 공유 숙박 시장에 큰 변화를 예고하며, 불법 숙박업체들이 줄어들 가능성이 크다. 하지만 이에 따른 숙소 부족 문제도 우려된다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">불법 에어비앤비의 현실</div><div class="para-body">한국의 에어비앤비 숙박의 90% 이상이 불법이다. 주거용 건물에서의 숙박 영업이 금지되어 있어, 적발될 경우 처벌이 가해진다. 현실적으로는 적발 시 백만 원의 벌금이 일반적이며, 화재보험 등에서 제외될 위험이 커진다.</div></div><div class="para"><div class="para-title">생활형 숙박시설의 등장</div><div class="para-body">불법 숙박업 규제를 해결하기 위해 생활형 숙박시설이 대안으로 떠오른다. 이는 숙박업과 주거용 시설의 경계가 모호해질 가능성이 있지만, 현재의 규제 틀 안에서는 여전히 도전 과제가 존재한다. 정부의 새로운 규제가 시행되면, 법적 혼란이 가중될 수 있다.</div></div><div class="para"><div class="para-title">에어비앤비의 장점과 생숙 활용</div><div class="para-body">에어비앤비가 불법으로 규제되면, 여행객들이 원하는 숙소를 확보하기 위한 새로운 방안이 필요하다. 생활형 숙박시설의 특성을 잘 활용하면, 즉각적인 숙소 부족 문제 해결에 기여할 수 있다. 하지만 그러려면 체계적인 제도를 마련해야 한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">에어비앤비의 줄어드는 자리가 한국 숙박 시장에서 어떤 대안으로 채워질 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">변화하는 규제에 발맞춰 생활형 숙박시설이 잘 자리 잡는다면, 에어비앤비적 요소를 흡수하는 방향으로 숙박 시장이 발전할 수 있다. 장기적으로 이런 흐름이 유효하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223563488937" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="땅의 가치, 도로와의 관계가 결정한다 — 연희동 싱크홀에서 배운 교훈" data-tags="#부동산 #땅 #가치 #도로 #싱크홀" data-date="2024-08-30">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-08-30</div>
+      <div class="card-title">땅의 가치, 도로와의 관계가 결정한다 — 연희동 싱크홀에서 배운 교훈</div>
+      <div class="card-tags"><span class="tag">#부동산</span><span class="tag">#땅</span><span class="tag">#가치</span><span class="tag">#도로</span><span class="tag">#싱크홀</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 8월, 연희동에서 싱크홀이 발생하며 땅의 가치와 건축 가능성을 다시 생각할 기회가 생겼다. 도로와의 접촉, 건폐율, 용적률 등 다양한 요소가 땅의 가치를 결정짓는 중요한 변수라는 점을 이해하는 것이 필요하다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">도로와 접한 땅의 가치</div><div class="para-body">접하는 도로의 폭이 넓을수록 건물을 더 높게 올릴 수 있는 가능성이 커지며 땅의 가치가 상승한다. 예를 들어, 강남 테헤란로와 같은 지역에서는 도로 폭이 3배에 달하는 건축이 허가되며 이는 해당 지역의 땅 가치를 높이는 결과를 가져온다.</div></div><div class="para"><div class="para-title">도로의 모양과 건물 설계</div><div class="para-body">도로와 접하는 땅의 형태가 중요하며, 넓은 가로 장방형이 세장형보다 가치가 높다. 이와 같이 땅의 모양과 도로와의 관계는 건물 높이와 면적을 결정짓는 요소가 된다.</div></div><div class="para"><div class="para-title">부산과 서울의 싱크홀 사례</div><div class="para-body">서울 연희동에서 발생한 싱크홀은 과거 수맥과 지하수의 흐름에 의해 지반이 약해지면서 일어난 사고이다. 특히 여름철폭우가 시너지 효과를 낼 수 있어, 하천변의 땅 또한 안정성에 주의를 기울여야 함을 보여준다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">도로와의 접촉이 땅의 가치를 어떻게 규명할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">상당한 영향을 미친다. 도로와 접한 땅은 건물의 높이와 용적률에 따라 가치가 크게 증가할 수 있기 때문이다. 따라서 땅을 평가할 때 도로와의 관계를 반드시 고려해야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223564749418" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 9월 · 4개</div>
+  
+<div class="card" data-title="은행들이 전세자금대출을 줄인다는데, 그 배경은?" data-tags="#전세자금대출 #은행 #부동산 #경제" data-date="2024-09-02">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-09-02</div>
+      <div class="card-title">은행들이 전세자금대출을 줄인다는데, 그 배경은?</div>
+      <div class="card-tags"><span class="tag">#전세자금대출</span><span class="tag">#은행</span><span class="tag">#부동산</span><span class="tag">#경제</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 9월, 전세자금대출 보험 비율 감소로 은행들이 대출 심사를 강화하고 있다. 이는 전세자금 대출이 실수요자에게 미치는 영향을 분석하는 계기가 되고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">전세제도의 역사와 변화</div><div class="para-body">1970년대 한국에서 전세가 부각되면서 임대방식이 자리 잡기 시작했다. 당시 고금리 상황에서 집주인들은 월세 대신 전세를 선호하게 되었고, 이는 세입자에게도 자산 형성의 기회를 제공했다. 그러나 2000년대 후반부터 월세 비중이 증가하며 전세자금 대출의 필요성이 대두되었다.</div></div><div class="para"><div class="para-title">전세자금대출의 현황 및 제도 변화</div><div class="para-body">전세자금 대출 보증보험 비율이 2024년 9월부터 80% 이하로 줄어들 예정이며, 이로 인해 은행들은 더 많은 책임을 져야 한다. 이는 은행들이 대출 심사를 더욱 깐깐히 할 수밖에 없다는 것을 의미한다.</div></div><div class="para"><div class="para-title">조건부 전세자금대출의 위험</div><div class="para-body">조건부 전세자금대출은 인수와 매매가 동시에 진행되는 복잡한 거래 방식으로, 저손실 위험이 높아지면서 금융기관의 대출 기준이 강화되고 있다. 이는 전세 실수요자에게 큰 부담으로 작용할 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">대출 기준이 강화되면 전세 실수요자에게 어떤 여파가 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">전세자금 대출 심사가 강화되면 실수요자들은 대출을 받기 어려워질 수밖에 없다. 이는 전세 시장에 부정적인 영향을 미칠 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223567073189" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="미국 상업용 부동산 붕괴, 한국 금융사의 리스크는 어디까지?" data-tags="#상업용부동산 #금융위기 #해외부동산 #공실률" data-date="2024-09-07">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-09-07</div>
+      <div class="card-title">미국 상업용 부동산 붕괴, 한국 금융사의 리스크는 어디까지?</div>
+      <div class="card-tags"><span class="tag">#상업용부동산</span><span class="tag">#금융위기</span><span class="tag">#해외부동산</span><span class="tag">#공실률</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 9월 현재, 미국의 상업용 부동산 시장은 심각한 위기에 직면하고 있다. 저금리의 환경에서 시작된 투자가 금리 상승과 재택근무의 확산으로 이어지며 공실률이 급격히 증가하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">상업용 부동산과 투자 방식의 변화</div><div class="para-body">상업용 부동산은 본질적으로 월세를 통해 수익을 발생시키는 구조다. 2016년부터 활발한 투자가 이루어졌지만, 최근 들어 투자자들은 대출 이자와 가격 하락으로 어려움을 겪고 있다. 대출이 많은 상황에서 수익성이 감소하므로 투자자들은 더 큰 리스크에 직면하고 있다.</div></div><div class="para"><div class="para-title">고금리 시대의 도래와 그 영향</div><div class="para-body">미국의 기준 금리가 상승하면서, 상업용 부동산 대출 금리도 올랐다. 과거 2.6%에서 현재 6.7%로 급등하며, 공실률 또한 증가하고 있어 시장 상황이 악화되고 있다. 높은 변동성으로 인해 투자 금액이 줄어들었다는 점도 주요 원인이다.</div></div><div class="para"><div class="para-title">한국 금융사의 해외 투자 불안</div><div class="para-body">한국 금융회사들은 해외 상업용 부동산에 대한 투자를 늘려 왔으며, 최근 이들 투자에서 손실이 발생하고 있다. 특히 대출 만기가 다가오는 상황에서, 부동산 가격 하락으로 인해 심각한 타격을 받을 가능성이 높다. 이는 전체 시장에 불안감을 초래하고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">상업용 부동산 시장의 위기가 심화되면서, 한국 금융사는 어떻게 대응해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">위기를 관리해야 한다. 위험 요소가 분명히 드러난 만큼, 현재 상황에 맞는 전략을 세워야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223574664259" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="성수 레미콘 공장 폐쇄, 서울 아파트 분양가 상승 위험 촉발" data-tags="#부동산 #레미콘 #서울 #분양가" data-date="2024-09-10">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-09-10</div>
+      <div class="card-title">성수 레미콘 공장 폐쇄, 서울 아파트 분양가 상승 위험 촉발</div>
+      <div class="card-tags"><span class="tag">#부동산</span><span class="tag">#레미콘</span><span class="tag">#서울</span><span class="tag">#분양가</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 9월 기준, 서울 지역의 레미콘 공장 폐쇄가 아파트 분양가에 미치는 급격한 영향을 우려하게 만든다. 성수동 삼표 레미콘 공장의 폐쇄가 서울 건설 현장과 분양 시장에 미치는 부담이 커지는 상황이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">서울에서 레미콘 공급의 중요성</div><div class="para-body">레미콘은 건설 현장에서 필수적인 자재로, 공급이 원활해야 공사가 순조롭게 진행될 수 있다. 성수동에 위치한 삼표 레미콘 공장이 서울의 60% 레미콘을 공급해왔으나 이번 폐쇄로 인해 레미콘 공급이 어려워질 우려가 있다.</div></div><div class="para"><div class="para-title">건설원가 상승과 분양가의 연관성</div><div class="para-body">레미콘과 시멘트 가격 상승이 직접적으로 건설비에 영향을 미치고 있다. 건설 공사비가 2020년 100을 기준으로 2024년에는 130까지 올라갈 것으로 예상되며, 이는 아파트 분양가 인상으로 이어진다.</div></div><div class="para"><div class="para-title">서울의 대안과 향후 전망</div><div class="para-body">소규모 레미콘 공장들만 남아 있는 서울에서는 대형 공사를 진행할 수 있는 방법을 모색해야 하며, 현장에서 레미콘을 제조하는 것도 대안 중 하나다. 하지만 공급 문제의 근본적인 해결책은 아닌 만큼 아파트 가격 상승은 지속될 가능성이 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">성수동 삼표 레미콘 공장 폐쇄가 서울 부동산 시장에 어떤 리스크를 가져올까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">서울의 레미콘 공급 문제가 지속된다면, 아파트 분양가 상승이 불가피하다. 따라서 분양가에 대한 우려가 커질 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223577955068" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="준공 후 미분양 아파트, 실수요자에게 기회가 될까?" data-tags="#미분양 #부동산PF #준공후 #실수요자" data-date="2024-09-13">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-09-13</div>
+      <div class="card-title">준공 후 미분양 아파트, 실수요자에게 기회가 될까?</div>
+      <div class="card-tags"><span class="tag">#미분양</span><span class="tag">#부동산PF</span><span class="tag">#준공후</span><span class="tag">#실수요자</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 9월 기준, 준공 후 미분양 아파트가 증가할 것으로 보인다. 부동산 PF 과정에서의 위험 요소들을 살펴보며 실수요자들에게는 기회가 될 수 있는 순간을 조명한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">부동산 PF 과정과 위험 요소</div><div class="para-body">부동산 PF는 시행사가 땅을 구매하고 인허가를 받아 아파트를 완공하는 과정이다. 이 과정에서 브리지론과 본 PF 등 다양한 대출이 활용되며, 각 단계에서 발생할 수 있는 위험이 상존한다. 브리지론은 시행사가 땅 소유권을 확보하기 위한 중간 단계 대출로, 그 뒤 본 PF로 전환된다.</div></div><div class="para"><div class="para-title">미분양의 구조와 회수 방법</div><div class="para-body">미분양이 발생할 경우, 금융사들 간에 이해관계가 극명히 갈리게 된다. 1순위 금융사는 공매를 선호하는 반면, 2~3순위 금융사는 시간과 노력을 들여 분양을 유도하려 한다. 이 과정에서 아파트 가격 하락이 가속화될 수 있으며, 이는 실수요자에게는 저가 매입의 기회를 제공할 수 있다.</div></div><div class="para"><div class="para-title">시장 전망과 실수요자 전략</div><div class="para-body">2024년까지 미분양이 급증할 예정인 상황에서, 실수요자는 '일단 살아보고 결정하세요'와 같은 분양 전략을 활용할 수 있다. 핵심 지역 외에 선호도가 낮은 지역은 더 큰 가격 하락에 직면할 가능성이 크다. 따라서 실수요자는 노령층 수요가 있는 지역 등을 주목해야 한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">준공 후 미분양 아파트가 쌓이는데, 실수요자는 이를 어떻게 기회로 활용할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">실수요자에게 저가 매입의 기회가 올 것으로 보인다. 하지만, 선호도가 낮은 지역은 가격 하락이 심해질 가능성이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223572279829" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 10월 · 6개</div>
+  
+<div class="card" data-title="1기 신도시 아파트, 층간소음과 구조의 비밀" data-tags="#1기신도시 #아파트 #층간소음 #구조" data-date="2024-10-03">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-03</div>
+      <div class="card-title">1기 신도시 아파트, 층간소음과 구조의 비밀</div>
+      <div class="card-tags"><span class="tag">#1기신도시</span><span class="tag">#아파트</span><span class="tag">#층간소음</span><span class="tag">#구조</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월 현재, 1기 신도시 아파트의 구조와 층간소음 문제에 대해 정리하고 있다. 아파트의 정의 및 역사, 그리고 층간소음의 원인과 해결 방안에 대한 논의가 필요하다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">아파트의 정의와 역사</div><div class="para-body">아파트는 5층 이상의 주거용 건물로, 다수의 가구가 함께 거주하는 구조이다. 한국에서 아파트는 1930년대 경성에서 시작하여 인구 증가와 함께 발전했다. 최초의 아파트인 미쿠니 아파트는 1931년에 준공되었으며, 오늘날까지 다양한 형태로 존재하고 있다.</div></div><div class="para"><div class="para-title">층간소음 문제</div><div class="para-body">층간소음은 대부분 벽식구조에 의해 발생한다. 이 구조에서는 위층의 진동이 아래층으로 직접 전달되어 소음 문제가 발생하게 된다. 기둥식 구조는 이 문제를 개선할 수 있지만, 건설 비용이 증가하는 단점이 있다.</div></div><div class="para"><div class="para-title">아파트 건축의 변화</div><div class="para-body">1990년대부터 아파트 건축에서 다양한 변화가 일어났다. 주차 공간의 확보 및 고층 아파트의 증가, 그리고 다양한 편의시설의 도입이 그 예이다. 그러나 이러한 변화 속에서도 층간소음 문제는 여전히 중요한 이슈로 남아 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">1기 신도시 아파트의 구조적 문제는 앞으로 어떻게 해결될 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">기둥식 구조의 도입이 필요하다. 층간소음을 줄이기 위해서는 건축 비용이 높더라도 기둥식 구조로 전환해야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223605189641" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="1기 신도시 재건축, 분담금 폭등의 딜레마" data-tags="#재건축 #1기신도시 #분담금 #층간소음" data-date="2024-10-04">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-04</div>
+      <div class="card-title">1기 신도시 재건축, 분담금 폭등의 딜레마</div>
+      <div class="card-tags"><span class="tag">#재건축</span><span class="tag">#1기신도시</span><span class="tag">#분담금</span><span class="tag">#층간소음</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월 현재, 1기 신도시의 재건축이 각광받고 있지만, 분담금 상승과 층간 소음 문제로 도전이 이어지고 있다. 과거 아파트 기준이 현대화되면서 리모델링이 어려워지고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">층간 소음 관련 법 개정</div><div class="para-body">층간 소음을 줄이기 위해 바닥 두께가 21cm 이상으로 법이 수정되었으며, 이는 신축 아파트에 대한 기준을 강화한 결과로 나타났다. 반면, 기존 아파트는 이 변경사항을 충족하지 못해 리모델링 시 층고가 낮아지는 문제가 발생한다.</div></div><div class="para"><div class="para-title">재건축 비용의 급증</div><div class="para-body">신반포 22차의 재건축 공사비가 3.3㎡당 1,300만원으로 확정되면서 재건축 시장의 새로운 이정표가 생겼다. 이로 인해 조합원들은 부담스러운 분담금을 감수해야 하는 상황에 처해 있으며, 일반 브랜드 아파트의 경우 평균적으로 800만 원에서 1,000만 원까지의 공사비가 예상되고 있다.</div></div><div class="para"><div class="para-title">재건축의 불확실성과 대안</div><div class="para-body">1기 신도시 지역의 재건축 사업성이 상향 조정되기 위해서는 용적률을 높여야 한다. 그러나 용적률을 늘릴 경우 공공기여비율이 증가해 추가 부담이 생기므로, 재건축을 원하는 주민들은 현실적인 대안을 마련해야 하는 상황이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">재건축비용이 과다해 신축 아파트와 가격 차이가 나지 않는다면, 기존 아파트 리모델링이 힘든 현실에서 우리는 어떤 선택을 해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">재건축에 대한 접근 방식은 반드시 달라져야 한다. 지속적으로 상승하는 비용 속에서 기존 아파트의 사업성이 떨어지는 것이 분명하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223605233270" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="1기 신도시 아파트의 바닷모래, 그 숨겨진 위험" data-tags="#1기신도시 #아파트 #철근콘크리트 #모래" data-date="2024-10-05">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-05</div>
+      <div class="card-title">1기 신도시 아파트의 바닷모래, 그 숨겨진 위험</div>
+      <div class="card-tags"><span class="tag">#1기신도시</span><span class="tag">#아파트</span><span class="tag">#철근콘크리트</span><span class="tag">#모래</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월 기준, 1기 신도시 아파트들은 바닷모래를 사용한 결과로 심각한 내구성 문제에 직면하게 되었다. 과거 건설 시 대응이 미흡했던 염분의 위험이 보이지 않는 곳에서 드러나고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">1기 신도시와 아파트 폭등의 원인</div><div class="para-body">1기 신도시는 정부가 서울의 주택 수요를 분산하기 위해 건설된 29만 가구의 대단위 주택 프로젝트로, 아파트 가격 폭등을 잠재우는 역할을 했다. 하지만 이 과정에서 사용된 바다 모래의 염분 문제는 앞으로의 내구성에 큰 걱정거리가 되고 있다.</div></div><div class="para"><div class="para-title">바닷모래의 위험과 그 결과</div><div class="para-body">바닷모래를 씻지 않고 콘크리트에 사용하면서 시간에 따른 부식 문제가 생기기 시작했다. 콘크리트의 염분이 철근의 보호 피막을 파괴해 철근을 녹슬게 만들어 내구성을 크게 저하시키고 있다.</div></div><div class="para"><div class="para-title">현황과 안전 문제</div><div class="para-body">1기 신도시 아파트 조사를 통해서는 34%의 아파트들이 염분 기준치를 초과하는 것으로 나타났다. 염분 농도가 높을수록 10년 후 내부 철근이 녹슬 가능성이 커지며, 아파트의 안전도는 심각한 위협을 받아야만 한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">1기 신도시의 염분 문제로 인해 아파트의 내구성이 저하된다면, 정부는 어떤 대응책을 마련해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">즉각적인 대응이 필요하다. 안전성 확보가 최우선 과제로, 기존 아파트의 재점검 및 보수 작업을 서둘러야 한다. 조치가 더이상 늦어져서는 안 된다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223605670760" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="지하주차장 붕괴, 무량판 구조가 따라온 재앙의 진짜 원인은?" data-tags="#무량판 #아파트붕괴 #전단보강근" data-date="2024-10-06">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-06</div>
+      <div class="card-title">지하주차장 붕괴, 무량판 구조가 따라온 재앙의 진짜 원인은?</div>
+      <div class="card-tags"><span class="tag">#무량판</span><span class="tag">#아파트붕괴</span><span class="tag">#전단보강근</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월 기준, 최근의 아파트 붕괴 사건들은 무량판 구조의 설계와 시공에서 발생한 총체적 부실을 드러내고 있다. 이 글은 인천 아파트 지하주차장 붕괴 사건을 통해 무량판 구조의 위험성과 현행 시스템의 취약점을 재조명한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">무량판 구조의 기본 원리</div><div class="para-body">무량판 구조는 천장을 기둥이 직접 지탱하는 형식으로, 기둥의 힘에 의존하여 수직과 수평 하중을 모두 견디도록 설계된다. 그러나 이 방식은 하중을 점으로만 받기 때문에 구조의 안전성을 크게 저하시킨다. 이 구조는 이론상 강한 하중을 견딜 수 있지만, 실제 상황에서는 추가적인 보강이 필요하다.</div></div><div class="para"><div class="para-title">사고 사례와 구조적 문제</div><div class="para-body">인천 아파트 지하주차장의 붕괴원인은 전단보강근 미설치와 콘크리트의 강도 부족에 있다. 설계 시 32개의 전단보강근 설치가 요구되었으나, 실제로는 17개만 설치되었고 설계자의 책임이 적나라하게 드러났다. 이 사례는 한국 아파트의 구조적 신뢰성을 다시 생각하게 만든다.</div></div><div class="para"><div class="para-title">부실 감리 문제의 심각성</div><div class="para-body">LH가 시공한 무량판 구조 아파트에서 발생한 철근 누락 문제는 설계와 감리, 시공 간의 총체적 부실을 보여준다. 감리의 부실한 검사는 결국 안전성을 위협하고 있으며, 이를 개선하기 위한 제도적 장치가 시급하다. 안전과 직결된 문제인 만큼 뿌리 깊은 문제가 아니다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">무량판 구조의 붕괴가 반복되는 상황에서, 우리는 어떤 안전 장치를 확보해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">안전성을 위해서는 구조적 설계와 시공에서의 철저한 관리가 필요하다. 부실한 감리는 사고를 초래할 수 있으므로, 전문가의 정확한 검증이 반드시 이루어져야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223607414655" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="국토부 대책, 생숙 오피스텔 전환의 기회가 열리다" data-tags="#생숙 #국토부대책 #오피스텔 #부동산" data-date="2024-10-17">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-17</div>
+      <div class="card-title">국토부 대책, 생숙 오피스텔 전환의 기회가 열리다</div>
+      <div class="card-tags"><span class="tag">#생숙</span><span class="tag">#국토부대책</span><span class="tag">#오피스텔</span><span class="tag">#부동산</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 10월 17일 기준, 생활형 숙박시설에 대한 정부의 대책이 나왔다. 이는 기존 생숙의 오피스텔 전환을 허용하겠다는 내용을 포함하며, 시행 지침의 변화를 보여준다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">국토부 대책의 주요 내용</div><div class="para-body">국토부의 대책은 기존 생숙을 오피스텔로 전환하도록 유도하며, 신규 시설은 숙박업으로만 운영하겠다는 호출이다. 기존 생숙 12만8천 호실 중 6만6천 실이 숙박업 신고를 마쳤고, 1만 실은 오피스텔로 용도변경이 완료되었다.</div></div><div class="para"><div class="para-title">오피스텔 전환 요건과 규제 완화</div><div class="para-body">현재 11만실이 오피스텔 전환 가능성을 띄고 있으며, 복도 폭, 주차장, 지구단위계획의 세 가지 규제가 완화되면 전환이 가능하다. 특히, 복도 폭 기준을 완화하는 방안이 주요 포인트로 떠오르고 있다.</div></div><div class="para"><div class="para-title">생숙 소유자들의 합의와 향후 계획</div><div class="para-body">생숙 소유자들 간의 합의로 오피스텔 전환 신청이 이루어질 것으로 보이며, 이는 다음 단계로 나아가는 중요한 발걸음이 될 것이다. 내년부터는 신청을 진행할 계획으로, 이행강제금 부과의 유예 조치가 포함되어 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">생숙 오피스텔 전환이 성공적으로 이루어진다면 향후 부동산 시장에 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">이러한 규제 완화는 생숙 시장의 구조적 변화를 유도할 것이며, 따라서 부동산 시장의 유동성을 증가시킬 것으로 예상된다. 정책의 시행이 생숙 전환에 긍정적인 영향을 미친다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223622170769" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="전세자금 대출이 점점 어려워지는 이유, HUG와 전세사기" data-tags="#전세자금대출 #HUG #전세사기" data-date="2024-10-31">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-10-31</div>
+      <div class="card-title">전세자금 대출이 점점 어려워지는 이유, HUG와 전세사기</div>
+      <div class="card-tags"><span class="tag">#전세자금대출</span><span class="tag">#HUG</span><span class="tag">#전세사기</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 10월 현재, 전세자금 대출이 어렵고 그 원인과 과정에 대한 이해가 절실하다. HUG와 보증 보험의 역할이 중요해졌다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">전세제도의 역사적 배경</div><div class="para-body">625전쟁 이후 한국에서 전세가 활성화된 배경은 산업화와 함께 전세 가격의 비약적인 상승에 기인한다. 개인의 자금 수요가 늘어난 시기에 전세가 월세보다 현명한 선택이 되었다. 전세는 집주인과 세입자 간의 이해관계가 맞아떨어지면서 나타난 임대제도이다.</div></div><div class="para"><div class="para-title">전세자금 대출과 보증 제도의 변화</div><div class="para-body">2006년 전세자금 대출이 등장하면서 임차인이 대출을 통해 집을 구입하기 쉬워졌다. HUG의 보증이 증가하면서 은행들이 대출을 주저하지 않게 되었으나, 최근에는 보증비율이 낮아지고 심사가 깐깐해지고 있다. 이는 사기 피해와 금융사의 손실 확대 때문이다.</div></div><div class="para"><div class="para-title">전세사기의 증가와 그 영향</div><div class="para-body">전세사기의 증가로 인해 HUG의 보증손실이 커지고, 결국 은행들이 전세자금 대출에 대한 기준을 강화하게 된다. 최근 5년간 보증금 지급액이 급증하면서 재정적 부담이 커진 HUG는 대출 기준을 다시 검토하게 될 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">전세자금 대출이 더욱 깐깐해진다면, 세입자는 어디로 가야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">전세자금 대출이 줄어들 조짐이 보인다. 이러한 변화는 특히 중산층 이하 세입자들에게 더 큰 부담이 될 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223640007699" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 11월 · 3개</div>
+  
+<div class="card" data-title="한국 오피스빌딩, 공실률 증가와 배당 감소의 위기" data-tags="#오피스빌딩 #부동산리츠 #상업용부동산 #공실률" data-date="2024-11-06">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-11-06</div>
+      <div class="card-title">한국 오피스빌딩, 공실률 증가와 배당 감소의 위기</div>
+      <div class="card-tags"><span class="tag">#오피스빌딩</span><span class="tag">#부동산리츠</span><span class="tag">#상업용부동산</span><span class="tag">#공실률</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 11월 기준, 한국 오피스빌딩 시장은 주요 변화의 기로에 있다. 공실률 증가, 대출 이자 상승 등으로 수익률은 하락세를 보이며, 이에 따른 배당 감소가 투자자들을 불안하게 하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">부동산 리츠의 투자 구조</div><div class="para-body">부동산 리츠는 임대 수입을 기반으로 하여 자산을 운영한다. 예를 들어, 1조원짜리 오피스빌딩은 80% 임차인을 두고 있으며, 이로 인해 매달 30억의 순수익을 기록한다. 순수익률은 상대적으로 안정적인 3.6%에 해당하지만, 이는 점차 낮아지며 투자자들에게 배당 압박이 증가할 것이다.</div></div><div class="para"><div class="para-title">금리 상승과 공실률의 영향</div><div class="para-body">미국의 기준금리가 상승하면서 3.6%의 수익률은 매력도가 떨어지고 있으며, 한국도 비슷한 상황이다. 공실률이 증가하게 되면 전체 임대 수입 또한 감소하여 수익률이 2.4%로 낮아질 수 있는 우려가 커지고 있다. 이는 대출 이자 부담을 더욱 가중시킨다.</div></div><div class="para"><div class="para-title">한국과 미국의 차별점</div><div class="para-body">한국의 오피스 공실률은 5% 이하로 미국과 큰 차이를 보이고 있다. 코로나19 이후에도 한국은 사무실 근무로 빠르게 복귀하고 있는 반면, 미국은 재택근무가 자리 잡고 있어 공실률이 오름세다. 이는 한국의 오피스빌딩 시장에 비교적 긍정적인 요소가 된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">한국 오피스빌딩 시장에서 공실률 상승과 배당 감소라는 위기를 맞는다면, 투자자들에게 어떤 대안이 필요할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">상업용 오피스 빌딩의 수익성 감소는 현 상황을 고려했을 때 매우 불리한 전망이다. 투자자들은 안정적인 수익을 원하기 때문에, 이러한 변화를 반영한 새로운 투자 전략을 수립해야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223647458774" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="부동산PF 자기자본 비율 20% 증가, 시행사에 돌고 돌아 오는 리스크는?" data-tags="#부동산PF #자기자본 #대토리츠" data-date="2024-11-19">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-11-19</div>
+      <div class="card-title">부동산PF 자기자본 비율 20% 증가, 시행사에 돌고 돌아 오는 리스크는?</div>
+      <div class="card-tags"><span class="tag">#부동산PF</span><span class="tag">#자기자본</span><span class="tag">#대토리츠</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 11월, 부동산PF 구조의 변화가 발표되며 시행사의 자기자본 비율을 20%까지 높이기 위한 노력이 시작됐다. 이 조치는 시행사의 책임을 높이고 자기자본 투입을 강제하여 안정적인 부동산PF 운영을 목표로 하고 있지만, 영세한 시행사들이 과연 이를 충족할 수 있을지가 의문이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">부동산PF의 기본 구조와 변화</div><div class="para-body">부동산PF는 시행사가 토지를 매입하고 인허가를 받아 아파트를 건설하는 과정으로 이루어진다. 최근 발표된 변화는 시행사가 자기자본으로 최소 20%를 투입해야 하며, 이는 시행사의 재무적 안정성을 높이는 데 기여할 것으로 보인다. 하지만 시행사들이 이러한 조건을 충족하는 것은 현실적으로 쉽지 않은 상황이다.</div></div><div class="para"><div class="para-title">대토리츠의 등장과 그 함의</div><div class="para-body">대토리츠는 토지주들이 자신의 토지를 현물로 출자하여 리츠를 구성하고, 이 리츠가 시행사 역할을 하면서 발생하는 이익을 토지주와 함께 나누도록 하는 구조이다. 이 방식은 시행사들에게 필요한 자기자본 비율을 충족하는 데 도움이 될 수 있으며, 정부 방안으로서 각광받고 있다. 그러나 대토리츠의 활성화가 얼마나 실질적으로 이루어질지는 지켜봐야 할 부분이다.</div></div><div class="para"><div class="para-title">금리 상승과 부동산PF의 리스크</div><div class="para-body">금리가 상승하면서 부동산PF의 위험 구조도 변화하고 있다. 시행사가 자기자본을 높이지 못할 경우, 브리지론으로 자금을 조달하기 힘들어지고, 이는 PF 진행에 악영향을 미칠 수 있다. 또한, 분양가를 올리는 것이 불가능할 때 자금조달의 문제가 심각해지고, 결국 시행사와 금융사 모두가 부담을 지게 될 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">영세한 시행사들이 자기자본 비율 20%를 충족하지 못할 경우, 부동산PF는 어떤 리스크를 안고 진행될까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">현실적으로 시행사들이 자기자본을 확보하기 어려운 상황에서 PF 진행이 어려워질 가능성이 크다. 이는 부동산 시장 전반에 부정적인 영향을 미칠 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223665115970" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="신탁사 부실 터지기 전에 아파트를 사야 하나?" data-tags="#부동산PF #신탁사 #미분양 #NPL" data-date="2024-11-26">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-11-26</div>
+      <div class="card-title">신탁사 부실 터지기 전에 아파트를 사야 하나?</div>
+      <div class="card-tags"><span class="tag">#부동산PF</span><span class="tag">#신탁사</span><span class="tag">#미분양</span><span class="tag">#NPL</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 11월, 부동산 PF와 신탁사의 부실이 맞물리며 시장에 경고 신호가 나타나고 있다. FN의 부실 발생이 겹치면서 부동산 가격 하락 예상이 우세해지는 시점이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">부동산PF의 위험 요소들</div><div class="para-body">부동산 PF는 분양대금 횡령 위험, 준공 지연 위험, 미분양 위험 등 세 가지 주요 리스크를 안고 있다. 주간사는 자금의 안전성을 확보하기 위해 SPC 구조를 만들어 이 위험들을 최소화하려는 노력을 한다.</div></div><div class="para"><div class="para-title">신탁사의 책임 역할과 부실 발생</div><div class="para-body">신탁사는 미분양에 대한 책임을 지고 준공을 보장하는 역할을 맡고 있다. 그러나 부동산 PF가 과도한 밀집으로 신탁사가 상환 능력을 초과할 경우, 비은행계 신탁사들은 은행 지원 없이 어려움을 겪을 가능성이 크다.</div></div><div class="para"><div class="para-title">미분양 증가와 NPL 시장의 가능성</div><div class="para-body">미분양 아파트가 시장에 풀리면서 NPL 시장이 활성화될 조짐이 보인다. 부동산 PF에서 미분양이 심해지면 은행들은 손실을 최소화하기 위해 부동산을 저가에 매각하려 할 것이고, 이는 전체 시장에 영향을 미칠 것으로 예상된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">신탁사의 부실로 미분양이 늘어날 시, 과연 안전한 아파트 구매 타이밍은 언제일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">현재로서는 미분양이 시장에 풀리기 전이 최선의 구매 타이밍이다. 큰 손실을 피하기 위해서는 조속한 접근이 필요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223672379928" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2024년 12월 · 3개</div>
+  
+<div class="card" data-title="전세자금대출, 금융위기가 부르는 보험사의 손실" data-tags="#전세자금대출 #HUG #보험사 #금융위기" data-date="2024-12-04">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-12-04</div>
+      <div class="card-title">전세자금대출, 금융위기가 부르는 보험사의 손실</div>
+      <div class="card-tags"><span class="tag">#전세자금대출</span><span class="tag">#HUG</span><span class="tag">#보험사</span><span class="tag">#금융위기</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 12월 기준, 전세자금대출의 구조적 결함이 드러나면서 금융사들의 손실이 가중되고 있다. 보증기관의 보증을 통해 대출이 가능해졌지만, 전세 시세의 하락과 전세사기가 겹치며 문제가 심각해진 상황이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">전세자금 대출 상품의 애초 문제</div><div class="para-body">전세자금대출은 임차인이 임대인에게 돌려받는 전세자금을 담보로 대출이 이루어지는 구조다. 그런데 개인 간 계약인 전세계약은 법적 구속력이 약해, 상환 가능성을 보장받기 어렵다. 따라서 전세시세가 하락하는 시점에선 대출 구조가 위기에 처하게 된다.</div></div><div class="para"><div class="para-title">HUG의 보증기능 및 손실 증가</div><div class="para-body">HUG는 전세사기로 인한 손실을 보상하기 위해 대규모 보험금을 지급해야 했다. 2024년까지 총 지급금이 5조 원에 이르고, 회수율은 저조해 지속적인 영업적자를 초래하고 있다. HUG는 손실을 줄이기 위해 보증 기준을 강화할 수밖에 없는 상황이다.</div></div><div class="para"><div class="para-title">전세금 관리의 어려움과 대출 기준 강화</div><div class="para-body">보증한도가 자기자본의 90배에 이르러 더 이상 책임을 지기 어려운 HUG는 전세자금대출 기준을 강화하는 방안을 모색하고 있다. 신규 임차인이 기존의 전세금을 수용하지 못할 가능성이 커지면서 전세시장에 부정적인 영향을 미칠 것으로 보인다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">전세자금대출의 구조적 결함으로 인해 금융사들의 손실이 커지고 있는데, 이러한 상황에서 대출 시장은 어떻게 변화할 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">예상하지 못한 손실이 계속될 경우, 전세자금대출 기준 강화는 불가피하다. 이는 대출받기가 점점 어려워지는 것을 의미한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223681258916" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="저온 물류센터 공급 과잉, 외국 자금들이 달려든다" data-tags="#부동산PF #물류센터 #쿠팡 #외국자금" data-date="2024-12-13">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-12-13</div>
+      <div class="card-title">저온 물류센터 공급 과잉, 외국 자금들이 달려든다</div>
+      <div class="card-tags"><span class="tag">#부동산PF</span><span class="tag">#물류센터</span><span class="tag">#쿠팡</span><span class="tag">#외국자금</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">24년 12월 기준, 저온 물류센터의 공급 과잉이 가격 하락을 초래하고 있다. 신규 착공이 중단되면서 외국 자금이 한국 물류센터 시장에 부쩍 늘어나고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">저온 물류센터의 공급 과잉</div><div class="para-body">신선식품 배송 증가로 저온 물류센터의 수요가 급증했지만, 공급이 2022년부터 과잉 상태에 빠졌다. 임차인 우위 시장으로 전환되며, 임대료가 하락하는 동시에 공실률이 20%를 넘게 증가한 상황이다.</div></div><div class="para"><div class="para-title">금리 상승과 건설비 증가</div><div class="para-body">2022년부터 금리가 올라가며 물류센터 건설에 드는 금융비용이 늘어났고, 원자재 가격 상승으로 건설 비용이 증가하였다. 이러한 비용 상승은 부동산 PF의 수익성을 악화시켜, 저온 물류센터 매매에 부정적인 영향을 미치고 있다.</div></div><div class="para"><div class="para-title">외국 자금의 대규모 매수 시작</div><div class="para-body">2025년부터 신규 공급이 줄어들 것으로 예상되자 외국 자금이 한국 물류센터를 매수하기 시작했다. 블랙스톤, 싱가포르 투자청 등의 대형 투자자들이 저렴한 가격에 물류센터를 인수하며 시장에 진입하고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">공급 과잉으로 가격이 급락하는 시장에서 외국 자본의 유입은 한국 물류센터 시장에 어떤 변화를 가져올까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">외국 자본의 유입은 단기적으로 매수세를 형성하겠지만, 장기적으로 저온 물류센터의 공급 문제는 해결되지 않는다. 공급과잉이 해소되지 않는 한 시장 회복은 어려울 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223690701530" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="시멘트 산업의 친환경 전환, 모래 부족에서 투자 기회를 찾아라" data-tags="#시멘트 #친환경 #모래부족" data-date="2024-12-19">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2024-12-19</div>
+      <div class="card-title">시멘트 산업의 친환경 전환, 모래 부족에서 투자 기회를 찾아라</div>
+      <div class="card-tags"><span class="tag">#시멘트</span><span class="tag">#친환경</span><span class="tag">#모래부족</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2024년 12월 현재, 시멘트 산업은 환경 오염 우려와 친환경 전환의 기로에 서 있다. 동시에 모래 부족 문제는 새로운 투자 기회를 창출하고 있다. 이 글에서는 시멘트 산업의 변화와 모래 상황을 통해 불거진 투자 포인트를 살펴본다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">시멘트 산업의 역사적 변화</div><div class="para-body">시멘트는 1824년 영국에서 시작된 역사적 배경이 있으며, 현재까지 건축 자재로서 사용된다. 한국의 시멘트 산업은 개화기와 함께 성장하였고, 현재는 환경 문제와 폐기물 사용이 주요 이슈로 떠오르고 있다. 이러한 변화는 산업 구조를 새롭게 재편성할 수 있는 기회를 제공한다.</div></div><div class="para"><div class="para-title">환경 규제와 산업 변화</div><div class="para-body">국내 시멘트 기업들은 환경 문제로 인해 폐기물을 연료로 사용하는 방안으로 반전할 가능성이 증가하고 있다. 한일시멘트와 같은 기업들은 대체 투자의 필요성을 강조하며, 2030년까지 대체율 100% 목표를 설정하고 있다. 이러한 변화는 기업들에게 새로운 성장동력을 제공할 수 있다.</div></div><div class="para"><div class="para-title">모래 부족과 대체재 시장</div><div class="para-body">현재 세계적으로 모래의 고갈이 우려되고 있으며, 중국은 대량의 모래를 소비하고 있다. 이 상황은 새로운 대체재 시장을 열 수 있는 기회를 제공한다. 시멘트 산업이 친환경 대체재를 통하여 새롭게 떠오를 가능성이 있으며, 이는 투자자에게 매력적인 기회가 될 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">친환경 전환과 모래 부족 해결이 시멘트 산업에 어떤 긍정적인 변화를 가져올 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">YES. 시멘트 산업의 친환경화를 통해 폐기물을 처리하는 산업으로의 전환이 가능하다. 이는 환경 규제 강화와 함께 투자자들에게 매력적인 기회를 제공한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223697908949" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 1월 · 2개</div>
+  
+<div class="card" data-title="미분양아파트, 지방엔 곧 미담대 등장이냐" data-tags="#미분양 #부동산PF #지방아파트" data-date="2025-01-11">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-01-11</div>
+      <div class="card-title">미분양아파트, 지방엔 곧 미담대 등장이냐</div>
+      <div class="card-tags"><span class="tag">#미분양</span><span class="tag">#부동산PF</span><span class="tag">#지방아파트</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 1월 현재, 미분양 아파트가 준공 후 미분양으로 넘어가고 있는 상황이다. 부동산PF 담보대출인 미담대가 본격적으로 출시되면서 시장에 미칠 영향이 커질 것으로 보인다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">미담대의 등장과 그 배경</div><div class="para-body">미담대가 본격적으로 나오기 시작했으며, 이는 주로 부동산PF의 흐름과 관련 있다. 지방에서는 아파트까지 미담대가 조만간 등장할 것으로 예상된다.</div></div><div class="para"><div class="para-title">미분양 아파트의 회수 메커니즘</div><div class="para-body">미분양이 있더라도 아파트가 준공되면 최초 분양을 받은 세대가 잔금을 내고 입주하게 된다. 각 금융사들은 분양 세대와 잔금 회수 순위에 따라 대출금 회수에 대한 경쟁을 시작한다.</div></div><div class="para"><div class="para-title">할인분양과 시행사의 위험</div><div class="para-body">미분양이 심화되면 시행사는 할인분양과 같은 극단적인 조치를 취하게 된다. 이는 기존 분양자와의 갈등을 유발할 수 있으며, 시행사의 분양 이익이 손실로 전환되는 상황을 초래할 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">미분양이 대출 시장에 미치는 악영향을 막기 위해 어떤 대책이 필요할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">미분양 문제 해결이 시급하다. 실수요자와 투자자의 신뢰를 되찾기 위해 정책적 접근이 필요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223721295027" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="LA 산불 속 목조 주택의 비밀, 조닝이 만들어낸 결과" data-tags="#LA산불 #목조주택 #조닝 #부동산" data-date="2025-01-15">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-01-15</div>
+      <div class="card-title">LA 산불 속 목조 주택의 비밀, 조닝이 만들어낸 결과</div>
+      <div class="card-tags"><span class="tag">#LA산불</span><span class="tag">#목조주택</span><span class="tag">#조닝</span><span class="tag">#부동산</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 1월 기준, LA에서 발생한 대규모 산불이 목조 단독주택의 특성과 조닝 제도의 연관성을 드러내고 있다. 이 지역에서 단독주택이 주거 형태로 자리 잡은 이유를 살펴본다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">LA 산불과 보험사 피해</div><div class="para-body">LA 산불로 인해 많은 한국 보험사가 피해를 입었고, 특히 DB손해보험의 보험 보상액이 천억 원대로 추정된다. 보험사는 재보험을 통해 위험을 분산하지만, 보상한도가 설정되어 있어 상황이 복잡해진다.</div></div><div class="para"><div class="para-title">미국 단독주택 시장의 특징</div><div class="para-body">미국 주택의 75%가 단독주택으로 구성되어 있으며, 특히 R1 지역에서는 여러 가구가 살 수 없는 구조다. 이번 산불로 인해 2층 이하 단독주택들이 피해를 보고 있으며, 지역 조닝의 응집력이 강조되고 있다.</div></div><div class="para"><div class="para-title">조닝의 역사적 배경과 영향</div><div class="para-body">조닝 제도는 주거환경을 규제하고, 과거 인종 차별의 여파로 인해 유색인종의 접근을 제한하는 데 사용되었다. 이러한 구조적인 문제가 현재에도 여전히 이어지고 있어 단독주택 지역이 외곽으로 밀려나는 현상이 나타나고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">LA 산불이 목조주택과 조닝 제도의 연관성을 드러낸다면, 앞으로 이 주택 시장은 어떻게 변화할 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">변화가 불가피하다. 조닝 구조와 보험사의 손실 관리는 향후 주택 시장에 큰 영향을 미칠 것임을 시사한다. 이는 신규 주택 건설 방식에 대한 재고를 요구한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223725920739" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 3월 · 2개</div>
+  
+<div class="card" data-title="한국인, 일본 부동산에 엔고를 매료되다" data-tags="#일본부동산 #엔저 #해외투자" data-date="2025-03-20">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-03-20</div>
+      <div class="card-title">한국인, 일본 부동산에 엔고를 매료되다</div>
+      <div class="card-tags"><span class="tag">#일본부동산</span><span class="tag">#엔저</span><span class="tag">#해외투자</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 3월 17일, 한국인의 일본 부동산 송금이 급증했다. 2023년 74건에서 2024년 123건으로 증가, 총 송금액도 3,920만 달러에 달했다. 외국인의 저금리 대출 이용과 엔저는 일본 부동산에 대한 매력을 더욱 높이고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">일본 부동산 시장의 매력</div><div class="para-body">일본 부동산에 대한 관심은 돈의 흐름과 증가율에 뚜렷하게 나타난다. 저금리 대출이 가능한 외국인 투자자들이 일본 부동산 시장에 적극적으로 진입하며, 특히 한국의 고액 자산가들이 해외 부동산 투자 세미나를 통해 활발히 참여하고 있다.</div></div><div class="para"><div class="para-title">부동산 구입의 새로운 패턴</div><div class="para-body">일본의 부동산 구입 목적은 단순한 시세 차익을 노리는 것을 넘어 절세 차원으로 확장되고 있다. 노후 주택을 통해 감가상각을 활용한 절세 방법이 인기를 얻고 있으며, 이러한 트렌드는 일본의 고소득층이 선호하는 투자 방식으로 자리 잡고 있다.</div></div><div class="para"><div class="para-title">부동산 투자 시 유의점</div><div class="para-body">일본 부동산 구매 시 다양한 세금과 중개 수수료를 감안해야 한다. 취득세와 보유세, 중개 수수료의 부담이 크기 때문에 장기적인 투자 계획이 필요하며, 상승세가 제한된 지역과 안전한 투자처를 선택하는 것이 중요하다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">일본 부동산에 대한 투자가 늘어나고 있는 상황에서, 유의해야 할 점들은 무엇일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">투자 시세와 비용을 모두 고려해야 한다. 가격 상승의 기대가 명확하지 않은 지역에서의 투자는 신중해야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223802449020" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="스트레스 DSR 3단계 시행, 아파트 시장은 막차를 탈까?" data-tags="#스트레스DSR #부동산 #아파트 #대출" data-date="2025-03-25">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-03-25</div>
+      <div class="card-title">스트레스 DSR 3단계 시행, 아파트 시장은 막차를 탈까?</div>
+      <div class="card-tags"><span class="tag">#스트레스DSR</span><span class="tag">#부동산</span><span class="tag">#아파트</span><span class="tag">#대출</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 3월 기준, 스트레스 DSR 제도의 단계적 적용이 아파트 시장에 미치는 영향이 커지고 있다. 특히 7월 시행을 앞두고 수요가 몰리며 불확실성이 증대되고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">스트레스 DSR 개념과 그 영향</div><div class="para-body">스트레스 DSR은 대출 한도를 보수적으로 설정하기 위한 지표로, 금융기관은 이를 통해 대출자의 소득과 부채 비율을 기반으로 상환능력을 평가한다. 이 제도가 도입된 이후 대출 한도는 줄어들고 있다. 7월 전면 시행 시점에서 더 많은 대출자들이 영향을 받을 전망이다.</div></div><div class="para"><div class="para-title">예상되는 전세자금대출에의 영향</div><div class="para-body">스트레스 DSR이 전세자금대출에 확산될 경우, 대출자들은 더 엄격한 심사를 통과해야 한다. 이는 아파트 구매 심리에 직접적인 영향을 미치고 있으며, 특히 입주율 감소와 미분양 주택 증가 우려로 전세시장에 심각한 타격을 줄 수 있다. 대출 한도가 줄어드는 만큼, 수요가 더욱 악화될 가능성이 있다.</div></div><div class="para"><div class="para-title">서울과 기타 지역의 극단적 대조</div><div class="para-body">서울의 아파트 수요는 공급 부족 우려로 유지될 가능성이 있지만, 지방은 미분양과 입주 포기가 심화되고 있다. 정부의 규제가 강화되고 있는 상황에서, 시장의 양극화 현상이 더욱 뚜렷해질 것으로 예상된다. 이는 향후 아파트 가격에도 큰 영향을 미칠 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">스트레스 DSR 시행이 아파트 구매 심리에 어떤 영향을 미칠까요?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">예, 스트레스 DSR이 시행되면 더 많은 사람들의 대출 한도가 줄어들어 아파트 구매가 감소할 것이다. 특히 지방 시장에 더욱 큰 부정적인 영향을 미칠 수 있다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223808233603" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 4월 · 1개</div>
+  
+<div class="card" data-title="1억으로 10억 아파트 소유, 지분형 모기지의 위험과 기회는?" data-tags="#지분형모기지 #부동산 #가계부채" data-date="2025-04-24">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-04-24</div>
+      <div class="card-title">1억으로 10억 아파트 소유, 지분형 모기지의 위험과 기회는?</div>
+      <div class="card-tags"><span class="tag">#지분형모기지</span><span class="tag">#부동산</span><span class="tag">#가계부채</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 6월, 금융위가 지분형 모기지의 세부 방안을 발표할 예정이다. 이 방안은 가계부채를 줄이려는 정부의 의도를 반영하고 있으나, 그 속에는 숨은 함정이 있을지 모르기 때문에 주의 깊은 관찰이 필요하다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">지분형 모기지의 구조와 이점</div><div class="para-body">지분형 모기지를 통해 1억원으로 10억원 규모의 아파트를 구입할 수 있게 된다. 이는 40% LTV로 4억원의 은행 대출과 5억원의 주택금융공사 지분 투자를 통해 가능해진다. 사용자는 주택금융공사에 대한 사용료와 은행 이자를 부담하게 되어, 주택금융공사의 부담이 상대적으로 더 큰 구조로 설계되었다.</div></div><div class="para"><div class="para-title">가격 상승과 하락의 리스크</div><div class="para-body">주택가격 상승 시 매각수익을 개인과 주택금융공사가 각각 나누는 구조다. 반대로, 주택가격이 하락하면 주택금융공사가 1차 손실을 우선적으로 떠안는 시스템이기 때문에, 개인은 더 안전한 입장에 서게 된다. 그러나 가격 하락이 지속되면 결국 개인의 손실이 발생할 수 있는 구조다.</div></div><div class="para"><div class="para-title">실제 비용과 주의사항</div><div class="para-body">주택구입에 따른 매달 내야 하는 대출이자와 사용료는 크게 증가할 수 있다. 예를 들어 9억원의 주택에 대한 가중평균 이자 및 사용료는 거의 225만원에 달할 것으로 보이며, 원금 상환을 포함하면 매달 300만원 이상의 부담이 예상된다. 이에 따라 개인의 재정 상황이 매우 중요한 판단 요소로 작용하게 된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">지분형 모기지의 경제적 이익이 과연 개인에게 실질적인 혜택이 될까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">YES. 지분형 모기지는 개인이 리스크를 상당히 줄일 수 있는 구조로 설계되어 있다. 다만, 가격 하락 시 점검이 추가로 필요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223844293537" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 5월 · 1개</div>
+  
+<div class="card" data-title="6월 전세자금대출 깐깐해지며 영향은?" data-tags="#전세자금대출 #보증비율 #DTI #DSR" data-date="2025-05-30">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-05-30</div>
+      <div class="card-title">6월 전세자금대출 깐깐해지며 영향은?</div>
+      <div class="card-tags"><span class="tag">#전세자금대출</span><span class="tag">#보증비율</span><span class="tag">#DTI</span><span class="tag">#DSR</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 6월부터 전세자금대출의 보증비율이 가장 크게 변동하며, 은행들은 더 깐깐한 심사를 해야 한다. 이는 전세사기의 급증으로 인해 보증기관들이 큰 손실을 보았기 때문이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">전세자금대출의 변화와 리스크</div><div class="para-body">전세자금 대출 보증기관들이 손실을 줄이기 위해 보증비율을 기존 100%에서 90%로 낮출 예정이다. 이는 은행이 10%의 손실을 떠안게 되는 것을 의미하며, 이에 따라 대출 심사가 엄격해질 수밖에 없다.</div></div><div class="para"><div class="para-title">전세사기 증가와 정책 대응</div><div class="para-body">최근 몇 년간 전세사기가 발생하면서 보증기관들이 매년 조 단위의 손실을 봤다. 특히 HUG가 지급한 보험금이 급증하면서, 금융기관은 더욱 신중한 접근이 필요해진 상황이다.</div></div><div class="para"><div class="para-title">DSR 및 DTI 적용 확대로 신용 심사 강화</div><div class="para-body">6월부터 DSR 및 DTI 기준이 적용되면서 대출자에 대한 소득과 부채의 심사가 강화된다. 이는 주택 대출 시장에서 전세자금 대출을 받기가 점점 더 어려워지는 변화를 의미한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">전세자금대출이 깐깐해지면 무주택 신혼부부에게 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">전세자금대출 조건이 강화되는 상황에서 신혼부부는 더 낮은 대출 한도와 높은 심사 기준에 직면하게 된다. 결국 주택 마련이 더 어려워질 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223880321116" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 6월 · 3개</div>
+  
+<div class="card" data-title="부동산 신탁사 부실, 법적 책임 공격에 직면하다" data-tags="#부동산신탁 #PF #부동산부실" data-date="2025-06-03">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-06-03</div>
+      <div class="card-title">부동산 신탁사 부실, 법적 책임 공격에 직면하다</div>
+      <div class="card-tags"><span class="tag">#부동산신탁</span><span class="tag">#PF</span><span class="tag">#부동산부실</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 6월 현재, 부동산 신탁사들은 경영 악화와 법적 분쟁의 이중 고통을 겪고 있다. 부실한 부동산 투자와 신탁사의 준공 책임 문제로 심각한 손실이 예상된다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">부동산 PF의 위험 요인</div><div class="para-body">부동산 PF에서는 시행사가 횡령하거나 준공이 불가능한 위험이 존재한다. 이를 방지하기 위해 주간사가 SPC를 설립하고 자금을 관리하도록 구조를 설정한다. 하지만 건설사 부도 위험과 준공 지연은 여전히 큰 문제로 남아 있다.</div></div><div class="para"><div class="para-title">신탁사의 책임과 법적 책임</div><div class="para-body">신탁사는 건설사 대신 준공 책임을 지기로 약속하면서 투자자들에게 경과 책임을 보장한다. 그러나 최근 법원이 신탁사가 원금을 상환해야 한다고 판결함에 따라 신탁사들은 거액의 손해배상을 요구받게 됐다.</div></div><div class="para"><div class="para-title">부동산 신탁사들의 경영 위기</div><div class="para-body">국내 신탁사들은 이로 인해 2024년에 6,616억 원의 영업손실이 예상된다. 신탁사들은 책임을 이행할 수 없는 상황에 직면하며, 중소 건설사의 신용 문제는 더욱 심각해질 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">부동산 신탁사들의 부실이 심화될 경우, 이를 관리할 실질적 대안이 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">현재 상황에서는 신탁사들이 경영改善을 위한 효과적인 대안을 마련하기 어려울 것이다. 이들은 법적 책임을 피하기 위해 필사적으로 노력해야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223885681167" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="하자 많이 발생하는 건설사, 누가 가장 위험한가" data-tags="#하자 #건설사 #아파트 #국토교통부" data-date="2025-06-10">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-06-10</div>
+      <div class="card-title">하자 많이 발생하는 건설사, 누가 가장 위험한가</div>
+      <div class="card-tags"><span class="tag">#하자</span><span class="tag">#건설사</span><span class="tag">#아파트</span><span class="tag">#국토교통부</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 6월 기준, 아파트 하자 문제가 심각한 건설사 순위가 발표됐다. 특히 한화와 현대건설이 주요 문제로 지목되며, 과거 하자 발생 비율과 건수에서 두드러진다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">하자 문제의 전반적인 상황</div><div class="para-body">국토교통부의 하자 심사 결과, 기능 불량과 탈락 등의 문제가 주를 이루고 있다. 특히 공동주택 시공 시 접수되는 하자 건수가 해마다 늘어나고 있으며, 안전 기준 강화를 요구하는 목소리가 커지고 있다.</div></div><div class="para"><div class="para-title">하자 판정 건수와 발생 비율</div><div class="para-body">최근 6개월 동안 한화가 97건의 하자를 판정받아 가장 많은 수치를 기록했다. 하지만 세대수 대비 하자 발생 비율로 분석했을 때는 현대건설이 하자 발생률이 낮은 것으로 나타났다.</div></div><div class="para"><div class="para-title">하자 발생 유형 및 주의점</div><div class="para-body">기능 불량과 균열, 누수 등 다양한 하자 유형이 관찰되고 있으며, 이는 입주 전 점검에서 주의해야 할 부분이다. 국토교통부의 발표로 건설사들이 하자 문제에 보다积极적으로 대응하는 모습을 보이고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">하자 판정이 많은 건설사가 지속되면, 소비자와 시장에 어떤 영향을 미칠까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">하자 발생이 지속된다면 소비자의 신뢰가 크게 손상될 수 있다. 이는 향후 아파트 매매에 부정적인 영향을 미친다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223894392540" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="시멘트 산업이 쓰레기 대란 속 친환경으로 변모할 기로에 서다" data-tags="#시멘트 #생활폐기물 #친환경 #쓰레기대란" data-date="2025-06-24">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-06-24</div>
+      <div class="card-title">시멘트 산업이 쓰레기 대란 속 친환경으로 변모할 기로에 서다</div>
+      <div class="card-tags"><span class="tag">#시멘트</span><span class="tag">#생활폐기물</span><span class="tag">#친환경</span><span class="tag">#쓰레기대란</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년부터 수도권의 생활폐기물 매립이 금지된다. 이에 따라 시멘트 산업이 친환경 전환을 시도하며 폐기물을 처리할 새로운 기회를 창출하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">시멘트와 폐기물의 교차점</div><div class="para-body">시멘트 생산 과정에 다양한 폐기물이 사용되면서 환경 오염의 주범이 되었으나, 이를 활용해 친환경 산업으로 전환하려는 움직임이 나타나고 있다. 폐플라스틱을 사용하면 경제적인 이점이 있으며, 순환자원으로의 활용이 강조되고 있다.</div></div><div class="para"><div class="para-title">시멘트 업계의 재도약 전략</div><div class="para-body">쌍용 등 시멘트 대기업들은 폐기물 사용 대체율을 높이기 위해 막대한 투자를 계획하고 있으며, 기술 개선으로 탄소 배출을 줄이는 것에 실질적인 목표를 두고 있다. 이는 시멘트 산업의 이미지 개선에도 큰 역할을 할 것으로 기대된다.</div></div><div class="para"><div class="para-title">환경 단체의 반발과 대안 모색</div><div class="para-body">시멘트 업계의 친환경 전환 시도에 대한 환경 단체의 반발이 있으며, 새로운 소각로가 다이옥신 등의 유해 물질을 배출하지 않는지 검증이 필요하다. 폐기물 소각 시 환경 오염 문제를 해결하기 위해 더 많은 연구와 공론화가 필요하다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">시멘트 산업이 진정으로 친환경 산업으로 탈바꿈할 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">YES, 폐기물 처리를 통해 자원으로 재활용 가능한 기회가 많아 보인다. 이는 시멘트 산업의 지속 가능한 발전을 가능하게 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223908924273" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 7월 · 1개</div>
+  
+<div class="card" data-title="일본 조선업, 국영 조선소 건설과 인력 문제에 직면하다" data-tags="#일본조선업 #국영조선소 #조선소인력문제" data-date="2025-07-09">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-07-09</div>
+      <div class="card-title">일본 조선업, 국영 조선소 건설과 인력 문제에 직면하다</div>
+      <div class="card-tags"><span class="tag">#일본조선업</span><span class="tag">#국영조선소</span><span class="tag">#조선소인력문제</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 7월 일본 조선업이 국영 조선소 건설을 계획하고 있지만, 심각한 인력 문제를 안고 있다. 조선업의 경쟁력 회복을 위한 노력이 시급한 상황이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">일본 조선업의 역사적 전환</div><div class="para-body">1970년대 일본은 세계 조선 시장의 60%를 차지했던 조선강국이지만, 두 차례의 오일쇼크 이후 한국 조선사와의 가격 경쟁에서 밀리기 시작했다. 조선업의 경쟁력을 높이기 위해 일본 정부는 '조선 합리화 정책'을 도입하며 비용 절감을 위한 노력을 시작했다.</div></div><div class="para"><div class="para-title">현장 인력의 감소와 설계 조직의 비대화</div><div class="para-body">일본 조선사는 생산설계를 통해 숙련 인력의 수요를 줄이고 설계팀 조직이 비대해지며 의사소통의 단절이 발생했다. 이는 조선업의 질적 저하로 이어져, 현장에서의 문제 해결이 늦어지는 상황을 초래했다.</div></div><div class="para"><div class="para-title">국영 조선소 건설과 미래 전망</div><div class="para-body">일본 정부는 1조 엔 규모의 조선업 지원 방안을 제안했으나, 예산은 인력 양성 기금에 대부분 배정되고 있다. 조선소 통합과 인력 문제 해결이 병행되지 않는다면, 일본 조선업의 미래는 불투명할 것으로 예상된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">일본의 조선업 경쟁력이 회복되기 위해 해결해야 할 가장 시급한 문제는 무엇인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">인력 문제 해결이 가장 중요하다. 숙련된 인력의 감소는 조선업의 퀄리티와 생산성을 심각하게 저하시킬 것으로 보인다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223926428491" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 8월 · 1개</div>
+  
+<div class="card" data-title="전세자금대출 기준 강화, 전세에서 월세 전환이 가속화될까" data-tags="#전세자금대출 #LTV #주택금융 #전세사기" data-date="2025-08-31">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-08-31</div>
+      <div class="card-title">전세자금대출 기준 강화, 전세에서 월세 전환이 가속화될까</div>
+      <div class="card-tags"><span class="tag">#전세자금대출</span><span class="tag">#LTV</span><span class="tag">#주택금융</span><span class="tag">#전세사기</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 8월 28일부터 주택금융공사의 전세자금 대출 기준이 강화되었다. 이로 인해 전세 대출이 어려워지고 있으며, 월세나 반전세로의 전환이 가속화될 가능성이 커지고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">전세자금대출 기준 변화</div><div class="para-body">주요 변경 사항은 선순위 채권과 임차보증금의 총액이 담보물 가격의 90%를 초과할 수 없다는 점이다. 서울에서 전세가율이 52.8%에 달하는 상황에서 이는 대출 한도의 축소를 의미한다. 특히 지방은 더 심각하여 주담대가 있는 경우 전세자금 대출이 제한된다.</div></div><div class="para"><div class="para-title">임차보증금 반환채권의 질권 설정</div><div class="para-body">임차보증금 반환채권은 임차인이 집주인에게 보증금을 돌려받을 권리로, 이를 보장하기 위해 질권이 설정된다. 주택금융공사는 임차인의 권리를 질권으로 확보하여 직접 보증금을 청구할 수 있는 구조를 만들 예정이다. 이 조치는 전세사기를 예방하고 임차인의 권익을 보호하기 위한 것이다.</div></div><div class="para"><div class="para-title">임대 시장의 변화</div><div class="para-body">장기적인 관점에서 이러한 변화는 전세에서 월세 또는 반전세로의 전환을 가속화할 것으로 보인다. 특히 전세자금 대출이 줄어들면서 기존 임차인의 보증금 반환에 어려움을 겪을 가능성이 커, 경매 증가도 예측된다. 이는 임대 시장의 구조적 변화를 예고한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">전세자금 대출이 계속 강화된다면 결국 임대 시장은 어떻게 변화할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">월세와 반전세로의 전환은 불가피하다. 전세 대출이 줄어들며 기존 임차인의 보증금 반환이 어려워지면 경매 증가가 예상된다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223987305460" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 9월 · 2개</div>
+  
+<div class="card" data-title="대출 규제가 주택 공급 확대를 왜곡시킨다" data-tags="#주택공급 #대출규제 #부동산정책" data-date="2025-09-08">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-09-08</div>
+      <div class="card-title">대출 규제가 주택 공급 확대를 왜곡시킨다</div>
+      <div class="card-tags"><span class="tag">#주택공급</span><span class="tag">#대출규제</span><span class="tag">#부동산정책</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 9월 7일 발표된 대출 규제는 주택 공급 확대를 위한 방안으로 포장되었지만, 실제로는 금융 대출 조건을 강화하는 내용이 주를 이루고 있다. 주택 가격 안정을 위한 조치가 오히려 공급 우려를 가중시키고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">규제지역 LTV 강화의 논리</div><div class="para-body">주택 담보대출의 LTV가 규제지역에서 기존 50%에서 40%로 강화됨에 따라, 이는 주택 구입자에게 더 큰 부담을 주게 되는 구조다. 이러한 대출 규제는 공급자의 의욕도 저하시킬 것으로 보인다.</div></div><div class="para"><div class="para-title">매매 및 임대 사업자 대출 금지</div><div class="para-body">규제지역과 수도권의 주택 매매 및 임대 사업자에 대한 대출 금지는 주택 시장의 유동성을 더욱 축소시킬 가능성이 크다. 이는 초기 투자자의 진입 장벽을 높이고, 임대 주택 공급에 악영향을 끼칠 우려가 있다.</div></div><div class="para"><div class="para-title">전세 대출 한도 통일 조치</div><div class="para-body">1주택자의 전세 대출 한도를 2억 원으로 낮추는 조치는 상위 주택을 가진 이들에게 불리하게 작용하여 전세 시장의 유동성을 더욱 약화시킬 것이다. 이에 따라 전세 구입이 더욱 어려워질 우려가 존재한다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이런 대출 규제가 과연 주택 공급을 늘릴 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">NO. 대출 규제는 주택 구매자의 접근성을 낮추고 시장의 위축을 초래한다. 이는 결국 공급 확대에 대한 기대를 더 어렵게 만든다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/223998945131" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="2026년 1월, 주택담보대출 강화로 은행 대출 여력이 어떻게 바뀔까?" data-tags="#주택담보대출 #금융규제 #대출여력" data-date="2025-09-23">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-09-23</div>
+      <div class="card-title">2026년 1월, 주택담보대출 강화로 은행 대출 여력이 어떻게 바뀔까?</div>
+      <div class="card-tags"><span class="tag">#주택담보대출</span><span class="tag">#금융규제</span><span class="tag">#대출여력</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 9월 19일, 금융위원회가 제시한 주택 담보대출과 관련된 신규 자본 규제는 은행 권의 대출 여력에 중대한 영향을 미칠 전망이다. 주택 담보대출의 위험가중치가 상승하고 주식 자산의 위험가중치가 하락함으로써 전체 대출 가능 총량이 어떻게 변할지 주목해야 한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">주택 담보대출 위험가중치 변화</div><div class="para-body">주택 담보대출의 위험가중치가 15%에서 20%로 인상되면, 은행이 대출해줄 수 있는 금액이 줄어들 수밖에 없다. 계산해보면, 동일한 100억 원의 주택 담보대출에서도 자체 자본 사용이 늘어나는 구조로 바뀌게 된다. 따라서, 은행들은 추가 대출 여력이 약 27조 원 가량 줄어들 것으로 예상된다.</div></div><div class="para"><div class="para-title">주식 위험가중치 하향 조정</div><div class="para-body">반면 주식 자산의 위험가중치가 400%에서 250%로 하향 조정되면, 은행의 위험가중자산(RWA)은 크게 줄어들게 된다. 이는 은행들이 대출 여력을 증가시키는 효과를 가져올 수 있으며, 대출 가능 금액은 160조 원으로 증가한다. 결과적으로 전체적인 대출 여력이 늘어나는 효과를 가져온다.</div></div><div class="para"><div class="para-title">규제의 복합적 영향</div><div class="para-body">이번 자본 규제의 변경이 주택 담보대출에 미치는 직접적인 영향은 있을지라도, 오히려 기업 대출로의 자금 유도가 이루어질 가능성도 존재한다. 이는 은행의 대출 여력이 증가하는 동시에 부동산 시장에 미치는 간접적 영향 또한 고려해야 함을 의미한다. 결국, 대출 확대가 이루어지면 민간 경제 전반에 긍정적인 효과가 있을 것으로 기대된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">주택 담보대출 제도가 강화되면 은행의 대출 여력이 실제로 어떻게 변화할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">주택 담보대출의 규제가 강화되면 은행의 대출 여력이 감소할 것으로 보인다. 하지만 주식 자산의 위험가중치 하향 조정으로 인해 대출 여력이 증가할 수 있으므로, 전체적으로는 증가하는 양상이 발생할 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224017016007" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 10월 · 2개</div>
+  
+<div class="card" data-title="추석 이후 서울 아파트 추가 규제, 가격 안정은 가능할까" data-tags="#서울아파트 #추가규제 #부동산시장" data-date="2025-10-07">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-10-07</div>
+      <div class="card-title">추석 이후 서울 아파트 추가 규제, 가격 안정은 가능할까</div>
+      <div class="card-tags"><span class="tag">#서울아파트</span><span class="tag">#추가규제</span><span class="tag">#부동산시장</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">25년 10월 기준, 서울 아파트 가격이 여전히 상승세를 보이고 있다. KB국민은행의 최근 조사에 따르면, 매매가격이 1% 이상 오른 지역이 여러 곳에 분포하고 있다. 규제 정책의 효과가 미미한 상황에서 추가 규제가 필요한 상황이다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">최근 서울 아파트 매매동향</div><div class="para-body">서울지역의 아파트 가격이 잡히지 않고 있으며, 강남구와 용산구를 포함한 여러 지역에서 가격 상승이 나타나고 있다. 광진구, 강동구, 성동구 등의 매매가격 상승률 역시 눈에 띈다. 이러한 상승세는 기존의 대출 규제나 주택공급 확대 방안이 효과를 발휘하지 못했음을 시사한다.</div></div><div class="para"><div class="para-title">추가 규제 시나리오</div><div class="para-body">추석 명절 이후 서울의 주요 지역에 대한 추가 규제 가능성이 제기되고 있다. 주택담보대출 LTV를 낮추고, 종부세와 재산세 인상을 검토하는 방안도 논의되고 있다. 이는 아파트 가격을 억제하기 위한 강력한 수요 억제 정책으로 이해될 수 있다.</div></div><div class="para"><div class="para-title">서울 아파트 공급 부족 문제</div><div class="para-body">서울 및 수도권의 아파트 입주물량은 감소 추세에 있으며, 임대용 빌라의 공급도 급감하고 있다. 전반적으로 아파트와 빌라를 합산할 경우, 서울의 주택 공급 부족은 더욱 심화되고 있다. 이로 인해 가격 안정이 더욱 어려워질 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">추가 규제가 시행되더라도 서울 아파트 시장의 가격 안정은 가능할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">NO. 추가 규제를 시행하더라도 공급 부족 문제를 해결하지 않는 한 효과는 제한적일 것이다. 가격 안정은 현실적으로 어려울 것으로 보인다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224032374482" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="서울·경기 규제 지역 확대, 6억원 주담대 한도도 축소됐다" data-tags="#부동산대책 #서울규제 #주담대한도 #종부세" data-date="2025-10-15">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-10-15</div>
+      <div class="card-title">서울·경기 규제 지역 확대, 6억원 주담대 한도도 축소됐다</div>
+      <div class="card-tags"><span class="tag">#부동산대책</span><span class="tag">#서울규제</span><span class="tag">#주담대한도</span><span class="tag">#종부세</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 10월 15일 발표된 부동산 대책은 서울 전역과 경기 12개 지역의 규제를 대폭 확대하며 주택담보대출 한도를 하향 조정했다. 이는 주택시장 안정化를 위한 긴급 조치로, 시장에 미치는 영향이 크다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">규제지역 광범위화</div><div class="para-body">규제지역의 지정이 서울 전역과 경기 12개 도시로 확대되었다. 이에 따라 주택담보대출의 LTV가 낮아지고, 기존 규제지역에 대한 대출 한도가 더욱 축소된다. 예를 들어, 6억원 주담대 한도가 4억원으로 줄어드는 조치가 포함되었다.</div></div><div class="para"><div class="para-title">종부세 및 재산세 인상 검토</div><div class="para-body">종합부동산세와 재산세 인상안도 검토 중이다. 공정시장가액이 60%에서 80%로 오르고, 재산세 공시지가가 시세 70%에서 90%로 상승할 가능성이 제기되고 있다. 이는 간접적으로 세금 부담을 가중시킬 우려가 있다.</div></div><div class="para"><div class="para-title">DSR 규제 강화</div><div class="para-body">전세대출에도 DSR(총부채상환비율) 규제가 적용되며, 이자 상환이 DSR 계산에 포함된다. 이로 인해 대출 한도가 줄어들며, 대출을 통한 자금 마련이 더욱 어려워질 것으로 예상된다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">규제 지역 확대와 세금 인상이 주택 시장에 미치는 영향은 무엇일까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">전세대출과 주담대 규제 강화로 인해 평균적으로 서울에서 아파트를 구매하기가 더욱 어려워지는 상황이다. 이는 자산 형성에 부정적인 영향을 미칠 가능성이 크다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224041894056" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 11월 · 1개</div>
+  
+<div class="card" data-title="롯데건설, 매출은 올랐지만 영업이익은 줄었다 — 구조적 위기 신호" data-tags="#롯데건설 #건설업 #미분양" data-date="2025-11-28">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-11-28</div>
+      <div class="card-title">롯데건설, 매출은 올랐지만 영업이익은 줄었다 — 구조적 위기 신호</div>
+      <div class="card-tags"><span class="tag">#롯데건설</span><span class="tag">#건설업</span><span class="tag">#미분양</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년을 기준으로 한국 건설업은 기존의 호황에서 벗어나 심각한 다운턴에 접어들고 있다. 최근 9개의 건설사가 법정관리 신청을 하며, 미분양 아파트의 수는 급격하게 증가하고 있다. 이 상황은 건설업의 구조적 문제를 드러내고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">미분양 아파트 급증 현황</div><div class="para-body">2021년 12월 지방 미분양아파트는 16,201세대에서 2025년에는 52,392세대로 증가하였다. 준공 후 미분양아파트도 7,449세대에서 25,117세대로 늘어나면서 주택 시장의 어려움을 실감하게 한다. 미분양 아파트의 증가가 복합적으로 작용하여 시장에 부정적인 영향을 미치고 있다.</div></div><div class="para"><div class="para-title">롯데건설의 재무 현황</div><div class="para-body">2023년에 롯데건설은 6조 8,111억원의 매출을 기록했으나 영업이익은 2,595억원으로 줄어들었다. 2024년에는 매출이 증가했음에도 불구하고 영업이익 감소가 이어졌다. 2025년 1분기에는 매출 1조 7935억원에 평소의 영업이익과 큰 차이를 보이는 38억원을 기록하며 심각한 위기를 직면했다.</div></div><div class="para"><div class="para-title">홈플러스 매각 문제와 리스크</div><div class="para-body">홈플러스가 회사 회생을 신청하면서 롯데건설이 제공한 PF 보증이 큰 위험 요소로 부각되고 있다. 매장 임대료 및 납품 대금 미납 상황이 worsened되고 있으며, 홈플러스의 자산 처분 시 롯데건설의 손실 가능성도 존재한다. 앞으로 홈플러스의 회생절차와 이에 따른 롯데건설의 대응이 주요 이슈로 떠오르고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">영업이익이 줄어드는 상황에서 롯데건설은 홈플러스와의 관계를 어떻게 정리해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">롯데건설은 홈플러스의 회생 절차에 따라 PF 보증을 지원해야 하며, 이로 인해 발생할 손실을 최소화하는 방안을 적극 모색해야 한다. 이 상황에서 리스크 관리는 필수적이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224090330267" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2025년 12월 · 2개</div>
+  
+<div class="card" data-title="10.15대책 이후, 서울 아파트 가격은 왜 여전히 상승세인가" data-tags="#부동산대책 #서울아파트 #전세가격 #강남3구" data-date="2025-12-10">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-12-10</div>
+      <div class="card-title">10.15대책 이후, 서울 아파트 가격은 왜 여전히 상승세인가</div>
+      <div class="card-tags"><span class="tag">#부동산대책</span><span class="tag">#서울아파트</span><span class="tag">#전세가격</span><span class="tag">#강남3구</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 12월 기준, 10.15 부동산 대책 이후에도 서울 아파트 가격은 상승세를 지속하고 있다. 이 대책이 예정된 규제의 물결 속에서도 강남 3구와 용산구는 매매와 전세시장에서 두드러진 성과를 보이고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">서울 아파트 상승세 지속</div><div class="para-body">10.15 대책 발표 이후 서울 아파트의 가격 상승 거래 비중이 증가하고 있다. 10월 52.2%에서 11월 54.1%로 상승 거래 비중이 확대되었고, 반대로 하락 거래 비중은 2.1%p 감소했다. 이는 서울 시장이 규제에도 불구하고 강한 상승세를 유지하고 있음을 나타낸다.</div></div><div class="para"><div class="para-title">강남 3구의 특별한 저항력</div><div class="para-body">강남 3구는 11월 상승 거래 비중이 60.7%로 서울 평균보다 높았다. 이 지역은 과거부터 강한 규제를 받아왔기 때문에 상대적으로 이번 대책의 영향을 덜 받는 것으로 분석된다. 매매 거래량도 증가세를 보이며, 전반적인 시장에서의 저항력이 돋보인다.</div></div><div class="para"><div class="para-title">매수우위지수의 변화</div><div class="para-body">서울의 매수우위지수가 회복세를 보이고 있다. 11월 72.79에서 시작하여 12월 초에는 77.71로 상승했다. 이는 공인중개사들 사이에서 매수자의 수가 많다는 신호로 해석되며, 시장에 긍정적인 분위기가 존재함을 나타내고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">10.15 대책에도 불구하고 서울 아파트 가격이 오르는 이유는 무엇인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">종합적인 시장 동향을 보면 규제가 실행되었음에도 매수세가 여전하므로 가격 상승은 지속될 것으로 판단된다. 이는 현재 시장의 수급이 가격에 큰 영향을 미치고 있음을 보여준다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224103648643" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="저축은행이 조용히 매각되는 이유는 부동산PF 부실이다" data-tags="#부동산PF #저축은행 #부실" data-date="2025-12-12">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2025-12-12</div>
+      <div class="card-title">저축은행이 조용히 매각되는 이유는 부동산PF 부실이다</div>
+      <div class="card-tags"><span class="tag">#부동산PF</span><span class="tag">#저축은행</span><span class="tag">#부실</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 12월 기준, 저축은행들이 부동산PF 부실로 매각에 나서고 있다. 부동산PF는 부동산 시행사가 땅을 사서 시작됐지만, 시중금리 상승과 미분양 문제로 부실이 쌓여가고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">부동산PF의 고리</div><div class="para-body">부동산PF는 시행사가 땅을 구입한 후, 금융사에서 자금을 모집하여 공사비용에 사용하는 구조다. 시행사는 초기 투자 후, 안정적인 분양이 이루어져야 이익을 가져갈 수 있다. 그러나 시중금리가 오르면 대출이자 부담이 크게 늘어난다.</div></div><div class="para"><div class="para-title">부실의 전개</div><div class="para-body">미분양 아파트가 쌓이면서 부동산PF가 정상적으로 진행되지 않으면 브리지론을 상환할 수 없는 상황이 발생한다. 이는 2금융 분야의 저축은행과 증권사들에 큰 피해를 주고 있다. 미분양이 해결되지 않으면 전세로 돌려 대응하려 해도 결과는 불확실하다.</div></div><div class="para"><div class="para-title">저축은행 M&A와 미래 전망</div><div class="para-body">부동산PF의 부실은 저축은행들에게 심각한 재정적 부담을 가하고 있으며, M&A가 활발히 이루어지고 있다. 악성 자산이 남아 있는 가운데, 향후 부동산 경기가 호전되기를 바라는 상황이 지속되고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">부동산PF 부실로 인한 저축은행들의 매각 현상은 앞으로 어떻게 전개될까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">부동산PF 부실 문제는 당분간 해결되기 어려울 것이다. 올 상반기까지는 저축은행들의 추가 매각이 계속될 가능성이 높다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224106271393" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+<div class="date-group">
+  <div class="date-group-header">2026년 2월 · 3개</div>
+  
+<div class="card" data-title="서울 중심부 대규모 아파트 공급, 레미콘 문제로 수급 우려가 커진다" data-tags="#레미콘 #삼표시멘트 #서울아파트 #부동산" data-date="2026-02-09">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-02-09</div>
+      <div class="card-title">서울 중심부 대규모 아파트 공급, 레미콘 문제로 수급 우려가 커진다</div>
+      <div class="card-tags"><span class="tag">#레미콘</span><span class="tag">#삼표시멘트</span><span class="tag">#서울아파트</span><span class="tag">#부동산</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 2월 기준, 서울 성수동 삼표레미콘 공장의 폐쇄로 인해 서울 지역 아파트 공급에 대한 우려가 커지고 있다. 레미콘의 수급 문제가 부동산 시장에 어떤 영향을 미칠지 주목할 필요가 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">삼표레미콘 공장 폐쇄와 서울의 물류 문제</div><div class="para-body">삼표산업은 성수 공장 폐쇄 약속에 따라 2022년까지 공장을 처분하기로 했고, 이로 인해 서울의 레미콘 공급이 줄어들 예정이다. 다른 소규모 레미콘 공장들이 경기도 외곽에 위치하고 있어 도심에서의 공급이 원활하지 못할 전망이다.</div></div><div class="para"><div class="para-title">대체 조치와 비용 문제</div><div class="para-body">현장에서 즉석에서 레미콘을 제조하는 임시 시설 설치가 수익성을 감안하면 대안이 될 수 있지만, 서울 내 소규모 현장에서는 비용 부담이 커 문제로 남아 있다. 일반 콘크리트 대신 응결지연제를 사용하는 것도 선택지지만, 이는 가격 상승을 초래할 수 있다.</div></div><div class="para"><div class="para-title">결국 상승하는 분양가</div><div class="para-body">레미콘 수급 문제는 사실상 서울의 아파트 건설 원가 상승으로 이어질 수 있다. 삼표산업의 주가는 최근 급등했지만, 시장에서의 공급 감소는 결국 주거용 물량의 감소와 가격 인상을 유발할 것이다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">서울의 대규모 아파트 건설이 계속되기 위해서는 레미콘 공급 문제를 어떻게 해결해야 할까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">현장 즉석 레미콘 제조시설 설치가 현실적으로 필요한 상황이다. 그러나 소규모 건축 현장에서 이를 도입하기 어려운 만큼, 품질과 비용 모두를 충족할 방법을 찾아야 한다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224176222418" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="서울 아파트, 이제 누가 살 수 있을까 — 규제 속 전세와 갭투자" data-tags="#부동산 #아파트 #양도소득세 #규제" data-date="2026-02-15">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-02-15</div>
+      <div class="card-title">서울 아파트, 이제 누가 살 수 있을까 — 규제 속 전세와 갭투자</div>
+      <div class="card-tags"><span class="tag">#부동산</span><span class="tag">#아파트</span><span class="tag">#양도소득세</span><span class="tag">#규제</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2025년 여러 부동산 규제가 실시된 이후, 서울 아파트 구매 가능성을 둔 의문이 커지고 있다. 이 글은 강남3구를 비롯한 규제지역의 대출한도와 양도소득세 변화로 인해 서울 아파트를 구매할 수 있는 사람이 어떤 상황인지 분석한다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">주요 규제의 변동</div><div class="para-body">2025년 6월부터 강남3구 및 용산구의 대출한도가 LTV와 무관하게 6억원으로 축소되었고, 이어서 스트레스 DSR이 시행되며 대출한도가 평균 15% 줄어드는 등 규제가 지속적으로 강화되어 왔다. 이와 같은 정세 속에서 서울 아파트는 규제가 전면 적용되고 있으며, LTV보다 주택담보대출 최대 한도가 더 큰 영향을 미치고 있다.</div></div><div class="para"><div class="para-title">서울 아파트 구매자의 조건</div><div class="para-body">2025년 기준에서 서울 내 5분위 평균 가격은 34억원이며, 이 가격에 해당하는 아파트를 구매하기 위해서는 최소 32억원 이상을 마련해야 한다. 상위 20%의 순자산 기준이 11억원인 점을 고려할 때, 강남3구 아파트를 구매할 수 있는 개인은 매우 제한적일 것으로 예상된다.</div></div><div class="para"><div class="para-title">양도소득세 변화와 갭투자</div><div class="para-body">2026년 5월부터 다주택자에 대한 양도소득세 중과가 시행되며, 이에 따라 다주택자의 매물이 시장에 나올 가능성이 크다. 현재 전세를 끼고 매수할 수 있는 기회가 주어진 만큼, 무주택자에게는 갭투자가 열리지만 결국 실거주에 대한 부담이 뒤따를 수 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">서울 아파트를 살 수 있는 이들이 점점 줄어드는 가운데, 앞으로 부동산 시장은 어떻게 변화할 것인가?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">매매는 조심해야 한다. 규제가 강화되고 실거주 비중이 높아지는 상황에서 비싼 아파트 구매는 더욱 어려워질 것이다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224183984825" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+
+<div class="card" data-title="영국 주택담보대출 사기, 바퀴벌레가 숨은 그림?" data-tags="#사기대출 #영국부동산 #마켓파이낸셜 #사모대출" data-date="2026-02-28">
+  <div class="card-header">
+    <div class="card-header-left">
+      <div class="card-date">2026-02-28</div>
+      <div class="card-title">영국 주택담보대출 사기, 바퀴벌레가 숨은 그림?</div>
+      <div class="card-tags"><span class="tag">#사기대출</span><span class="tag">#영국부동산</span><span class="tag">#마켓파이낸셜</span><span class="tag">#사모대출</span></div>
+    </div>
+    <div class="card-toggle">▼</div>
+  </div>
+  <div class="card-body">
+    <div class="section"><div class="section-label">이 글이 말하는 것</div><p class="intro-text">2026년 2월 27일, 영국의 마켓 파이낸셜 솔루션즈(MFS) 사기가 드러나면서 부동산 담보대출 시장이 흔들리고 있다. 이들은 느린 등기 제도를 악용하여 이중 대출을 실행한 것으로, 커다란 금융 피해를 초래하고 있다.</p></div>
+    <div class="section"><div class="para"><div class="para-title">MFS의 대출 방안과 사기 행각</div><div class="para-body">MFS는 등기가 되기 전에도 변호사 계약서를 담보로 대출을 해주는 방식으로 사기 행각을 벌였다. 대출자는 실제 담보와 무관하게 돈을 빌릴 수 있었고, 이로 인해 20억 파운드를 넘는 대출이 실행되었다. 그 결과, 90% 이상의 담보가 사라졌다.</div></div><div class="para"><div class="para-title">사고의 파장과 의문</div><div class="para-body">MFS의 대출 고객들은 정상적인 담보대출을 받았으나 피해 보상의 길은 막혀 있다. 이에 따라 여러 금융기관들이 거액의 손실을 입었고, 이들은 내부 점검을 진행 중이다. 허술한 사모대출 시장에 대한 불신감이 커지고 있으며, 이는 금융 시스템 전반에 영향을 미칠 수 있다.</div></div><div class="para"><div class="para-title">바퀴벌레 경고의 의미</div><div class="para-body">이번 사건은 JP모건의 제이미 다이먼이 경고한 바퀴벌레 비유와 맥락이 닿는다. 한 마리의 바퀴벌레가 보인다면 그 뒤에는 숨은 여러 마리가 있을 것이라는 경고가 금융 시스템에 대한 경각심을 일으키고 있다. 부실이 눈에 보이지 않는 곳에서 누적되고 있다는 우려가 커지고 있다.</div></div></div>
+    <div class="section"><div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">이번 영국 주택담보대출 사기 사건이 금융시장에서 다른 바퀴벌레를 드러낼 수 있을까?</div></div><div class="answer-box"><div class="a-label">나의 답</div><div class="a-text">YES, 이번 사건은 기존 부실이 드러나는 계기가 될 것이다. 금융기관들이 느슨한 규제를 점검하고, 전반적인 금융 건전성을 높이는 계기가 필요하다.</div></div></div>
+    <div class="source-link"><a href="https://blog.naver.com/ranto28/224198897242" target="_blank">원문 보기 →</a></div>
+  </div>
+</div>
+</div>
+</div>
+<div class="no-results" id="noResults">검색 결과가 없습니다.</div>
+<script>
+// 카드 펼치기
+document.querySelectorAll('.card-header').forEach(h => {
+    h.addEventListener('click', () => h.closest('.card').classList.toggle('open'));
+});
+
+// 검색 + 태그 필터
+const searchInput = document.getElementById('searchInput');
+const filterCount = document.getElementById('filterCount');
+const noResults = document.getElementById('noResults');
+const cards = Array.from(document.querySelectorAll('.card'));
+const dateGroups = Array.from(document.querySelectorAll('.date-group'));
+let activeTag = null;
+
+function getCardText(card) {
+    return card.dataset.title + ' ' + card.dataset.tags + ' ' + card.dataset.date;
+}
+
+function applyFilters() {
+    const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    let visible = 0;
+
+    cards.forEach(card => {
+        const text = getCardText(card).toLowerCase();
+        const matchSearch = !q || text.includes(q);
+        const matchTag = !activeTag || card.dataset.tags.includes(activeTag);
+        const show = matchSearch && matchTag;
+        card.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    // 날짜 그룹 헤더: 하위 카드 모두 숨겨지면 헤더도 숨김
+    dateGroups.forEach(group => {
+        const groupCards = Array.from(group.querySelectorAll('.card'));
+        const anyVisible = groupCards.some(c => c.style.display !== 'none');
+        group.style.display = anyVisible ? '' : 'none';
+    });
+
+    if (filterCount) filterCount.textContent = visible + '개';
+    if (noResults) noResults.style.display = visible === 0 ? 'block' : 'none';
+}
+
+if (searchInput) searchInput.addEventListener('input', applyFilters);
+
+// 태그 버튼
+document.querySelectorAll('.tag-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tag = btn.dataset.tag;
+        if (tag === '__clear__') {
+            activeTag = null;
+            document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+        } else if (activeTag === tag) {
+            activeTag = null;
+            btn.classList.remove('active');
+        } else {
+            activeTag = tag;
+            document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        applyFilters();
+    });
+});
+</script>
+</body>
+</html>
