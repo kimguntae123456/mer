@@ -23,6 +23,57 @@ NEW_LOG = BASE / "new_posts.log"
 RSS_URL = "https://rss.blog.naver.com/ranto28"
 BLOG_BASE = "https://blog.naver.com"
 
+# 비경제 글 블랙리스트 키워드 (제목에 포함 시 즉시 제외)
+BLACKLIST_KEYWORDS = [
+    "맛집", "카페", "음식", "먹지", "먹을", "고등어", "밀면", "곰장어",
+    "여행", "부산", "서울", "제주", "일본", "유럽",
+    "블로그", "이웃", "키우는", "후기",
+    "주절주절", "주린이", "딸", "아들",
+    "영화", "드라마", "넷플릭스", "책",
+    "운동", "건강", "다이어트",
+    "일상", "소식",
+]
+
+# 경제 분석 글 화이트리스트 (포함 시 바로 통과)
+WHITELIST_KEYWORDS = [
+    "경제", "금리", "금융", "환율", "달러", "원화", "주식", "채권",
+    "부동산", "PF", "금값", "유가", "원유", "반도체", "AI",
+    "미국", "중국", "일본", "연준", "FOMC", "Fed",
+    "관세", "무역", "수출", "수입", "GDP", "인플레",
+    "은행", "증권", "펀드", "ETF", "비트코인", "코인",
+    "방위산업", "조선", "배터리", "전기차",
+    "feat", "근황", "업데이트",  # 메르 경제글 패턴
+]
+
+
+def is_relevant(title: str) -> str:
+    """제목 기반 관련성 판단. 'yes'/'no'/'maybe' 반환"""
+    title_lower = title.lower()
+    for kw in BLACKLIST_KEYWORDS:
+        if kw in title:
+            return "no"
+    for kw in WHITELIST_KEYWORDS:
+        if kw.lower() in title_lower:
+            return "yes"
+    return "maybe"
+
+
+async def classify_relevance(client, title: str) -> bool:
+    """애매한 제목을 OpenAI로 판단 (초저비용)"""
+    try:
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            max_tokens=5,
+            messages=[{
+                "role": "user",
+                "content": f"다음 블로그 글 제목이 경제·금융·지정학 분석 글이면 YES, 맛집·여행·일상·블로그운영이면 NO로만 답해:\n\n{title}"
+            }]
+        )
+        ans = response.choices[0].message.content.strip().upper()
+        return "YES" in ans
+    except Exception:
+        return True  # 오류 시 처리 시도
+
 SECTOR_MAP = {
     "금리·채권·통화정책": "금융·통화",
     "환율·외환시장": "금융·통화",
@@ -203,15 +254,33 @@ async def main():
         print("새 글 없음.")
         return
 
-    print(f"새 글 {len(new_items)}개 발견")
+    print(f"새 글 {len(new_items)}개 발견 — 관련성 필터링 중...")
 
     from openai import AsyncOpenAI
     client = AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
+    # 관련성 필터
+    filtered_items = []
+    for item in new_items:
+        title = item["title"]
+        relevance = is_relevant(title)
+        if relevance == "no":
+            print(f"  [제외] {title[:50]}")
+        elif relevance == "yes":
+            filtered_items.append(item)
+        else:  # maybe
+            ok = await classify_relevance(client, title)
+            if ok:
+                filtered_items.append(item)
+            else:
+                print(f"  [제외-AI] {title[:50]}")
+
+    print(f"경제 관련 글 {len(filtered_items)}개 처리 시작")
+
     PARSED.mkdir(parents=True, exist_ok=True)
 
     new_count = 0
-    for item in new_items:
+    for item in filtered_items:
         title = item["title"]
         link = item["link"]
         print(f"  처리: {title[:40]}...")
