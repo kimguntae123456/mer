@@ -29,7 +29,14 @@ jobs:
       - name: 새 글 수집 및 처리
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: python crawl_new.py
+        run: |
+          # new_posts.log 없으면 최초 실행 → 4월 6일 이후 백필
+          if [ ! -f new_posts.log ]; then
+            echo "최초 실행: 2025-04-06 이후 백필 시작"
+            python crawl_new.py --backfill 2025-04-06
+          else
+            python crawl_new.py
+          fi
 
       - name: 변경사항 커밋 및 푸시
         run: |
