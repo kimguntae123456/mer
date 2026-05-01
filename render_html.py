@@ -6,7 +6,7 @@ processed/ JSON → output/ HTML 타임라인
 import json
 from pathlib import Path
 
-BASE = Path.home() / "메르_리더"
+BASE = Path(__file__).resolve().parent
 PROCESSED = BASE / "processed"
 OUTPUT = BASE / "output"
 

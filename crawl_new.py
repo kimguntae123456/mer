@@ -144,52 +144,54 @@ def fetch_rss():
     return items
 
 
-def fetch_blog_postlist(since_date: str, max_pages: int = 10) -> list:
+def fetch_blog_postlist(since_date: str, max_pages: int = 20) -> list:
     """
-    네이버 블로그 전체 글 목록에서 since_date 이후 글 수집
+    네이버 블���그 PostTitleListAsync API로 since_date 이후 글 수집
     since_date: 'YYYY-MM-DD'
     """
+    from urllib.parse import unquote
     items = []
     cutoff = datetime.strptime(since_date, "%Y-%m-%d")
 
     for page in range(1, max_pages + 1):
-        url = f"https://blog.naver.com/PostList.naver?blogId=ranto28&currentPage={page}&postListType=&blogType=TT"
-        req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        url = f"https://blog.naver.com/PostTitleListAsync.naver?blogId=ranto28&currentPage={page}&countPerPage=30"
+        req = Request(url, headers={
+            "User-Agent": "Mozilla/5.0",
+            "Referer": "https://blog.naver.com/ranto28"
+        })
         try:
             with urlopen(req, timeout=15) as r:
-                html = r.read().decode("utf-8", errors="replace")
+                raw = r.read().decode("utf-8", errors="replace")
         except Exception as e:
-            print(f"  [목록 페이지 오류 p{page}] {e}")
+            print(f"  [API 오류 p{page}] {e}")
             break
 
-        # 글 링크 + 날짜 추출
-        # 패턴: logNo=숫자 / 날짜 텍스트
-        post_ids = re.findall(r'logNo=(\d+)', html)
-        date_texts = re.findall(r'(\d{4}\.\s*\d{1,2}\.\s*\d{1,2})', html)
+        # JSON 파싱이 깨질 수 있어 regex로 추출
+        posts = re.findall(
+            r'"logNo":"(\d+)","title":"([^"]*)",".*?"addDate":"([^"]*?)"', raw
+        )
 
-        if not post_ids:
+        if not posts:
             break
 
         found_old = False
-        for i, pid in enumerate(dict.fromkeys(post_ids)):  # 중복 제거
-            link = f"https://blog.naver.com/ranto28/{pid}"
+        for logno, title_enc, add_date in posts:
+            link = f"https://blog.naver.com/ranto28/{logno}"
+            title = unquote(title_enc).replace("+", " ").replace("&quot;", '"')
 
-            # 날짜 추정
+            # 날짜 파싱 ("2026. 4. 30." 또는 "10시간 전" 등)
             date_str = ""
-            if i < len(date_texts):
-                raw = date_texts[i].replace(" ", "")
-                try:
-                    dt = datetime.strptime(raw, "%Y.%m.%d")
-                    date_str = dt.strftime("%Y-%m-%d")
-                    if dt < cutoff:
-                        found_old = True
-                        continue
-                except Exception:
-                    pass
-
-            # 제목은 별도 추출
-            title_m = re.search(rf'logNo={pid}[^"]*"[^>]*>([^<]{{3,80}})<', html)
-            title = title_m.group(1).strip() if title_m else f"글 {pid}"
+            date_m = re.match(r'(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})', add_date)
+            if date_m:
+                y, m, d = date_m.groups()
+                dt = datetime(int(y), int(m), int(d))
+                date_str = dt.strftime("%Y-%m-%d")
+                if dt < cutoff:
+                    found_old = True
+                    continue
+            else:
+                # "N시간 전", "N일 전" 등 → 오늘 날짜로 처리
+                date_str = datetime.now().strftime("%Y-%m-%d")
 
             items.append({"title": title, "link": link, "pub_date": date_str})
 
