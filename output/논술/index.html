@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>논술 요약 리더</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#1a1a1a">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; background: #f5f5f0; color: #1a1a1a; line-height: 1.7; }
+a { color: inherit; text-decoration: none; }
+
+.nav { background: #1a1a1a; color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+.nav .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.5px; }
+.nav .back { font-size: 0.85rem; opacity: 0.6; }
+.nav .back:hover { opacity: 1; }
+
+.filter-bar { max-width: 780px; margin: 0 auto; padding: 16px 24px 0; display: flex; gap: 10px; align-items: center; }
+.search-input { flex: 1; min-width: 200px; padding: 9px 14px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 0.9rem; background: #fff; outline: none; }
+.search-input:focus { border-color: #1a1a1a; }
+.filter-count { font-size: 0.8rem; color: #aaa; white-space: nowrap; }
+
+.index-hero { padding: 60px 24px 40px; max-width: 900px; margin: 0 auto; }
+.index-hero h1 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+.index-hero p { color: #666; font-size: 0.95rem; }
+
+.folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 900px; margin: 0 auto; padding: 0 24px 60px; }
+.folder-card { background: #fff; border-radius: 12px; padding: 24px; border: 1px solid #e8e8e0; cursor: pointer; transition: box-shadow 0.2s, transform 0.2s; }
+.folder-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); transform: translateY(-2px); }
+.folder-card .folder-name { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
+.folder-card .folder-count { font-size: 1.8rem; font-weight: 800; color: #1a1a1a; }
+.folder-card .folder-count span { font-size: 0.85rem; font-weight: 400; color: #888; margin-left: 4px; }
+
+.timeline-header { padding: 40px 24px 24px; max-width: 780px; margin: 0 auto; }
+.timeline-header h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+.timeline-header .sub { color: #888; font-size: 0.85rem; margin-top: 4px; }
+.timeline { max-width: 780px; margin: 0 auto; padding: 0 24px 80px; }
+
+.card { background: #fff; border-radius: 12px; border: 1px solid #e8e8e0; margin-bottom: 16px; overflow: hidden; transition: box-shadow 0.2s; }
+.card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.card-header { padding: 20px 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.card-header-left { flex: 1; }
+.card-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.3px; line-height: 1.5; }
+.card-toggle { font-size: 1.2rem; color: #ccc; flex-shrink: 0; margin-top: 2px; transition: transform 0.2s; }
+.card.open .card-toggle { transform: rotate(180deg); }
+.card-body { display: none; border-top: 1px solid #f0f0ea; padding: 24px; }
+.card.open .card-body { display: block; }
+
+.no-results { text-align: center; padding: 60px 24px; color: #aaa; font-size: 0.95rem; display: none; }
+
+/* MD 콘텐츠 스타일 */
+.md-h1 { font-size: 1.1rem; font-weight: 800; margin: 16px 0 10px; color: #1a1a1a; border-bottom: 2px solid #e8e8e0; padding-bottom: 8px; }
+.md-h2 { font-size: 0.95rem; font-weight: 700; margin: 14px 0 8px; color: #333; padding-left: 10px; border-left: 3px solid #1a1a1a; }
+.md-h3 { font-size: 0.88rem; font-weight: 700; margin: 12px 0 6px; color: #555; }
+.md-p { font-size: 0.88rem; color: #444; line-height: 1.8; margin-bottom: 4px; }
+.md-hr { border: none; border-top: 1px solid #e8e8e0; margin: 16px 0; }
+.md-list { padding-left: 20px; margin: 6px 0; }
+.md-list li { font-size: 0.88rem; color: #444; line-height: 1.8; margin-bottom: 2px; }
+.card-body br { display: block; content: ""; margin-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="../index.html" class="back">← 메르 리더</a>
+  <span class="logo">논술 요약</span>
+</nav>
+
+<div class="index-hero">
+  <h1>논술 요약 리더</h1>
+  <p>489개 논술 요약 — 41개 카테고리</p>
+</div>
+
+<div class="folder-grid">
+
+<a href="ESG/index.html">
+  <div class="folder-card">
+    <div class="folder-name">ESG</div>
+    <div class="folder-count">20<span>개 요약</span></div>
+  </div>
+</a>
+<a href="가계_고령문제/index.html">
+  <div class="folder-card">
+    <div class="folder-name">가계/고령문제</div>
+    <div class="folder-count">10<span>개 요약</span></div>
+  </div>
+</a>
+<a href="가계_금융문제/index.html">
+  <div class="folder-card">
+    <div class="folder-name">가계/금융문제</div>
+    <div class="folder-count">3<span>개 요약</span></div>
+  </div>
+</a>
+<a href="가계_인력문제/index.html">
+  <div class="folder-card">
+    <div class="folder-name">가계/인력문제</div>
+    <div class="folder-count">9<span>개 요약</span></div>
+  </div>
+</a>
+<a href="공급망/index.html">
+  <div class="folder-card">
+    <div class="folder-name">공급망</div>
+    <div class="folder-count">12<span>개 요약</span></div>
+  </div>
+</a>
+<a href="글로벌_관세_통상_국제/index.html">
+  <div class="folder-card">
+    <div class="folder-name">글로벌/관세_통상_국제</div>
+    <div class="folder-count">18<span>개 요약</span></div>
+  </div>
+</a>
+<a href="글로벌_외화/index.html">
+  <div class="folder-card">
+    <div class="folder-name">글로벌/외화</div>
+    <div class="folder-count">17<span>개 요약</span></div>
+  </div>
+</a>
+<a href="금융업/index.html">
+  <div class="folder-card">
+    <div class="folder-name">금융업</div>
+    <div class="folder-count">31<span>개 요약</span></div>
+  </div>
+</a>
+<a href="디지털_기타/index.html">
+  <div class="folder-card">
+    <div class="folder-name">디지털/기타</div>
+    <div class="folder-count">5<span>개 요약</span></div>
+  </div>
+</a>
+<a href="디지털_코인/index.html">
+  <div class="folder-card">
+    <div class="folder-name">디지털/코인</div>
+    <div class="folder-count">19<span>개 요약</span></div>
+  </div>
+</a>
+<a href="벤처_창업_스케일업/index.html">
+  <div class="folder-card">
+    <div class="folder-name">벤처/창업_스케일업</div>
+    <div class="folder-count">16<span>개 요약</span></div>
+  </div>
+</a>
+<a href="벤처_투자_모험자본/index.html">
+  <div class="folder-card">
+    <div class="folder-name">벤처/투자_모험자본</div>
+    <div class="folder-count">25<span>개 요약</span></div>
+  </div>
+</a>
+<a href="부동산/index.html">
+  <div class="folder-card">
+    <div class="folder-name">부동산</div>
+    <div class="folder-count">4<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업 과제_산업 과제/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업 과제/산업 과제</div>
+    <div class="folder-count">18<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업 과제_생산적금융/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업 과제/생산적금융</div>
+    <div class="folder-count">17<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_AI_AI 도입/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/AI/AI 도입</div>
+    <div class="folder-count">13<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_AI_일자리/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/AI/일자리</div>
+    <div class="folder-count">7<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_AI_도입/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/AI/도입</div>
+    <div class="folder-count">7<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_가전_스마트폰_디스플레이/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/가전_스마트폰_디스플레이</div>
+    <div class="folder-count">6<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_건설_제조_기계_철강/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/건설_제조_기계_철강</div>
+    <div class="folder-count">10<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_로봇/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/로봇</div>
+    <div class="folder-count">4<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_바이오_헬스/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/바이오_헬스</div>
+    <div class="folder-count">10<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_반도체/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/반도체</div>
+    <div class="folder-count">9<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_방산/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/방산</div>
+    <div class="folder-count">5<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_섬유패션산업/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/섬유패션산업</div>
+    <div class="folder-count">6<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_우주/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/우주</div>
+    <div class="folder-count">4<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_원전/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/원전</div>
+    <div class="folder-count">6<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_유통_서비스_컨텐츠/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/유통_서비스_컨텐츠</div>
+    <div class="folder-count">11<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_이차전지/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/이차전지</div>
+    <div class="folder-count">10<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_자동차/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/자동차</div>
+    <div class="folder-count">9<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_조선_해운/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/조선_해운</div>
+    <div class="folder-count">13<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_항공/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/항공</div>
+    <div class="folder-count">2<span>개 요약</span></div>
+  </div>
+</a>
+<a href="산업별_화학_에너지/index.html">
+  <div class="folder-card">
+    <div class="folder-name">산업별/화학_에너지</div>
+    <div class="folder-count">15<span>개 요약</span></div>
+  </div>
+</a>
+<a href="시사/index.html">
+  <div class="folder-card">
+    <div class="folder-name">시사</div>
+    <div class="folder-count">27<span>개 요약</span></div>
+  </div>
+</a>
+<a href="자본시장_국장/index.html">
+  <div class="folder-card">
+    <div class="folder-name">자본시장/국장</div>
+    <div class="folder-count">25<span>개 요약</span></div>
+  </div>
+</a>
+<a href="자본시장_채권/index.html">
+  <div class="folder-card">
+    <div class="folder-name">자본시장/채권</div>
+    <div class="folder-count">5<span>개 요약</span></div>
+  </div>
+</a>
+<a href="정책금융_소상공인/index.html">
+  <div class="folder-card">
+    <div class="folder-name">정책금융/소상공인</div>
+    <div class="folder-count">6<span>개 요약</span></div>
+  </div>
+</a>
+<a href="정책금융_정책금융개선/index.html">
+  <div class="folder-card">
+    <div class="folder-name">정책금융/정책금융개선</div>
+    <div class="folder-count">5<span>개 요약</span></div>
+  </div>
+</a>
+<a href="정책금융_중소기업/index.html">
+  <div class="folder-card">
+    <div class="folder-name">정책금융/중소기업</div>
+    <div class="folder-count">12<span>개 요약</span></div>
+  </div>
+</a>
+<a href="중동이슈/index.html">
+  <div class="folder-card">
+    <div class="folder-name">중동이슈</div>
+    <div class="folder-count">28<span>개 요약</span></div>
+  </div>
+</a>
+<a href="지역균형/index.html">
+  <div class="folder-card">
+    <div class="folder-name">지역균형</div>
+    <div class="folder-count">10<span>개 요약</span></div>
+  </div>
+</a>
+</div>
+
+</body>
+</html>
