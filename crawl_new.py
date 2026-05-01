@@ -144,6 +144,61 @@ def fetch_rss():
     return items
 
 
+def fetch_blog_postlist(since_date: str, max_pages: int = 10) -> list:
+    """
+    네이버 블로그 전체 글 목록에서 since_date 이후 글 수집
+    since_date: 'YYYY-MM-DD'
+    """
+    items = []
+    cutoff = datetime.strptime(since_date, "%Y-%m-%d")
+
+    for page in range(1, max_pages + 1):
+        url = f"https://blog.naver.com/PostList.naver?blogId=ranto28&currentPage={page}&postListType=&blogType=TT"
+        req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        try:
+            with urlopen(req, timeout=15) as r:
+                html = r.read().decode("utf-8", errors="replace")
+        except Exception as e:
+            print(f"  [목록 페이지 오류 p{page}] {e}")
+            break
+
+        # 글 링크 + 날짜 추출
+        # 패턴: logNo=숫자 / 날짜 텍스트
+        post_ids = re.findall(r'logNo=(\d+)', html)
+        date_texts = re.findall(r'(\d{4}\.\s*\d{1,2}\.\s*\d{1,2})', html)
+
+        if not post_ids:
+            break
+
+        found_old = False
+        for i, pid in enumerate(dict.fromkeys(post_ids)):  # 중복 제거
+            link = f"https://blog.naver.com/ranto28/{pid}"
+
+            # 날짜 추정
+            date_str = ""
+            if i < len(date_texts):
+                raw = date_texts[i].replace(" ", "")
+                try:
+                    dt = datetime.strptime(raw, "%Y.%m.%d")
+                    date_str = dt.strftime("%Y-%m-%d")
+                    if dt < cutoff:
+                        found_old = True
+                        continue
+                except Exception:
+                    pass
+
+            # 제목은 별도 추출
+            title_m = re.search(rf'logNo={pid}[^"]*"[^>]*>([^<]{{3,80}})<', html)
+            title = title_m.group(1).strip() if title_m else f"글 {pid}"
+
+            items.append({"title": title, "link": link, "pub_date": date_str})
+
+        if found_old:
+            break
+
+    return items
+
+
 def fetch_blog_content(url: str) -> str:
     """네이버 블로그 본문 텍스트 추출"""
     # 모바일 URL로 변환 (파싱 쉬움)
@@ -239,13 +294,28 @@ async def classify_and_process(client, title: str, content: str, link: str, date
         return None
 
 
-async def main():
-    print("RSS 확인 중...")
-    try:
-        items = fetch_rss()
-    except Exception as e:
-        print(f"RSS 오류: {e}")
-        return
+async def main(backfill_since: str = None):
+    import sys
+    if backfill_since is None and "--backfill" in sys.argv:
+        idx = sys.argv.index("--backfill")
+        backfill_since = sys.argv[idx + 1] if idx + 1 < len(sys.argv) else "2025-04-06"
+
+    if backfill_since:
+        print(f"백필 모드: {backfill_since} 이후 글 수집 중...")
+        try:
+            items = fetch_blog_postlist(since_date=backfill_since, max_pages=20)
+            print(f"  목록에서 {len(items)}개 발견")
+        except Exception as e:
+            print(f"목록 수집 오류: {e}")
+            # fallback to RSS
+            items = fetch_rss()
+    else:
+        print("RSS 확인 중...")
+        try:
+            items = fetch_rss()
+        except Exception as e:
+            print(f"RSS 오류: {e}")
+            return
 
     processed_links = get_processed_links()
     new_items = [it for it in items if it["link"] not in processed_links]
@@ -336,4 +406,9 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    import sys
+    backfill = None
+    if "--backfill" in sys.argv:
+        idx = sys.argv.index("--backfill")
+        backfill = sys.argv[idx + 1] if idx + 1 < len(sys.argv) else "2025-04-06"
+    asyncio.run(main(backfill_since=backfill))
