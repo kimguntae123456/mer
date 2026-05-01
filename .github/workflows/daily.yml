@@ -2,7 +2,7 @@ name: Daily 메르 블로그 업데이트
 
 on:
   schedule:
-    - cron: '0 22 * * *'  # 매일 오전 7시 KST (UTC 22:00)
+    - cron: '0 21 * * *'  # 매일 오전 6시 KST (UTC 21:00)
   workflow_dispatch:
     inputs:
       mode:
