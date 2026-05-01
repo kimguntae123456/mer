@@ -11,7 +11,7 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent
 PROCESSED = BASE / "processed"
 OUTPUT = BASE / "output"
-HANDOFF = Path.home() / "Downloads" / "메르"
+HANDOFF = BASE / "static"
 
 # Static files to copy from handoff directory
 STATIC_FILES = [
