@@ -299,6 +299,10 @@ def render_timeline_page(folder, cards):
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>메르 리더 — {folder}</title>
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <style>{CSS}</style>
 </head>
 <body>
@@ -327,8 +331,9 @@ def render_timeline_page(folder, cards):
 
 INDEX_JS = """
 const allData = ALL_ARTICLES_JSON;
-let view = 'folders'; // 'folders' | 'all'
+let view = 'folders';
 let searchQ = '';
+let sortDesc = true; // true=최신순, false=오래된순
 
 const searchInput = document.getElementById('globalSearch');
 const folderSection = document.getElementById('folderSection');
@@ -336,18 +341,26 @@ const allSection = document.getElementById('allSection');
 const allList = document.getElementById('allList');
 const resultCount = document.getElementById('resultCount');
 
-function renderCards(items) {
-    if (!items.length) {
-        allList.innerHTML = '<div style="text-align:center;padding:60px;color:#aaa">검색 결과가 없습니다.</div>';
-        return;
-    }
-    allList.innerHTML = items.map(d => `
+function renderAnnotations(anns) {
+    if (!anns || !anns.length) return '';
+    return '<div class="annotations">' + anns.map(a => {
+        if (a.유형 === '용어풀이') return `<div class="annotation"><span class="ann-type">용어</span><span class="ann-target">${a.대상||''}</span>${a.내용||''}</div>`;
+        return `<div class="annotation"><span class="ann-type">맥락</span>${a.내용||''}</div>`;
+    }).join('') + '</div>';
+}
+
+function renderCard(d) {
+    const tagsHtml = d.tags.map(t=>`<span class="tag">${t}</span>`).join('');
+    const parasHtml = (d.paras||[]).map(p =>
+        `<div class="para"><div class="para-title">${p.title||''}</div><div class="para-body">${p.body||''}</div>${renderAnnotations(p.anns)}</div>`
+    ).join('');
+    return `
 <div class="card" style="margin-bottom:12px">
   <div class="card-header" onclick="this.closest('.card').classList.toggle('open')">
     <div class="card-header-left">
       <div class="card-date">${d.date} &nbsp;·&nbsp; <span style="color:#aaa;font-size:0.75rem">${d.folder}</span></div>
       <div class="card-title">${d.title}</div>
-      <div class="card-tags">${d.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      <div class="card-tags">${tagsHtml}</div>
     </div>
     <div class="card-toggle">▼</div>
   </div>
@@ -355,32 +368,36 @@ function renderCards(items) {
     <div class="section">
       <div class="section-label">이 글이 말하는 것</div>
       <p class="intro-text">${d.intro}</p>
+      ${renderAnnotations(d.intro_anns)}
     </div>
-    <div class="question-box" style="margin-top:12px">
-      <div class="q-label">메르가 던지는 질문</div>
-      <div class="q-text">${d.question}</div>
+    <div class="section">${parasHtml}</div>
+    <div class="section">
+      ${d.question ? `<div class="question-box"><div class="q-label">메르가 던지는 질문</div><div class="q-text">${d.question}</div></div>` : ''}
+      ${d.answer ? `<div class="answer-box" style="margin-top:8px"><div class="a-label">나의 답</div><div class="a-text">${d.answer}</div></div>` : ''}
     </div>
-    <div class="answer-box" style="margin-top:8px">
-      <div class="a-label">나의 답</div>
-      <div class="a-text">${d.answer}</div>
-    </div>
-    ${d.link ? `<div class="source-link" style="margin-top:12px"><a href="${d.link}" target="_blank">원문 보기 →</a></div>` : ''}
+    ${d.link ? `<div class="source-link"><a href="${d.link}" target="_blank">원문 보기 →</a></div>` : ''}
   </div>
-</div>`).join('');
-    resultCount.textContent = items.length + '개';
+</div>`;
 }
 
-function applySearch() {
+function applyFilters() {
     const q = searchQ.trim().toLowerCase();
-    let filtered = allData;
+    let filtered = [...allData];
     if (q) {
-        filtered = allData.filter(d =>
+        filtered = filtered.filter(d =>
             d.title.toLowerCase().includes(q) ||
             d.tags.join(' ').toLowerCase().includes(q) ||
-            d.intro.toLowerCase().includes(q)
+            d.intro.toLowerCase().includes(q) ||
+            (d.paras||[]).some(p => (p.body||'').toLowerCase().includes(q))
         );
     }
-    renderCards(filtered);
+    filtered.sort((a,b) => sortDesc ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date));
+    if (!filtered.length) {
+        allList.innerHTML = '<div style="text-align:center;padding:60px;color:#aaa">검색 결과가 없습니다.</div>';
+    } else {
+        allList.innerHTML = filtered.map(renderCard).join('');
+    }
+    resultCount.textContent = filtered.length + '개';
 }
 
 document.getElementById('btnAll').addEventListener('click', () => {
@@ -389,7 +406,7 @@ document.getElementById('btnAll').addEventListener('click', () => {
     allSection.style.display = 'block';
     document.getElementById('btnAll').classList.add('active');
     document.getElementById('btnFolders').classList.remove('active');
-    applySearch();
+    applyFilters();
 });
 
 document.getElementById('btnFolders').addEventListener('click', () => {
@@ -400,13 +417,18 @@ document.getElementById('btnFolders').addEventListener('click', () => {
     document.getElementById('btnAll').classList.remove('active');
 });
 
+document.getElementById('btnSort').addEventListener('click', () => {
+    sortDesc = !sortDesc;
+    document.getElementById('btnSort').textContent = sortDesc ? '최신순 ↓' : '오래된순 ↑';
+    if (view === 'all') applyFilters();
+});
+
 searchInput.addEventListener('input', e => {
     searchQ = e.target.value;
     if (view === 'folders' && searchQ.trim()) {
-        // 검색 입력 시 자동으로 전체 보기로 전환
         document.getElementById('btnAll').click();
     } else if (view === 'all') {
-        applySearch();
+        applyFilters();
     }
 });
 """
@@ -428,17 +450,28 @@ def render_index_page(folder_counts, all_cards):
 
     total = sum(folder_counts.values())
 
-    # 전체 카드 데이터 (경량 버전)
+    # 전체 카드 데이터
     import html as html_mod
     compact = []
     for d in sorted(all_cards, key=lambda x: x.get("날짜", ""), reverse=True):
         body = d.get("이_글이_말하는_것", {})
+        paras = []
+        for key in ["단락1", "단락2", "단락3", "단락4"]:
+            p = body.get(key)
+            if p and isinstance(p, dict):
+                paras.append({
+                    "title": p.get("제목", ""),
+                    "body": p.get("본문", ""),
+                    "anns": p.get("주석", []),
+                })
         compact.append({
             "title": html_mod.escape(d.get("글_제목", d.get("원본_제목", ""))),
             "date": d.get("날짜", ""),
             "folder": d.get("섹터_통합", ""),
             "tags": d.get("태그", []),
-            "intro": html_mod.escape(body.get("도입", "")[:200]),
+            "intro": html_mod.escape(body.get("도입", "")),
+            "intro_anns": body.get("도입_주석", []),
+            "paras": paras,
             "question": html_mod.escape(d.get("메르가_던지는_질문", "")),
             "answer": html_mod.escape(d.get("나의_답", "")),
             "link": d.get("원본_링크", ""),
@@ -452,6 +485,11 @@ def render_index_page(folder_counts, all_cards):
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>메르 리더</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="메르 리더">
 <style>
 {CSS}
 .view-btns {{ display:flex; gap:8px; }}
@@ -471,7 +509,8 @@ def render_index_page(folder_counts, all_cards):
   <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;align-items:center;">
     <div class="view-btns">
       <button class="view-btn active" id="btnFolders">섹터별</button>
-      <button class="view-btn" id="btnAll">최신순 전체 <span id="resultCount" style="color:#aaa;font-size:0.8rem"></span></button>
+      <button class="view-btn" id="btnAll">전체보기 <span id="resultCount" style="color:#aaa;font-size:0.8rem"></span></button>
+      <button class="view-btn" id="btnSort">최신순 ↓</button>
     </div>
     <input id="globalSearch" class="index-search" type="text" placeholder="제목·태그·내용 검색...">
   </div>
@@ -488,6 +527,7 @@ def render_index_page(folder_counts, all_cards):
 </div>
 
 <script>{js}</script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
 </body>
 </html>"""
 
@@ -525,6 +565,43 @@ def main():
     index_html = render_index_page(folder_counts, all_cards)
     (OUTPUT / "index.html").write_text(index_html, encoding="utf-8")
     print(f"\n완료: {OUTPUT}/index.html")
+
+    # PWA 파일
+    manifest = {
+        "name": "메르 리더",
+        "short_name": "메르 리더",
+        "description": "메르 블로그 경제 분석 리더",
+        "start_url": ".",
+        "display": "standalone",
+        "background_color": "#f5f5f0",
+        "theme_color": "#1a1a1a",
+        "icons": [
+            {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"}
+        ]
+    }
+    (OUTPUT / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    sw_js = """const CACHE = 'mer-v1';
+const SHELL = ['./'];
+self.addEventListener('install', e => {
+    e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
+    self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+    e.waitUntil(caches.keys().then(keys =>
+        Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ));
+    self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+    e.respondWith(
+        fetch(e.request).catch(() => caches.match(e.request))
+    );
+});
+"""
+    (OUTPUT / "sw.js").write_text(sw_js, encoding="utf-8")
+    print("PWA 파일 생성 완료 (manifest.json, sw.js)")
 
 
 if __name__ == "__main__":
