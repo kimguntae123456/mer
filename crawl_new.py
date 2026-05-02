@@ -208,7 +208,7 @@ def fetch_blog_content(url: str) -> str:
     """네이버 블로그 본문 텍스트 추출"""
     # 모바일 URL로 변환 (파싱 쉬움)
     post_id = url.rstrip("/").split("/")[-1]
-    blog_id = url.split("/")[4] if "blog.naver.com" in url else "ranto28"
+    blog_id = url.split("/")[3] if "blog.naver.com" in url else "ranto28"
     mobile_url = f"https://m.blog.naver.com/{blog_id}/{post_id}"
 
     req = Request(mobile_url, headers={
@@ -227,12 +227,15 @@ def fetch_blog_content(url: str) -> str:
     html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL)
     html = re.sub(r'<style[^>]*>.*?</style>', '', html, flags=re.DOTALL)
 
-    # se-main-container 또는 본문 영역
-    m = re.search(r'class="se-main-container".*?</div>\s*</div>\s*</div>', html, re.DOTALL)
+    # se-main-container부터 본문 끝까지 추출
+    m = re.search(r'class="se-main-container"(.*?)(?=<div[^>]*class="[^"]*(?:comment|footer|aside|wrap_btn)[^"]*")', html, re.DOTALL)
+    if not m:
+        # fallback: se-main-container부터 넉넉히
+        m = re.search(r'class="se-main-container"(.{500,50000})', html, re.DOTALL)
     if not m:
         m = re.search(r'id="postViewArea"(.*?)(?=<div class="wrap_btn_post"|</body>)', html, re.DOTALL)
 
-    raw = m.group(0) if m else html
+    raw = m.group(0) if m else html[:50000]
     text = re.sub(r'<[^>]+>', ' ', raw)
     text = re.sub(r'\s+', '\n', text).strip()
     return text
