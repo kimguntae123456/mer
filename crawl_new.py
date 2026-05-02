@@ -373,14 +373,17 @@ async def main(backfill_since: str = None):
             print(f"    [크롤링 실패] {e}")
             continue
 
-        # 날짜 파싱
-        try:
-            from email.utils import parsedate
-            from time import mktime
-            dt = datetime(*parsedate(item["pub_date"])[:6])
-            date_str = dt.strftime("%Y-%m-%d")
-        except Exception:
-            date_str = datetime.now().strftime("%Y-%m-%d")
+        # 날짜: pub_date가 이미 YYYY-MM-DD면 그대로 사용
+        pub = item.get("pub_date", "")
+        if re.match(r'\d{4}-\d{2}-\d{2}', pub):
+            date_str = pub[:10]
+        else:
+            try:
+                from email.utils import parsedate
+                dt = datetime(*parsedate(pub)[:6])
+                date_str = dt.strftime("%Y-%m-%d")
+            except Exception:
+                date_str = datetime.now().strftime("%Y-%m-%d")
 
         result = await classify_and_process(client, title, content, link, date_str)
         if not result:
