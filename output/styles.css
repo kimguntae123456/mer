@@ -1130,6 +1130,86 @@ mark.clip-mark {
   color: inherit; padding: 0 1px; border-radius: 2px;
   border-bottom: 1px solid oklch(0.7 0.13 65 / 0.5);
 }
+mark.highlight-mark {
+  background: oklch(0.93 0.12 95 / 0.8);
+  color: inherit; padding: 0 2px; border-radius: 2px;
+  border-bottom: 2px solid oklch(0.75 0.15 85 / 0.6);
+}
+mark.memo-mark {
+  background: oklch(0.90 0.08 230 / 0.35);
+  color: inherit; padding: 0 2px; border-radius: 2px;
+  border-bottom: 2px solid oklch(0.65 0.12 240 / 0.5);
+  cursor: pointer;
+}
+.memo-mark .memo-icon {
+  font-size: 0.7em; margin-left: 2px; vertical-align: super;
+}
+.memo-tooltip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: var(--paper); font-size: 0.82rem; line-height: 1.5;
+  padding: 8px 14px; border-radius: 8px; z-index: 310;
+  max-width: 280px; white-space: pre-wrap;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  animation: cp-in 120ms ease-out;
+}
+.memo-tooltip::after {
+  content: ''; position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%); border: 5px solid transparent;
+  border-top-color: var(--ink);
+}
+
+/* Popover memo input */
+.memo-input-row {
+  display: flex; gap: 4px; align-items: center; padding: 2px;
+}
+.memo-input {
+  background: rgba(255,255,255,0.15); color: var(--paper);
+  border: 1px solid rgba(255,255,255,0.25); border-radius: 4px;
+  font-size: 0.78rem; padding: 6px 8px; width: 160px;
+  outline: none;
+}
+.memo-input::placeholder { color: rgba(255,255,255,0.5); }
+.memo-input:focus { border-color: rgba(255,255,255,0.5); }
+.memo-save, .memo-cancel {
+  background: transparent; color: var(--paper);
+  font-size: 0.75rem; padding: 5px 8px; border-radius: 4px;
+  font-weight: 600; white-space: nowrap;
+}
+.memo-save:hover, .memo-cancel:hover { background: rgba(255,255,255,0.12); }
+
+/* Drawer tabs */
+.cd-tabs {
+  display: flex; border-bottom: 1px solid var(--rule); padding: 0 24px;
+}
+.cd-tab {
+  flex: 1; padding: 10px 0; font-size: 0.82rem; font-weight: 600;
+  color: var(--muted); background: none; border: none;
+  border-bottom: 2px solid transparent; cursor: pointer;
+  transition: color 150ms, border-color 150ms;
+}
+.cd-tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+.cd-tab:hover { color: var(--ink-2); }
+.cd-tab-n {
+  font-size: 0.7rem; color: var(--muted); margin-left: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.clip-item.hl-item .ci-text { border-left-color: oklch(0.75 0.15 85); }
+.clip-item.memo-item .ci-text { border-left-color: oklch(0.65 0.12 240); }
+.ci-memo {
+  font-size: 0.82rem; color: var(--ink-2); margin-top: 6px;
+  padding: 6px 10px; background: oklch(0.96 0.02 230 / 0.3);
+  border-radius: 6px; line-height: 1.5;
+}
+
+/* Mobile popover: prevent iOS overlap */
+@media (max-width: 880px) {
+  .clip-popover {
+    position: fixed; left: 50% !important; bottom: 90px; top: auto !important;
+    transform: translateX(-50%); margin-top: 0;
+    padding: 8px 4px; border-radius: 12px;
+  }
+  .clip-popover::after { display: none; }
+}
 
 /* =========================================================
    Clips drawer

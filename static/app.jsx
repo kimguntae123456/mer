@@ -2,7 +2,7 @@
 const { useState, useEffect, useMemo, useCallback } = React;
 const { SECTORS, sectorMap, Ico, fmtDate, decodeEntities,
         useBookmarks, searchPosts, ArticleView, DayGroup, PostRow,
-        useClips, InlineArticle, ClipsDrawer } = window.MR;
+        useClips, useHighlights, useMemos, InlineArticle, ClipsDrawer } = window.MR;
 
 /* ---------- Tweak defaults ---------- */
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -240,6 +240,8 @@ function App() {
   const [showClips, setShowClips] = useState(false);
   const [marks, toggleMark] = useBookmarks();
   const { clips, add: addClip, remove: removeClip, clear: clearClips } = useClips();
+  const { highlights, add: addHL, remove: removeHL, clear: clearHL } = useHighlights();
+  const { memos, add: addMemo, remove: removeMemo, clear: clearMemo } = useMemos();
 
   // persist filter
   useEffect(() => {
@@ -314,12 +316,18 @@ function App() {
   // Build inline article slot for the currently expanded row
   const expandedPost = expandedTitle ? data.find(p => p.title === expandedTitle) : null;
   const clipsForPost = expandedPost ? clips.filter(c => c.title === expandedPost.title) : [];
+  const hlForPost = expandedPost ? highlights.filter(h => h.title === expandedPost.title) : [];
+  const memosForPost = expandedPost ? memos.filter(m => m.title === expandedPost.title) : [];
   const expandedSlot = expandedPost ? (
     <InlineArticle
       post={expandedPost}
       onClose={handleClose}
       onClip={addClip}
       clipsForPost={clipsForPost}
+      onHighlight={addHL}
+      highlightsForPost={hlForPost}
+      onMemo={addMemo}
+      memosForPost={memosForPost}
     />
   ) : null;
 
@@ -380,11 +388,11 @@ function App() {
 
       <MobileTabs filter={filter} setFilter={setFilter} openSettings={openSettings}/>
 
-      {clips.length > 0 && (
+      {(clips.length + highlights.length + memos.length) > 0 && (
         <button className="clips-fab" onClick={() => setShowClips(true)}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          발췌
-          <span className="num">{clips.length}</span>
+          내 서랍
+          <span className="num">{clips.length + highlights.length + memos.length}</span>
         </button>
       )}
 
@@ -395,6 +403,12 @@ function App() {
           onRemove={removeClip}
           onClear={clearClips}
           onJump={handleJumpToClip}
+          highlights={highlights}
+          onRemoveHL={removeHL}
+          onClearHL={clearHL}
+          memos={memos}
+          onRemoveMemo={removeMemo}
+          onClearMemo={clearMemo}
         />
       )}
     </>
