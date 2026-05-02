@@ -9,6 +9,10 @@ on:
         description: 'deploy-only (기존 HTML만 배포) 또는 full (수집+배포)'
         required: false
         default: 'full'
+      backfill_since:
+        description: '백필 시작 날짜 (예: 2026-04-07). 비우면 RSS만.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -41,7 +45,10 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          if [ ! -f new_posts.log ]; then
+          if [ -n "${{ github.event.inputs.backfill_since }}" ]; then
+            echo "백필 모드: ${{ github.event.inputs.backfill_since }} 이후"
+            python crawl_new.py --backfill ${{ github.event.inputs.backfill_since }}
+          elif [ ! -f new_posts.log ]; then
             echo "최초 실행: 2025-04-06 이후 백필"
             python crawl_new.py --backfill 2025-04-06
           else

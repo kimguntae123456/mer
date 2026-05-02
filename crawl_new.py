@@ -257,10 +257,13 @@ async def classify_and_process(client, title: str, content: str, link: str, date
 먼저 아래 섹터 중 가장 적합한 것 1개를 골라:
 {sector_list}
 
-그리고 아래 JSON 구조로 출력:
+섹터_통합 매핑:
+금리·채권·통화정책→금융·통화, 환율·외환시장→금융·통화, 중동·지정학→지정학, 중국경제·정치→지정학, 미국경제·정책→미국·글로벌, 글로벌 기타→미국·글로벌, 한국경제·정책→한국경제, 부동산·건설·PF→부동산, 반도체·AI·기술→기술·산업, 배터리·전기차→기술·산업, 조선·방위산업→중후장대, 주식·투자·금융→자본시장, 에너지·원자재·기후→에너지·자원
+
+아래 JSON 구조로 출력:
 {{
   "섹터_원래": "선택한 섹터",
-  "섹터_통합": "해당 통합 폴더",
+  "섹터_통합": "매핑표에 따른 통합 폴더",
   "글_번호": 0,
   "글_제목": "재작성된 제목",
   "원본_제목": "{title}",
@@ -275,17 +278,21 @@ async def classify_and_process(client, title: str, content: str, link: str, date
     "단락3": {{"제목": "...", "본문": "...", "주석": []}}
   }},
   "메르가_던지는_질문": "...?",
-  "나의_답": "..."
+  "나의_답": "...",
+  "원문_단락": [
+    {{"번호": 1, "본문": "...", "용어풀이": null, "맥락풀이": null}},
+    {{"번호": 2, "본문": "...", "용어풀이": null, "맥락풀이": null}}
+  ]
 }}
 
 ---
-{content[:6000]}
+{content[:12000]}
 ---"""
 
     try:
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            max_tokens=6000,
+            model="gpt-4o",
+            max_tokens=8000,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": prompt}
@@ -383,13 +390,23 @@ async def main(backfill_since: str = None):
         sector = result.get("섹터_원래", "신규")
         unified = SECTOR_MAP.get(sector, "신규")
 
+        # 후처리: 섹터_통합 강제 매핑, 글_번호 자동 할당
+        result["섹터_통합"] = unified
+
         out_dir = BASE / "processed" / unified
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        # 파일명: 섹터_날짜_해시
-        import hashlib
-        h = hashlib.md5(link.encode()).hexdigest()[:6]
-        fname = f"{sector}_{date_str}_{h}.json"
+        # 글_번호: 해당 폴더 내 같은 섹터의 max+1
+        existing_nums = []
+        for f in out_dir.glob(f"{sector}_*.json"):
+            m = re.search(r'_(\d{3,})\.json$', f.name)
+            if m:
+                existing_nums.append(int(m.group(1)))
+        next_num = max(existing_nums, default=0) + 1
+        result["글_번호"] = next_num
+
+        # 파일명: 섹터_글번호.json (기존 형식 통일)
+        fname = f"{sector}_{next_num:03d}.json"
         (out_dir / fname).write_text(json.dumps(result, ensure_ascii=False, indent=2))
 
         # 로그 기록
