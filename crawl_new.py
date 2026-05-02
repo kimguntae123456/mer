@@ -204,24 +204,34 @@ def fetch_blog_postlist(since_date: str, max_pages: int = 20) -> list:
     return items
 
 
-def fetch_blog_content(url: str) -> str:
-    """네이버 블로그 본문 텍스트 추출"""
-    # 모바일 URL로 변환 (파싱 쉬움)
+def fetch_blog_content(url: str, retries: int = 3) -> str:
+    """네이버 블로그 본문 텍스트 추출 (재시도 포함)"""
+    import time as _time
     post_id = url.rstrip("/").split("/")[-1]
     blog_id = url.split("/")[3] if "blog.naver.com" in url else "ranto28"
-    mobile_url = f"https://m.blog.naver.com/{blog_id}/{post_id}"
 
-    req = Request(mobile_url, headers={
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)"
-    })
-    try:
-        with urlopen(req, timeout=15) as r:
-            html = r.read().decode("utf-8", errors="replace")
-    except Exception:
-        # fallback to original URL
-        req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urlopen(req, timeout=15) as r:
-            html = r.read().decode("utf-8", errors="replace")
+    # 데스크톱 + 모바일 양쪽 시도
+    urls_to_try = [
+        (f"https://m.blog.naver.com/{blog_id}/{post_id}",
+         "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15"),
+        (f"https://blog.naver.com/PostView.naver?blogId={blog_id}&logNo={post_id}",
+         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"),
+    ]
+
+    html = ""
+    for attempt in range(retries):
+        for try_url, ua in urls_to_try:
+            req = Request(try_url, headers={"User-Agent": ua, "Accept-Language": "ko-KR,ko"})
+            try:
+                with urlopen(req, timeout=20) as r:
+                    html = r.read().decode("utf-8", errors="replace")
+                if len(html) > 10000:  # 의미 있는 응답
+                    break
+            except Exception:
+                continue
+        if len(html) > 10000:
+            break
+        _time.sleep(2 * (attempt + 1))  # 점진적 대기
 
     # 간단한 정규식으로 텍스트 추출
     html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL)
@@ -364,16 +374,25 @@ async def main(backfill_since: str = None):
 
     PARSED.mkdir(parents=True, exist_ok=True)
 
+    import time as _time
     new_count = 0
-    for item in filtered_items:
+    for idx, item in enumerate(filtered_items):
         title = item["title"]
         link = item["link"]
-        print(f"  처리: {title[:40]}...")
+        print(f"  [{idx+1}/{len(filtered_items)}] 처리: {title[:40]}...")
+
+        # 네이버 rate limit 방지
+        if idx > 0:
+            _time.sleep(3)
 
         try:
             content = fetch_blog_content(link)
         except Exception as e:
             print(f"    [크롤링 실패] {e}")
+            continue
+
+        if len(content) < 200:
+            print(f"    [본문 부족] {len(content)}자 — 스킵")
             continue
 
         # 날짜: pub_date가 이미 YYYY-MM-DD면 그대로 사용
