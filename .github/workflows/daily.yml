@@ -30,6 +30,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: JSX curly-quote 검사
+        run: |
+          if grep -nP '=[\xe2\x80\x9c\xe2\x80\x9d]' static/*.jsx output/*.jsx 2>/dev/null; then
+            echo "::error::JSX attribute에 curly quote(“ 또는 ”)가 있음. straight quote(\")로 교체 필요."
+            exit 1
+          fi
+          echo "OK: JSX curly-quote 없음"
+
       - name: Python 설정
         if: ${{ github.event.inputs.mode != 'deploy-only' }}
         uses: actions/setup-python@v5
