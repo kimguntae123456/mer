@@ -1559,3 +1559,19 @@ body.theme-white mark.lookup-mark {
   padding: 8px 12px; border-radius: 6px; font-size: 0.82rem;
   margin: 8px 0;
 }
+
+/* chat panel non-blocking — body remains usable */
+body.chat-open .app { padding-right: 460px; transition: padding-right 0.2s ease; }
+body.chat-open .clips-fab,
+body.chat-open .chat-fab { right: calc(24px + 460px); }
+@media (max-width: 900px) {
+  body.chat-open .app { padding-right: 0; }
+  body.chat-open .clips-fab,
+  body.chat-open .chat-fab { right: 24px; }
+  /* on small screen, panel is full-width — keep overlay-like behavior visually */
+  .chat-panel { max-width: 100%; }
+}
+.chat-panel {
+  pointer-events: auto;
+  border-left: 1px solid var(--rule);
+}

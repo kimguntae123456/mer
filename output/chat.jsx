@@ -44,6 +44,11 @@ function ChatPanel({ open, onClose, currentPost }) {
   }, [open, apiKey]);
 
   useEffect(() => {
+    document.body.classList.toggle('chat-open', !!open);
+    return () => document.body.classList.remove('chat-open');
+  }, [open]);
+
+  useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, loading]);
 
@@ -131,7 +136,6 @@ function ChatPanel({ open, onClose, currentPost }) {
   if (!open) return null;
   return (
     <>
-      <div className="chat-overlay" onClick={onClose}/>
       <aside className="chat-panel">
         <div className="chat-head">
           <h2>AI 도움말</h2>
