@@ -1,8 +1,8 @@
 /* global React, ReactDOM, MR */
-const { useState, useEffect, useMemo, useCallback } = React;
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
 const { SECTORS, sectorMap, Ico, fmtDate, decodeEntities,
         useBookmarks, searchPosts, ArticleView, DayGroup, PostRow,
-        useClips, useHighlights, useMemos, InlineArticle, ClipsDrawer } = window.MR;
+        useClips, useHighlights, useMemos, useLookups, InlineArticle, ClipsDrawer, ChatPanel } = window.MR;
 
 /* ---------- Tweak defaults ---------- */
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -238,10 +238,59 @@ function App() {
   const [q, setQ] = useState('');
   const [expandedTitle, setExpandedTitle] = useState(null);
   const [showClips, setShowClips] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [marks, toggleMark] = useBookmarks();
-  const { clips, add: addClip, remove: removeClip, clear: clearClips } = useClips();
-  const { highlights, add: addHL, remove: removeHL, clear: clearHL } = useHighlights();
-  const { memos, add: addMemo, remove: removeMemo, clear: clearMemo } = useMemos();
+  const { clips, add: addClipRaw, remove: removeClipRaw, clear: clearClipsRaw, setAll: setAllClips } = useClips();
+  const { highlights, add: addHLRaw, remove: removeHLRaw, clear: clearHLRaw, setAll: setAllHL } = useHighlights();
+  const { memos, add: addMemoRaw, remove: removeMemoRaw, clear: clearMemoRaw, update: updateMemoRaw, setAll: setAllMemos } = useMemos();
+  const { lookups, add: addLookupRaw, remove: removeLookupRaw, clear: clearLookupRaw, setAll: setAllLookups } = useLookups();
+
+  // Undo stack: snapshots of prev state per key
+  const undoRef = useRef([]);
+  const settersRef = useRef({});
+  settersRef.current = { clips: setAllClips, highlights: setAllHL, memos: setAllMemos, lookups: setAllLookups };
+  const snapshotsRef = useRef({});
+  snapshotsRef.current = { clips, highlights, memos, lookups };
+
+  const pushUndo = (key) => {
+    const prev = snapshotsRef.current[key];
+    undoRef.current.push({key, prev: [...prev]});
+    if (undoRef.current.length > 30) undoRef.current.shift();
+  };
+  const undo = useCallback(() => {
+    const last = undoRef.current.pop();
+    if (!last) return;
+    settersRef.current[last.key]?.(last.prev);
+  }, []);
+
+  const addClip = useCallback((item) => { pushUndo('clips'); addClipRaw(item); }, [addClipRaw]);
+  const removeClip = useCallback((id) => { pushUndo('clips'); removeClipRaw(id); }, [removeClipRaw]);
+  const clearClips = useCallback(() => { pushUndo('clips'); clearClipsRaw(); }, [clearClipsRaw]);
+  const addHL = useCallback((item) => { pushUndo('highlights'); addHLRaw(item); }, [addHLRaw]);
+  const removeHL = useCallback((id) => { pushUndo('highlights'); removeHLRaw(id); }, [removeHLRaw]);
+  const clearHL = useCallback(() => { pushUndo('highlights'); clearHLRaw(); }, [clearHLRaw]);
+  const addMemo = useCallback((item) => { pushUndo('memos'); addMemoRaw(item); }, [addMemoRaw]);
+  const removeMemo = useCallback((id) => { pushUndo('memos'); removeMemoRaw(id); }, [removeMemoRaw]);
+  const clearMemo = useCallback(() => { pushUndo('memos'); clearMemoRaw(); }, [clearMemoRaw]);
+  const addLookup = useCallback((item) => { pushUndo('lookups'); addLookupRaw(item); }, [addLookupRaw]);
+  const removeLookup = useCallback((id) => { pushUndo('lookups'); removeLookupRaw(id); }, [removeLookupRaw]);
+  const clearLookup = useCallback(() => { pushUndo('lookups'); clearLookupRaw(); }, [clearLookupRaw]);
+  // memo position update — not undoable
+  const updateMemo = updateMemoRaw;
+
+  // Global Ctrl/Cmd+Z undo
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key.toLowerCase() !== 'z' || e.shiftKey) return;
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
+      e.preventDefault();
+      undo();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [undo]);
 
   // persist filter
   useEffect(() => {
@@ -318,6 +367,7 @@ function App() {
   const clipsForPost = expandedPost ? clips.filter(c => c.title === expandedPost.title) : [];
   const hlForPost = expandedPost ? highlights.filter(h => h.title === expandedPost.title) : [];
   const memosForPost = expandedPost ? memos.filter(m => m.title === expandedPost.title) : [];
+  const lookupsForPost = expandedPost ? lookups.filter(l => l.title === expandedPost.title) : [];
   const expandedSlot = expandedPost ? (
     <InlineArticle
       post={expandedPost}
@@ -328,6 +378,9 @@ function App() {
       highlightsForPost={hlForPost}
       onMemo={addMemo}
       memosForPost={memosForPost}
+      onUpdateMemo={updateMemo}
+      onLookup={addLookup}
+      lookupsForPost={lookupsForPost}
     />
   ) : null;
 
@@ -388,13 +441,19 @@ function App() {
 
       <MobileTabs filter={filter} setFilter={setFilter} openSettings={openSettings}/>
 
-      {(clips.length + highlights.length + memos.length) > 0 && (
+      {(clips.length + highlights.length + memos.length + lookups.length) > 0 && (
         <button className="clips-fab" onClick={() => setShowClips(true)}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           내 서랍
-          <span className="num">{clips.length + highlights.length + memos.length}</span>
+          <span className="num">{clips.length + highlights.length + memos.length + lookups.length}</span>
         </button>
       )}
+
+      <button className="chat-fab" onClick={() => setShowChat(true)} title="AI 도움말">
+        AI
+      </button>
+
+      <ChatPanel open={showChat} onClose={() => setShowChat(false)} currentPost={expandedPost}/>
 
       {showClips && (
         <ClipsDrawer
@@ -409,6 +468,9 @@ function App() {
           memos={memos}
           onRemoveMemo={removeMemo}
           onClearMemo={clearMemo}
+          lookups={lookups}
+          onRemoveLookup={removeLookup}
+          onClearLookup={clearLookup}
         />
       )}
     </>
