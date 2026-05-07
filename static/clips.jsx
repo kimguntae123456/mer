@@ -309,23 +309,23 @@ function ClipsDrawer({ clips, onClose, onRemove, onClear, onJump,
 
   return (
     <>
-      <div className=”clips-drawer-overlay” onClick={onClose}/>
-      <aside className=”clips-drawer”>
-        <div className=”cd-head”>
+      <div className="clips-drawer-overlay" onClick={onClose}/>
+      <aside className="clips-drawer">
+        <div className="cd-head">
           <h2>내 서랍</h2>
-          <span className=”cd-count”>{total}개</span>
-          <button className=”icon-btn” onClick={onClose} aria-label=”닫기”><Ico.Close/></button>
+          <span className="cd-count">{total}개</span>
+          <button className="icon-btn" onClick={onClose} aria-label="닫기"><Ico.Close/></button>
         </div>
-        <div className=”cd-tabs”>
+        <div className="cd-tabs">
           {['clips','highlights','memos'].map(t => (
             <button key={t} className={'cd-tab' + (tab===t?' active':'')} onClick={() => setTab(t)}>
-              {tabLabels[t]} <span className=”cd-tab-n”>{tabCounts[t]}</span>
+              {tabLabels[t]} <span className="cd-tab-n">{tabCounts[t]}</span>
             </button>
           ))}
         </div>
         {tabData.length > 0 && (
-          <div className=”cd-actions”>
-            <button className=”chip” onClick={() => {
+          <div className="cd-actions">
+            <button className="chip" onClick={() => {
               const text = tabData.map(c =>
                 tab === 'memos'
                   ? `”${c.text}”\n📝 ${c.memo}\n— ${c.title} (${c.date})`
@@ -333,13 +333,13 @@ function ClipsDrawer({ clips, onClose, onRemove, onClear, onJump,
               ).join('\n\n');
               navigator.clipboard?.writeText(text);
             }}>전체 복사</button>
-            <button className=”chip” onClick={handleClear} style={{marginLeft:'auto'}}>모두 삭제</button>
+            <button className="chip" onClick={handleClear} style={{marginLeft:'auto'}}>모두 삭제</button>
           </div>
         )}
-        <div className=”cd-list”>
+        <div className="cd-list">
           {tabData.length === 0 ? (
-            <div className=”cd-empty”>
-              <div className=”e-mark”>{tab === 'clips' ? '¶' : tab === 'highlights' ? '🖍' : '💬'}</div>
+            <div className="cd-empty">
+              <div className="e-mark">{tab === 'clips' ? '¶' : tab === 'highlights' ? '🖍' : '💬'}</div>
               <div>{tab === 'clips' ? '본문에서 텍스트를 드래그하면\n여기에 모입니다.' :
                      tab === 'highlights' ? '형광펜으로 칠한 텍스트가\n여기에 모입니다.' :
                      '메모를 추가하면\n여기에 모입니다.'}</div>
@@ -348,18 +348,18 @@ function ClipsDrawer({ clips, onClose, onRemove, onClear, onJump,
             const sec = sectorMap[c.folder];
             return (
               <div className={'clip-item' + (tab === 'highlights' ? ' hl-item' : tab === 'memos' ? ' memo-item' : '')} key={c.id}>
-                <div className=”ci-meta”>
-                  {sec && <span className=”sec” style={{color: `var(${sec.cssVar})`}}>{c.folder}</span>}
+                <div className="ci-meta">
+                  {sec && <span className="sec" style={{color: `var(${sec.cssVar})`}}>{c.folder}</span>}
                   <span>·</span>
                   <span style={{fontVariantNumeric:'tabular-nums'}}>{c.date}</span>
                 </div>
-                <div className=”ci-source” onClick={() => onJump(c)}>{decodeEntities(c.title)}</div>
-                <div className=”ci-text”>{c.text}</div>
-                {tab === 'memos' && c.memo && <div className=”ci-memo”>💬 {c.memo}</div>}
-                <div className=”ci-tools”>
+                <div className="ci-source" onClick={() => onJump(c)}>{decodeEntities(c.title)}</div>
+                <div className="ci-text">{c.text}</div>
+                {tab === 'memos' && c.memo && <div className="ci-memo">💬 {c.memo}</div>}
+                <div className="ci-tools">
                   <button onClick={() => navigator.clipboard?.writeText(tab === 'memos' ? `${c.text}\n📝 ${c.memo}` : c.text)}>복사</button>
                   <button onClick={() => onJump(c)}>해당 글 보기</button>
-                  <button className=”del” onClick={() => handleRemove(c.id)}>삭제</button>
+                  <button className="del" onClick={() => handleRemove(c.id)}>삭제</button>
                 </div>
               </div>
             );
