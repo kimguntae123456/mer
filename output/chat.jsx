@@ -7,6 +7,7 @@ const MODEL = 'gpt-4o-mini';
 
 const PRESETS = {
   '기본 (학습 도우미)': '너는 한국 금융·경제 학습 도우미. 사용자가 보고 있는 메르 블로그 글을 함께 읽으며 모르는 용어·맥락·인과를 짧고 정확하게 설명. 추측 금지, 한국어, 핵심만.',
+  '비전공자 풀어쓰기': '너는 금융·경제 비전공자에게 설명하는 도우미. 모든 답을 다음 3단계로 한다. 1) 일상 비유 한 줄로 직관 잡아주기 2) 정확한 정의·메커니즘을 평이한 한국어로 풀어쓰기 (전문용어 나오면 즉시 괄호 안에 한 줄 풀이) 3) "왜 중요한가" 한 줄. 어려운 한자어·영어 약자는 가능하면 우리말로 바꾸고, 못 바꾸면 그 자리에서 풀어준다. 한국어 반말체 OK, 친근하게.',
   '깐깐한 교수': '너는 한국 금융·경제학 박사 교수. 학생이 묻는 개념의 정의·전제·반례를 엄격하게 짚어준다. 두루뭉술한 답 금지, 모르면 모른다고 말한다. 한국어 격식체.',
   '메르 스타일': '너는 메르처럼 답한다. 짧은 문장, 번호 매기기(1. 2. 3.), 직설적 어조, 비유 적극 사용. "~다", "~네", "~지" 같은 평어 섞고, 핵심 숫자·고유명사 굵게 살림. 양시론·뭉개기 절대 금지.',
   '면접 코치': '너는 공기업·금융권 면접 코치. 사용자가 묻는 내용을 면접 답변 구조(두괄식 결론 → 근거 2개 → 시사점)로 30초 분량으로 정리해 답한다. 한국어 격식체.',
@@ -56,6 +57,44 @@ function ChatPanel({ open, onClose, currentPost }) {
   const [useContext, setUseContext] = useState(true);
   const [systemPrompt, setSystemPrompt] = useState(() => getPrompt());
   const [showStyle, setShowStyle] = useState(false);
+  const [panelW, setPanelW] = useState(() => {
+    const v = parseInt(localStorage.getItem('meru_oai_panel_w'), 10);
+    return Number.isFinite(v) && v >= 320 ? v : 460;
+  });
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--chat-w', panelW + 'px');
+  }, [panelW]);
+
+  const onPanelResize = (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = panelW;
+    const onMove = (ev) => {
+      const w = Math.min(900, Math.max(320, startW + (startX - ev.clientX)));
+      setPanelW(w);
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      try { localStorage.setItem('meru_oai_panel_w', String(panelW)); } catch {}
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+
+  // persist width on change
+  useEffect(() => {
+    try { localStorage.setItem('meru_oai_panel_w', String(panelW)); } catch {}
+  }, [panelW]);
+
+  // textarea auto-grow
+  const autoGrow = (el) => {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(240, el.scrollHeight) + 'px';
+  };
+  useEffect(() => { autoGrow(inputRef.current); }, [input]);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -157,7 +196,8 @@ function ChatPanel({ open, onClose, currentPost }) {
   if (!open) return null;
   return (
     <>
-      <aside className="chat-panel">
+      <aside className="chat-panel" style={{width: panelW + 'px'}}>
+        <div className="chat-resize-handle" onMouseDown={onPanelResize} title="드래그하여 너비 조절"/>
         <div className="chat-head">
           <h2>AI 도움말</h2>
           <span className="chat-model">{MODEL}</span>
@@ -250,7 +290,7 @@ function ChatPanel({ open, onClose, currentPost }) {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={onKeyDown}
-                rows={2}
+                rows={1}
               />
               <button className="chat-send" onClick={send} disabled={loading || !input.trim()}>
                 전송

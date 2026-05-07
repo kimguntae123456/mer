@@ -1599,3 +1599,26 @@ body.chat-open .chat-fab { right: calc(24px + 460px); }
   outline: none;
 }
 .chat-style-text:focus { border-color: var(--ink); }
+
+/* chat panel resize handle + dynamic width */
+.chat-panel { width: var(--chat-w, 460px); max-width: 100%; }
+body.chat-open .app { padding-right: var(--chat-w, 460px); }
+body.chat-open .clips-fab,
+body.chat-open .chat-fab { right: calc(24px + var(--chat-w, 460px)); }
+@media (max-width: 900px) {
+  body.chat-open .app { padding-right: 0; }
+  .chat-panel { width: 100% !important; }
+  .chat-resize-handle { display: none; }
+}
+.chat-resize-handle {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 6px; cursor: ew-resize;
+  background: transparent;
+  z-index: 5;
+}
+.chat-resize-handle:hover { background: rgba(0,0,0,0.08); }
+
+/* textarea auto-grow friendly */
+.chat-input {
+  min-height: 36px; max-height: 240px; overflow-y: auto;
+}
