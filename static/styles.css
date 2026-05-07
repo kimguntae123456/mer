@@ -1575,3 +1575,27 @@ body.chat-open .chat-fab { right: calc(24px + 460px); }
   pointer-events: auto;
   border-left: 1px solid var(--rule);
 }
+
+/* chat style editor */
+.chat-style-editor {
+  border-bottom: 1px solid var(--rule);
+  padding: 12px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  background: rgba(0,0,0,0.02);
+}
+.chat-style-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip.preset {
+  font-size: 0.72rem; padding: 4px 10px;
+  border: 1px solid var(--rule); border-radius: 12px;
+  background: var(--paper); cursor: pointer;
+}
+.chip.preset:hover { background: rgba(0,0,0,0.06); }
+.chat-style-text {
+  width: 100%;
+  border: 1px solid var(--rule); border-radius: 6px;
+  padding: 8px 10px; font-size: 0.82rem; line-height: 1.55;
+  font-family: inherit; resize: vertical;
+  background: var(--paper); color: var(--ink);
+  outline: none;
+}
+.chat-style-text:focus { border-color: var(--ink); }

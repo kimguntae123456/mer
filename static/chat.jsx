@@ -2,7 +2,25 @@
 const { useState, useEffect, useRef, useCallback } = React;
 
 const KEY_STORAGE = 'meru_oai_key';
+const PROMPT_STORAGE = 'meru_oai_prompt';
 const MODEL = 'gpt-4o-mini';
+
+const PRESETS = {
+  '기본 (학습 도우미)': '너는 한국 금융·경제 학습 도우미. 사용자가 보고 있는 메르 블로그 글을 함께 읽으며 모르는 용어·맥락·인과를 짧고 정확하게 설명. 추측 금지, 한국어, 핵심만.',
+  '깐깐한 교수': '너는 한국 금융·경제학 박사 교수. 학생이 묻는 개념의 정의·전제·반례를 엄격하게 짚어준다. 두루뭉술한 답 금지, 모르면 모른다고 말한다. 한국어 격식체.',
+  '메르 스타일': '너는 메르처럼 답한다. 짧은 문장, 번호 매기기(1. 2. 3.), 직설적 어조, 비유 적극 사용. "~다", "~네", "~지" 같은 평어 섞고, 핵심 숫자·고유명사 굵게 살림. 양시론·뭉개기 절대 금지.',
+  '면접 코치': '너는 공기업·금융권 면접 코치. 사용자가 묻는 내용을 면접 답변 구조(두괄식 결론 → 근거 2개 → 시사점)로 30초 분량으로 정리해 답한다. 한국어 격식체.',
+  '쉬운 비유': '너는 어려운 금융·경제 개념을 일상 비유로 풀어주는 도우미. 전문용어가 나오면 반드시 일상 사례에 빗대 1문장 비유 먼저, 그다음 정확한 정의. 한국어 반말체 OK.',
+  '간결 (한 줄)': '한국어로 한 문장(최대 2문장)만으로 답한다. 군더더기 금지. 정의·핵심만.',
+};
+
+function getPrompt() {
+  return localStorage.getItem(PROMPT_STORAGE) || PRESETS['기본 (학습 도우미)'];
+}
+function savePrompt(p) {
+  if (p) localStorage.setItem(PROMPT_STORAGE, p);
+  else localStorage.removeItem(PROMPT_STORAGE);
+}
 
 function getKey() { return localStorage.getItem(KEY_STORAGE) || ''; }
 function setKey(k) {
@@ -36,6 +54,8 @@ function ChatPanel({ open, onClose, currentPost }) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [useContext, setUseContext] = useState(true);
+  const [systemPrompt, setSystemPrompt] = useState(() => getPrompt());
+  const [showStyle, setShowStyle] = useState(false);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -86,9 +106,10 @@ function ChatPanel({ open, onClose, currentPost }) {
     setLoading(true);
 
     const ctx = useContext ? buildContext(currentPost) : '';
+    const base = systemPrompt.trim() || PRESETS['기본 (학습 도우미)'];
     const sys = ctx
-      ? `너는 한국 금융·경제 학습 도우미. 사용자가 보고 있는 메르 블로그 글을 함께 읽으며 모르는 용어·맥락·인과를 짧고 정확하게 설명. 추측 금지, 한국어, 핵심만. 사용자가 묻는 표현이 아래 글 안에 있으면 글 맥락에 맞춰 답해.\n\n--- 현재 보는 글 ---\n${ctx}`
-      : '너는 한국 금융·경제 학습 도우미. 짧고 정확하게, 한국어, 추측 금지.';
+      ? `${base}\n\n사용자가 묻는 표현이 아래 글 안에 있으면 글 맥락에 맞춰 답해.\n\n--- 현재 보는 글 ---\n${ctx}`
+      : base;
 
     try {
       const cleanKey = apiKey.replace(/\s+/g, '').trim();
@@ -170,9 +191,38 @@ function ChatPanel({ open, onClose, currentPost }) {
                 <input type="checkbox" checked={useContext} onChange={e => setUseContext(e.target.checked)}/>
                 <span>현재 글 맥락 포함 {currentPost ? '✓' : '(없음)'}</span>
               </label>
-              <button className="chip" onClick={reset}>대화 초기화</button>
-              <button className="chip" onClick={clearKey}>키 변경</button>
+              <button className="chip" onClick={() => setShowStyle(s => !s)}>스타일</button>
+              <button className="chip" onClick={reset}>초기화</button>
+              <button className="chip" onClick={clearKey}>키</button>
             </div>
+
+            {showStyle && (
+              <div className="chat-style-editor">
+                <div className="chat-style-presets">
+                  {Object.entries(PRESETS).map(([name, prompt]) => (
+                    <button key={name} className="chip preset"
+                      onClick={() => { setSystemPrompt(prompt); savePrompt(prompt); }}>
+                      {name}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  className="chat-style-text"
+                  rows={5}
+                  value={systemPrompt}
+                  onChange={e => setSystemPrompt(e.target.value)}
+                  onBlur={() => savePrompt(systemPrompt)}
+                  placeholder="여기에 직접 시스템 프롬프트를 적으면 그대로 적용됩니다…"
+                />
+                <div style={{display:'flex', gap:8, fontSize:'0.72rem', color:'var(--muted)', alignItems:'center'}}>
+                  <span>저장됨 (자동) · 다음 메시지부터 적용</span>
+                  <button className="chip" style={{marginLeft:'auto'}}
+                    onClick={() => { const def = PRESETS['기본 (학습 도우미)']; setSystemPrompt(def); savePrompt(def); }}>
+                    기본값 복원
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="chat-msgs" ref={scrollRef}>
               {messages.length === 0 && (
