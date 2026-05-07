@@ -26,6 +26,8 @@ const Ico = {
   Grid: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>,
   Type: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>,
   Back: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>,
+  Trash: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>,
+  Restore: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>,
 };
 
 /* ---------- Date helpers ---------- */
@@ -64,6 +66,25 @@ function useBookmarks() {
   return [marks, toggle];
 }
 
+/* ---------- Hidden posts (localStorage) ---------- */
+function useHidden() {
+  const [hidden, setHidden] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('meru_hidden') || '[]')); }
+    catch { return new Set(); }
+  });
+  const persist = (s) => localStorage.setItem('meru_hidden', JSON.stringify([...s]));
+  const hide = useCallback((title) => {
+    setHidden(prev => { const n = new Set(prev); n.add(title); persist(n); return n; });
+  }, []);
+  const restore = useCallback((title) => {
+    setHidden(prev => { const n = new Set(prev); n.delete(title); persist(n); return n; });
+  }, []);
+  const restoreAll = useCallback(() => {
+    setHidden(() => { const n = new Set(); persist(n); return n; });
+  }, []);
+  return { hidden, hide, restore, restoreAll };
+}
+
 /* ---------- Search ---------- */
 function searchPosts(data, q) {
   if (!q || !q.trim()) return data;
@@ -78,7 +99,7 @@ function searchPosts(data, q) {
 }
 
 /* ---------- Row ---------- */
-function PostRow({ post, onOpen, isBookmarked, onToggleBookmark, showDate, isExpanded, expandedSlot }) {
+function PostRow({ post, onOpen, isBookmarked, onToggleBookmark, showDate, isExpanded, expandedSlot, onHide, onRestore, isHidden }) {
   const sec = sectorMap[post.folder];
   const cssVar = sec?.cssVar;
   return (<>
@@ -103,6 +124,28 @@ function PostRow({ post, onOpen, isBookmarked, onToggleBookmark, showDate, isExp
         >
           <Ico.Bookmark filled={isBookmarked}/>
         </button>
+        {isHidden ? (
+          onRestore && (
+            <button
+              className="bookmark-btn"
+              onClick={(e) => { e.stopPropagation(); onRestore(post.title); }}
+              aria-label="복원"
+              title="복원"
+            ><Ico.Restore/></button>
+          )
+        ) : (
+          onHide && (
+            <button
+              className="bookmark-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm('이 글을 숨길까요? 휴지통에서 다시 복원할 수 있습니다.')) onHide(post.title);
+              }}
+              aria-label="숨김"
+              title="숨김 (휴지통으로 이동)"
+            ><Ico.Trash/></button>
+          )
+        )}
       </div>
     </div>
     {isExpanded && expandedSlot}
@@ -110,7 +153,7 @@ function PostRow({ post, onOpen, isBookmarked, onToggleBookmark, showDate, isExp
 }
 
 /* ---------- Day Group ---------- */
-function DayGroup({ date, posts, onOpen, marks, toggleMark, expandedTitle, expandedSlot }) {
+function DayGroup({ date, posts, onOpen, marks, toggleMark, expandedTitle, expandedSlot, onHide, onRestore, hidden }) {
   return (
     <div className="day-group">
       <div className="day-head">
@@ -124,11 +167,13 @@ function DayGroup({ date, posts, onOpen, marks, toggleMark, expandedTitle, expan
             isBookmarked={marks.has(p.title)} onToggleBookmark={toggleMark}
             showDate={true}
             isExpanded={expandedTitle === p.title}
-            expandedSlot={expandedTitle === p.title ? expandedSlot : null}/>
+            expandedSlot={expandedTitle === p.title ? expandedSlot : null}
+            onHide={onHide} onRestore={onRestore}
+            isHidden={hidden ? hidden.has(p.title) : false}/>
         ))}
       </div>
     </div>
   );
 }
 
-window.MR = { SECTORS, sectorMap, Ico, fmtDate, fmtDateShort, dayWeek, decodeEntities, useBookmarks, searchPosts, PostRow, DayGroup };
+window.MR = { SECTORS, sectorMap, Ico, fmtDate, fmtDateShort, dayWeek, decodeEntities, useBookmarks, useHidden, searchPosts, PostRow, DayGroup };

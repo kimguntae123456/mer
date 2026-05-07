@@ -1,7 +1,7 @@
 /* global React, ReactDOM, MR */
 const { useState, useEffect, useMemo, useCallback, useRef } = React;
 const { SECTORS, sectorMap, Ico, fmtDate, decodeEntities,
-        useBookmarks, searchPosts, ArticleView, DayGroup, PostRow,
+        useBookmarks, useHidden, searchPosts, ArticleView, DayGroup, PostRow,
         useClips, useHighlights, useMemos, useLookups, InlineArticle, ClipsDrawer, ChatPanel } = window.MR;
 
 /* ---------- Tweak defaults ---------- */
@@ -17,7 +17,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 const FS_LABELS = { s: '작게', m: '보통', l: '크게', xl: '아주 크게' };
 
 /* ---------- Sidebar (desktop) ---------- */
-function Sidebar({ filter, setFilter, counts, total, currentBookmarks }) {
+function Sidebar({ filter, setFilter, counts, total, currentBookmarks, hiddenCount }) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -47,6 +47,13 @@ function Sidebar({ filter, setFilter, counts, total, currentBookmarks }) {
         >
           <span>섹터 보기</span>
           <span className="count">{SECTORS.length}</span>
+        </div>
+        <div
+          className={'nav-item' + (filter.kind === 'trash' ? ' active' : '')}
+          onClick={() => setFilter({kind: 'trash'})}
+        >
+          <span>휴지통</span>
+          <span className="count">{hiddenCount}</span>
         </div>
       </div>
 
@@ -240,6 +247,7 @@ function App() {
   const [showClips, setShowClips] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [marks, toggleMark] = useBookmarks();
+  const { hidden, hide: hidePost, restore: restorePost, restoreAll: restoreAllPosts } = useHidden();
   const { clips, add: addClipRaw, remove: removeClipRaw, clear: clearClipsRaw, setAll: setAllClips } = useClips();
   const { highlights, add: addHLRaw, remove: removeHLRaw, clear: clearHLRaw, setAll: setAllHL } = useHighlights();
   const { memos, add: addMemoRaw, remove: removeMemoRaw, clear: clearMemoRaw, update: updateMemoRaw, setAll: setAllMemos } = useMemos();
@@ -308,22 +316,29 @@ function App() {
     document.body.dataset.fs = tweaks.fontSize || 'm';
   }, [tweaks.mode, tweaks.fontSize, tweaks.density, tweaks.theme]);
 
-  // counts per sector
+  // counts per sector (excluding hidden)
   const counts = useMemo(() => {
     const c = {};
-    data.forEach(d => { c[d.folder] = (c[d.folder] || 0) + 1; });
+    data.forEach(d => { if (!hidden.has(d.title)) c[d.folder] = (c[d.folder] || 0) + 1; });
     return c;
-  }, [data]);
+  }, [data, hidden]);
+  const visibleTotal = useMemo(() => data.filter(d => !hidden.has(d.title)).length, [data, hidden]);
+  const visibleBookmarks = useMemo(() => [...marks].filter(t => !hidden.has(t)).length, [marks, hidden]);
 
   // filter pipeline
   const filteredPosts = useMemo(() => {
     let posts = data;
-    if (filter.kind === 'sector') posts = posts.filter(p => p.folder === filter.sector);
-    else if (filter.kind === 'bookmarks') posts = posts.filter(p => marks.has(p.title));
+    if (filter.kind === 'trash') {
+      posts = posts.filter(p => hidden.has(p.title));
+    } else {
+      posts = posts.filter(p => !hidden.has(p.title));
+      if (filter.kind === 'sector') posts = posts.filter(p => p.folder === filter.sector);
+      else if (filter.kind === 'bookmarks') posts = posts.filter(p => marks.has(p.title));
+    }
     posts = searchPosts(posts, q);
     posts = [...posts].sort((a,b) => b.date.localeCompare(a.date));
     return posts;
-  }, [data, filter, q, marks]);
+  }, [data, filter, q, marks, hidden]);
 
   const grouped = useMemo(() => groupByDate(filteredPosts), [filteredPosts]);
 
@@ -392,10 +407,31 @@ function App() {
     body = (
       <>
         <PageHead eyebrow="My Library" title="북마크"
-          sub={`저장한 글 ${marks.size}편${q ? ` · 검색 결과 ${filteredPosts.length}편` : ''}`}/>
+          sub={`저장한 글 ${visibleBookmarks}편${q ? ` · 검색 결과 ${filteredPosts.length}편` : ''}`}/>
         <Timeline grouped={grouped} q={q} onOpen={handleOpen} marks={marks} toggleMark={toggleMark}
           expandedTitle={expandedTitle} expandedSlot={expandedSlot}
-          emptyMsg={marks.size === 0 ? '아직 저장한 글이 없습니다.' : '검색 결과가 없습니다.'}/>
+          onHide={hidePost} hidden={hidden}
+          emptyMsg={visibleBookmarks === 0 ? '아직 저장한 글이 없습니다.' : '검색 결과가 없습니다.'}/>
+      </>
+    );
+  } else if (filter.kind === 'trash') {
+    body = (
+      <>
+        <PageHead eyebrow="Trash" title="휴지통"
+          sub={`숨긴 글 ${hidden.size}편${q ? ` · 검색 결과 ${filteredPosts.length}편` : ''}`}/>
+        {hidden.size > 0 && (
+          <div style={{padding:'0 36px 12px'}}>
+            <button
+              className="icon-btn"
+              style={{padding:'8px 14px', fontSize:'0.85rem'}}
+              onClick={() => { if (confirm(`숨긴 글 ${hidden.size}편을 모두 복원할까요?`)) restoreAllPosts(); }}
+            >전체 복원</button>
+          </div>
+        )}
+        <Timeline grouped={grouped} q={q} onOpen={handleOpen} marks={marks} toggleMark={toggleMark}
+          expandedTitle={expandedTitle} expandedSlot={expandedSlot}
+          onRestore={restorePost} hidden={hidden}
+          emptyMsg={hidden.size === 0 ? '휴지통이 비어 있습니다.' : '검색 결과가 없습니다.'}/>
       </>
     );
   } else if (filter.kind === 'sector') {
@@ -405,18 +441,20 @@ function App() {
         <PageHead eyebrow={sec?.sub || ''} title={filter.sector}
           sub={`${counts[filter.sector] || 0}편${q ? ` · 검색 결과 ${filteredPosts.length}편` : ''}`}/>
         <Timeline grouped={grouped} q={q} onOpen={handleOpen} marks={marks} toggleMark={toggleMark}
-          expandedTitle={expandedTitle} expandedSlot={expandedSlot}/>
+          expandedTitle={expandedTitle} expandedSlot={expandedSlot}
+          onHide={hidePost} hidden={hidden}/>
       </>
     );
   } else {
     body = (
       <>
-        <Masthead total={data.length} sectorCount={SECTORS.length} bookmarkCount={marks.size}/>
+        <Masthead total={visibleTotal} sectorCount={SECTORS.length} bookmarkCount={visibleBookmarks}/>
         {q && <div style={{padding:'0 36px 16px', fontSize:'0.85rem', color:'var(--muted)'}}>
           검색 “{q}” — {filteredPosts.length}편
         </div>}
         <Timeline grouped={grouped} q={q} onOpen={handleOpen} marks={marks} toggleMark={toggleMark}
-          expandedTitle={expandedTitle} expandedSlot={expandedSlot}/>
+          expandedTitle={expandedTitle} expandedSlot={expandedSlot}
+          onHide={hidePost} hidden={hidden}/>
       </>
     );
   }
@@ -425,7 +463,7 @@ function App() {
     <>
       <div className="app">
         <Sidebar filter={filter} setFilter={setFilter} counts={counts}
-          total={data.length} currentBookmarks={marks.size}/>
+          total={visibleTotal} currentBookmarks={visibleBookmarks} hiddenCount={hidden.size}/>
         <div className="content">
           <Topbar q={q} setQ={setQ}
             fontSize={tweaks.fontSize}
@@ -479,7 +517,7 @@ function App() {
 }
 
 /* ---------- Timeline ---------- */
-function Timeline({ grouped, q, onOpen, marks, toggleMark, emptyMsg, expandedTitle, expandedSlot }) {
+function Timeline({ grouped, q, onOpen, marks, toggleMark, emptyMsg, expandedTitle, expandedSlot, onHide, onRestore, hidden }) {
   if (grouped.length === 0) {
     return (
       <div className="empty">
@@ -493,7 +531,8 @@ function Timeline({ grouped, q, onOpen, marks, toggleMark, emptyMsg, expandedTit
       {grouped.map(([date, posts]) => (
         <DayGroup key={date} date={date} posts={posts} onOpen={onOpen}
           marks={marks} toggleMark={toggleMark}
-          expandedTitle={expandedTitle} expandedSlot={expandedSlot}/>
+          expandedTitle={expandedTitle} expandedSlot={expandedSlot}
+          onHide={onHide} onRestore={onRestore} hidden={hidden}/>
       ))}
     </div>
   );
