@@ -1462,7 +1462,6 @@ body.theme-white mark.lookup-mark {
 }
 .chat-panel {
   position: fixed; right: 0; top: 0; bottom: 0;
-  width: 100%; max-width: 460px;
   background: var(--paper); color: var(--ink);
   z-index: 610; display: flex; flex-direction: column;
   box-shadow: -8px 0 32px rgba(0,0,0,0.18);
@@ -1668,4 +1667,26 @@ body.drawer-open.chat-open .chat-fab { right: calc(24px + 440px + var(--chat-w, 
   content: ''; position: absolute; top: 100%; left: 50%;
   transform: translateX(-50%); border: 5px solid transparent;
   border-top-color: var(--ink);
+}
+
+/* Visible resize grip on chat panel left edge */
+.chat-resize-handle {
+  width: 8px;
+  background: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.04) 50%, transparent 100%);
+  border-left: 1px solid var(--rule);
+  transition: background 0.15s;
+}
+.chat-resize-handle::before {
+  content: '⋮⋮';
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px; color: rgba(0,0,0,0.35);
+  letter-spacing: -2px; line-height: 1;
+  writing-mode: vertical-rl;
+}
+.chat-resize-handle:hover {
+  background: rgba(0,0,0,0.12);
+}
+.chat-resize-handle:active {
+  background: rgba(0,0,0,0.2);
 }
