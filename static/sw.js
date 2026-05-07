@@ -1,5 +1,5 @@
 /* 메르 리더 PWA — Service Worker */
-const CACHE = 'meru-reader-v11';
+const CACHE = 'meru-reader-v12';
 const ASSETS = [
   './',
   './index.html',
