@@ -1,4 +1,4 @@
-/* global React, MR */
+/* global React, ReactDOM, MR */
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 const { sectorMap, Ico, fmtDate, decodeEntities } = window.MR;
 
@@ -8,46 +8,53 @@ function useStorageList(key) {
     try { return JSON.parse(localStorage.getItem(key) || '[]'); }
     catch { return []; }
   });
-  const save = (next) => { setItems(next); localStorage.setItem(key, JSON.stringify(next)); };
+  const persist = (next) => { localStorage.setItem(key, JSON.stringify(next)); };
   const add = useCallback((item) => {
     setItems(prev => {
       const next = [{...item, id: Date.now()+Math.random(), createdAt: Date.now()}, ...prev];
-      localStorage.setItem(key, JSON.stringify(next));
+      persist(next);
       return next;
     });
   }, [key]);
   const remove = useCallback((id) => {
     setItems(prev => {
       const next = prev.filter(c => c.id !== id);
-      localStorage.setItem(key, JSON.stringify(next));
+      persist(next);
       return next;
     });
   }, [key]);
-  const clear = useCallback(() => save([]), [key]);
-  return { items, add, remove, clear };
+  const clear = useCallback(() => { setItems([]); persist([]); }, [key]);
+  const update = useCallback((id, patch) => {
+    setItems(prev => {
+      const next = prev.map(c => c.id === id ? {...c, ...patch} : c);
+      persist(next);
+      return next;
+    });
+  }, [key]);
+  const setAll = useCallback((arr) => { setItems(arr); persist(arr); }, [key]);
+  return { items, add, remove, clear, update, setAll };
 }
 
-/* ---------- Clips storage hook ---------- */
 function useClips() {
-  const { items: clips, add, remove, clear } = useStorageList('meru_clips');
-  return { clips, add, remove, clear };
+  const { items: clips, add, remove, clear, setAll } = useStorageList('meru_clips');
+  return { clips, add, remove, clear, setAll };
 }
-
-/* ---------- Highlights storage hook ---------- */
 function useHighlights() {
-  const { items: highlights, add, remove, clear } = useStorageList('meru_highlights');
-  return { highlights, add, remove, clear };
+  const { items: highlights, add, remove, clear, setAll } = useStorageList('meru_highlights');
+  return { highlights, add, remove, clear, setAll };
 }
-
-/* ---------- Memos storage hook ---------- */
 function useMemos() {
-  const { items: memos, add, remove, clear } = useStorageList('meru_memos');
-  return { memos, add, remove, clear };
+  const { items: memos, add, remove, clear, update, setAll } = useStorageList('meru_memos');
+  return { memos, add, remove, clear, update, setAll };
+}
+function useLookups() {
+  const { items: lookups, add, remove, clear, setAll } = useStorageList('meru_lookups');
+  return { lookups, add, remove, clear, setAll };
 }
 
 /* ---------- Drag-to-clip popover ---------- */
-function ClipPopover({ container, onClip, onHighlight, onMemo }) {
-  const [pop, setPop] = useState(null); // {x, y, text}
+function ClipPopover({ container, onClip, onHighlight, onMemo, onLookup }) {
+  const [pop, setPop] = useState(null);
   const [memoMode, setMemoMode] = useState(false);
   const [memoText, setMemoText] = useState('');
   const memoRef = useRef(null);
@@ -74,9 +81,7 @@ function ClipPopover({ container, onClip, onHighlight, onMemo }) {
 
   useEffect(() => {
     if (!container) return;
-    // Desktop: mouseup
     const onMouseUp = () => { checkSelection(); };
-    // Mobile: use selectionchange with debounce to avoid iOS native callout conflict
     const onSelChange = () => {
       clearTimeout(timerRef.current);
       timerRef.current = setTimeout(checkSelection, 300);
@@ -118,6 +123,10 @@ function ClipPopover({ container, onClip, onHighlight, onMemo }) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             메모
           </button>
+          <button onClick={() => { onLookup(pop.text); dismiss(); }} title="나중에 찾아볼 것">
+            <span style={{fontWeight:700, fontSize:'0.95rem', display:'inline-block', width:14, textAlign:'center'}}>?</span>
+            모름
+          </button>
           <button onClick={() => { onClip(pop.text); dismiss(); }} title="클립">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12l5 5L20 7"/></svg>
             클립
@@ -143,20 +152,18 @@ function ClipPopover({ container, onClip, onHighlight, onMemo }) {
   );
 }
 
-/* ---------- Highlight clipped/highlighted/memo text inside body ---------- */
-function highlightAll(text, clipTexts, highlightTexts, memoItems) {
+/* ---------- Highlight markers inside body ---------- */
+function highlightAll(text, clipTexts, highlightTexts, memoItems, lookupTexts, onUpdateMemo) {
   if (!text) return decodeEntities(text);
   const decoded = decodeEntities(text);
-  // Build markers: {text, type} where type = 'clip' | 'highlight' | 'memo'
   const markers = [];
   (clipTexts || []).forEach(t => markers.push({text: t, type: 'clip'}));
   (highlightTexts || []).forEach(t => markers.push({text: t, type: 'highlight'}));
-  (memoItems || []).forEach(m => markers.push({text: m.text, type: 'memo', memo: m.memo}));
+  (memoItems || []).forEach(m => markers.push({text: m.text, type: 'memo', memo: m.memo, id: m.id, pos: m.pos}));
+  (lookupTexts || []).forEach(t => markers.push({text: t, type: 'lookup'}));
   if (!markers.length) return decoded;
-  // Sort by length desc to handle overlaps; memo > highlight > clip priority
-  const prio = {memo: 0, highlight: 1, clip: 2};
+  const prio = {memo: 0, lookup: 1, highlight: 2, clip: 3};
   markers.sort((a,b) => b.text.length - a.text.length || prio[a.type] - prio[b.type]);
-  // Deduplicate by text (keep highest priority)
   const seen = new Set();
   const unique = markers.filter(m => { if (seen.has(m.text)) return false; seen.add(m.text); return true; });
 
@@ -168,7 +175,7 @@ function highlightAll(text, clipTexts, highlightTexts, memoItems) {
       const idx = p.indexOf(marker.text);
       if (idx === -1) { next.push(p); continue; }
       if (idx > 0) next.push(p.slice(0, idx));
-      next.push({type: marker.type, text: marker.text, memo: marker.memo});
+      next.push({...marker});
       const rest = p.slice(idx + marker.text.length);
       if (rest) next.push(rest);
     }
@@ -176,41 +183,122 @@ function highlightAll(text, clipTexts, highlightTexts, memoItems) {
   }
   return parts.map((p, i) => {
     if (typeof p === 'string') return p;
-    if (p.type === 'memo') return <MemoMark key={i} text={p.text} memo={p.memo}/>;
+    if (p.type === 'memo') return <MemoMark key={i} id={p.id} text={p.text} memo={p.memo} pos={p.pos} onUpdate={onUpdateMemo}/>;
+    if (p.type === 'lookup') return <LookupMark key={i} text={p.text}/>;
     const cls = p.type === 'highlight' ? 'highlight-mark' : 'clip-mark';
     return <mark key={i} className={cls}>{p.text}</mark>;
   });
 }
 
-/* backward compat wrapper */
-function highlightClips(text, clips) { return highlightAll(text, clips, [], []); }
+function highlightClips(text, clips) { return highlightAll(text, clips, [], [], [], null); }
 
-/* ---------- Memo inline mark with tooltip ---------- */
-function MemoMark({ text, memo }) {
-  const [show, setShow] = useState(false);
+/* ---------- Lookup mark (?) ---------- */
+function LookupMark({ text }) {
   return (
-    <span className="memo-mark-wrap" style={{position:'relative', display:'inline'}}>
-      <mark className="memo-mark" onClick={() => setShow(s => !s)}>
-        {text}
-        <span className="memo-icon">💬</span>
-      </mark>
-      {show && (
-        <span className="memo-tooltip" onClick={() => setShow(false)}>
-          {memo}
-        </span>
-      )}
-    </span>
+    <mark className="lookup-mark" title="나중에 찾아볼 것">
+      {text}
+      <span className="lookup-icon">?</span>
+    </mark>
   );
 }
 
-/* ---------- Inline article (shown when row is expanded) ---------- */
-function InlineArticle({ post, onClose, onClip, clipsForPost, onHighlight, highlightsForPost, onMemo, memosForPost }) {
+/* ---------- Memo mark + draggable resizable post-it ---------- */
+function MemoMark({ id, text, memo, pos, onUpdate }) {
+  const [open, setOpen] = useState(false);
+  const markRef = useRef(null);
+  const [box, setBox] = useState(() => pos || null);
+
+  useEffect(() => {
+    if (open && !box && markRef.current) {
+      const r = markRef.current.getBoundingClientRect();
+      setBox({
+        x: Math.min(r.left + window.scrollX, window.innerWidth - 260),
+        y: r.bottom + window.scrollY + 6,
+        w: 240, h: 140,
+      });
+    }
+  }, [open, box]);
+
+  const persist = (next) => {
+    setBox(next);
+    if (id != null && onUpdate) onUpdate(id, {pos: next});
+  };
+
+  const onDragStart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX, startY = e.clientY;
+    const startBox = box;
+    const onMove = (ev) => {
+      const nx = Math.max(0, startBox.x + (ev.clientX - startX));
+      const ny = Math.max(0, startBox.y + (ev.clientY - startY));
+      setBox(b => ({...b, x: nx, y: ny}));
+    };
+    const onUp = (ev) => {
+      const nx = Math.max(0, startBox.x + (ev.clientX - startX));
+      const ny = Math.max(0, startBox.y + (ev.clientY - startY));
+      persist({...startBox, x: nx, y: ny});
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+
+  const onResizeStart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX, startY = e.clientY;
+    const startBox = box;
+    const onMove = (ev) => {
+      const nw = Math.max(160, startBox.w + (ev.clientX - startX));
+      const nh = Math.max(80, startBox.h + (ev.clientY - startY));
+      setBox(b => ({...b, w: nw, h: nh}));
+    };
+    const onUp = (ev) => {
+      const nw = Math.max(160, startBox.w + (ev.clientX - startX));
+      const nh = Math.max(80, startBox.h + (ev.clientY - startY));
+      persist({...startBox, w: nw, h: nh});
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+
+  return (
+    <>
+      <mark ref={markRef} className="memo-mark" onClick={() => setOpen(o => !o)}>
+        {text}
+        <span className="memo-icon">💬</span>
+      </mark>
+      {open && box && ReactDOM.createPortal(
+        <div className="postit" style={{left: box.x, top: box.y, width: box.w, height: box.h}}
+             onMouseDown={e => e.stopPropagation()}>
+          <div className="postit-head" onMouseDown={onDragStart}>
+            <span className="postit-grip">≡</span>
+            <span className="postit-label">메모</span>
+            <button className="postit-close" onClick={() => setOpen(false)}>×</button>
+          </div>
+          <div className="postit-body">{memo}</div>
+          <div className="postit-resize" onMouseDown={onResizeStart}/>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
+/* ---------- Inline article ---------- */
+function InlineArticle({ post, onClose, onClip, clipsForPost, onHighlight, highlightsForPost,
+                        onMemo, memosForPost, onUpdateMemo, onLookup, lookupsForPost }) {
   const ref = useRef(null);
   const [containerEl, setContainerEl] = useState(null);
   const sec = sectorMap[post.folder];
   const clipTexts = clipsForPost.map(c => c.text);
   const hlTexts = (highlightsForPost || []).map(h => h.text);
-  const memoItems = (memosForPost || []).map(m => ({text: m.text, memo: m.memo}));
+  const memoItems = (memosForPost || []).map(m => ({id: m.id, text: m.text, memo: m.memo, pos: m.pos}));
+  const lookupTexts = (lookupsForPost || []).map(l => l.text);
 
   const setContainer = useCallback((node) => {
     ref.current = node;
@@ -221,8 +309,9 @@ function InlineArticle({ post, onClose, onClip, clipsForPost, onHighlight, highl
   const handleClip = (text) => onClip({text, ...postMeta});
   const handleHL = (text) => onHighlight({text, ...postMeta});
   const handleMemo = (text, memo) => onMemo({text, memo, ...postMeta});
+  const handleLookup = (text) => onLookup({text, ...postMeta});
 
-  const hl = (text) => highlightAll(text, clipTexts, hlTexts, memoItems);
+  const hl = (text) => highlightAll(text, clipTexts, hlTexts, memoItems, lookupTexts, onUpdateMemo);
 
   return (
     <div className="inline-article" ref={setContainer} style={sec ? {'--c': `var(${sec.cssVar})`} : {}}>
@@ -268,7 +357,8 @@ function InlineArticle({ post, onClose, onClip, clipsForPost, onHighlight, highl
         </div>
       </div>
 
-      <ClipPopover container={containerEl} onClip={handleClip} onHighlight={handleHL} onMemo={handleMemo}/>
+      <ClipPopover container={containerEl} onClip={handleClip} onHighlight={handleHL}
+                   onMemo={handleMemo} onLookup={handleLookup}/>
     </div>
   );
 }
@@ -284,27 +374,35 @@ function AnnotationInline({ a }) {
   );
 }
 
-/* ---------- Clips drawer (with tabs: 클립 / 형광펜 / 메모) ---------- */
+/* ---------- Clips drawer (4 tabs) ---------- */
 function ClipsDrawer({ clips, onClose, onRemove, onClear, onJump,
-                        highlights, onRemoveHL, onClearHL,
-                        memos, onRemoveMemo, onClearMemo }) {
-  const [tab, setTab] = useState('clips'); // 'clips' | 'highlights' | 'memos'
-  const tabData = tab === 'clips' ? clips : tab === 'highlights' ? highlights : memos;
-  const tabLabels = {clips: '클립', highlights: '형광펜', memos: '메모'};
-  const tabCounts = {clips: clips.length, highlights: (highlights||[]).length, memos: (memos||[]).length};
-  const total = clips.length + (highlights||[]).length + (memos||[]).length;
+                       highlights, onRemoveHL, onClearHL,
+                       memos, onRemoveMemo, onClearMemo,
+                       lookups, onRemoveLookup, onClearLookup }) {
+  const [tab, setTab] = useState('clips');
+  const lookupsArr = lookups || [];
+  const tabData = tab === 'clips' ? clips
+                : tab === 'highlights' ? highlights
+                : tab === 'memos' ? memos
+                : lookupsArr;
+  const tabLabels = {clips: '클립', highlights: '형광펜', memos: '메모', lookups: '모름'};
+  const tabCounts = {clips: clips.length, highlights: (highlights||[]).length,
+                     memos: (memos||[]).length, lookups: lookupsArr.length};
+  const total = clips.length + (highlights||[]).length + (memos||[]).length + lookupsArr.length;
 
   const handleClear = () => {
-    const msg = tab === 'clips' ? '모든 발췌를 삭제할까요?' : tab === 'highlights' ? '모든 형광펜을 삭제할까요?' : '모든 메모를 삭제할까요?';
-    if (!confirm(msg)) return;
+    const labelMap = {clips: '발췌', highlights: '형광펜', memos: '메모', lookups: '모름 표시'};
+    if (!confirm(`모든 ${labelMap[tab]}을(를) 삭제할까요?`)) return;
     if (tab === 'clips') onClear();
     else if (tab === 'highlights') onClearHL?.();
-    else onClearMemo?.();
+    else if (tab === 'memos') onClearMemo?.();
+    else onClearLookup?.();
   };
   const handleRemove = (id) => {
     if (tab === 'clips') onRemove(id);
     else if (tab === 'highlights') onRemoveHL?.(id);
-    else onRemoveMemo?.(id);
+    else if (tab === 'memos') onRemoveMemo?.(id);
+    else onRemoveLookup?.(id);
   };
 
   return (
@@ -317,7 +415,7 @@ function ClipsDrawer({ clips, onClose, onRemove, onClear, onJump,
           <button className="icon-btn" onClick={onClose} aria-label="닫기"><Ico.Close/></button>
         </div>
         <div className="cd-tabs">
-          {['clips','highlights','memos'].map(t => (
+          {['clips','highlights','memos','lookups'].map(t => (
             <button key={t} className={'cd-tab' + (tab===t?' active':'')} onClick={() => setTab(t)}>
               {tabLabels[t]} <span className="cd-tab-n">{tabCounts[t]}</span>
             </button>
@@ -328,8 +426,10 @@ function ClipsDrawer({ clips, onClose, onRemove, onClear, onJump,
             <button className="chip" onClick={() => {
               const text = tabData.map(c =>
                 tab === 'memos'
-                  ? `”${c.text}”\n📝 ${c.memo}\n— ${c.title} (${c.date})`
-                  : `”${c.text}”\n— ${c.title} (${c.date})`
+                  ? `"${c.text}"\n📝 ${c.memo}\n— ${c.title} (${c.date})`
+                  : tab === 'lookups'
+                    ? `? ${c.text}\n— ${c.title} (${c.date})`
+                    : `"${c.text}"\n— ${c.title} (${c.date})`
               ).join('\n\n');
               navigator.clipboard?.writeText(text);
             }}>전체 복사</button>
@@ -339,15 +439,20 @@ function ClipsDrawer({ clips, onClose, onRemove, onClear, onJump,
         <div className="cd-list">
           {tabData.length === 0 ? (
             <div className="cd-empty">
-              <div className="e-mark">{tab === 'clips' ? '¶' : tab === 'highlights' ? '🖍' : '💬'}</div>
+              <div className="e-mark">{tab === 'clips' ? '¶' : tab === 'highlights' ? '🖍' : tab === 'memos' ? '💬' : '?'}</div>
               <div>{tab === 'clips' ? '본문에서 텍스트를 드래그하면\n여기에 모입니다.' :
                      tab === 'highlights' ? '형광펜으로 칠한 텍스트가\n여기에 모입니다.' :
-                     '메모를 추가하면\n여기에 모입니다.'}</div>
+                     tab === 'memos' ? '메모를 추가하면\n여기에 모입니다.' :
+                     '모르는 표현에 ? 표시하면\n여기에 모입니다.'}</div>
             </div>
           ) : tabData.map(c => {
             const sec = sectorMap[c.folder];
+            const itemCls = 'clip-item' +
+              (tab === 'highlights' ? ' hl-item' :
+               tab === 'memos' ? ' memo-item' :
+               tab === 'lookups' ? ' lookup-item' : '');
             return (
-              <div className={'clip-item' + (tab === 'highlights' ? ' hl-item' : tab === 'memos' ? ' memo-item' : '')} key={c.id}>
+              <div className={itemCls} key={c.id}>
                 <div className="ci-meta">
                   {sec && <span className="sec" style={{color: `var(${sec.cssVar})`}}>{c.folder}</span>}
                   <span>·</span>
@@ -373,6 +478,7 @@ function ClipsDrawer({ clips, onClose, onRemove, onClear, onJump,
 window.MR.useClips = useClips;
 window.MR.useHighlights = useHighlights;
 window.MR.useMemos = useMemos;
+window.MR.useLookups = useLookups;
 window.MR.InlineArticle = InlineArticle;
 window.MR.ClipsDrawer = ClipsDrawer;
 window.MR.ClipPopover = ClipPopover;
