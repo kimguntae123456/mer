@@ -57,36 +57,74 @@ function ChatPanel({ open, onClose, currentPost, onSaveClip, onSaveLookup }) {
   const [useContext, setUseContext] = useState(true);
   const [systemPrompt, setSystemPrompt] = useState(() => getPrompt());
   const [showStyle, setShowStyle] = useState(false);
-  const [panelW, setPanelW] = useState(() => {
-    const v = parseInt(localStorage.getItem('meru_oai_panel_w'), 10);
-    return Number.isFinite(v) && v >= 320 ? v : 460;
+
+  // Floating panel position + size (messenger-style)
+  const defaultBox = () => ({
+    x: Math.max(20, window.innerWidth - 460 - 24),
+    y: Math.max(20, window.innerHeight - 620 - 24),
+    w: 440, h: 600,
+  });
+  const [box, setBox] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('meru_oai_panel_box') || 'null');
+      if (saved && Number.isFinite(saved.x)) return saved;
+    } catch {}
+    return defaultBox();
   });
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--chat-w', panelW + 'px');
-  }, [panelW]);
+    try { localStorage.setItem('meru_oai_panel_box', JSON.stringify(box)); } catch {}
+  }, [box]);
 
-  const onPanelResize = (e) => {
+  // clamp to viewport when window resizes
+  useEffect(() => {
+    const onResize = () => {
+      setBox(b => ({
+        x: Math.min(b.x, window.innerWidth - 200),
+        y: Math.min(b.y, window.innerHeight - 100),
+        w: Math.min(b.w, window.innerWidth - 20),
+        h: Math.min(b.h, window.innerHeight - 20),
+      }));
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const onDragStart = (e) => {
+    if (e.target.closest('button, input, textarea, .chat-resize-corner')) return;
     e.preventDefault();
-    const startX = e.clientX;
-    const startW = panelW;
+    const startX = e.clientX, startY = e.clientY;
+    const startBox = box;
     const onMove = (ev) => {
-      const w = Math.min(900, Math.max(320, startW + (startX - ev.clientX)));
-      setPanelW(w);
+      const nx = Math.min(window.innerWidth - 100, Math.max(-startBox.w + 100, startBox.x + (ev.clientX - startX)));
+      const ny = Math.min(window.innerHeight - 40, Math.max(0, startBox.y + (ev.clientY - startY)));
+      setBox(b => ({...b, x: nx, y: ny}));
     };
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
-      try { localStorage.setItem('meru_oai_panel_w', String(panelW)); } catch {}
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   };
 
-  // persist width on change
-  useEffect(() => {
-    try { localStorage.setItem('meru_oai_panel_w', String(panelW)); } catch {}
-  }, [panelW]);
+  const onResizeCorner = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX, startY = e.clientY;
+    const startBox = box;
+    const onMove = (ev) => {
+      const nw = Math.max(280, Math.min(window.innerWidth - 20, startBox.w + (ev.clientX - startX)));
+      const nh = Math.max(280, Math.min(window.innerHeight - 20, startBox.h + (ev.clientY - startY)));
+      setBox(b => ({...b, w: nw, h: nh}));
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
 
   // textarea auto-grow
   const autoGrow = (el) => {
@@ -196,9 +234,9 @@ function ChatPanel({ open, onClose, currentPost, onSaveClip, onSaveLookup }) {
   if (!open) return null;
   return (
     <>
-      <aside className="chat-panel" style={{width: panelW + 'px'}}>
-        <div className="chat-resize-handle" onMouseDown={onPanelResize} title="드래그하여 너비 조절"/>
-        <div className="chat-head">
+      <aside className="chat-panel chat-floating"
+             style={{left: box.x, top: box.y, width: box.w, height: box.h}}>
+        <div className="chat-head" onMouseDown={onDragStart} style={{cursor:'grab'}}>
           <h2>AI 도움말</h2>
           <span className="chat-model">{MODEL}</span>
           <button className="icon-btn" onClick={onClose} aria-label="닫기">×</button>
@@ -310,6 +348,7 @@ function ChatPanel({ open, onClose, currentPost, onSaveClip, onSaveLookup }) {
             </div>
           </>
         )}
+        <div className="chat-resize-corner" onMouseDown={onResizeCorner} title="크기 조절"/>
       </aside>
     </>
   );
