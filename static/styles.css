@@ -1622,3 +1622,50 @@ body.chat-open .chat-fab { right: calc(24px + var(--chat-w, 460px)); }
 .chat-input {
   min-height: 36px; max-height: 240px; overflow-y: auto;
 }
+
+/* Clips drawer non-blocking — body usable while open */
+body.drawer-open .app { padding-right: 440px; transition: padding-right 0.2s ease; }
+body.drawer-open .clips-fab,
+body.drawer-open .chat-fab { right: calc(24px + 440px); }
+@media (max-width: 900px) {
+  body.drawer-open .app { padding-right: 0; }
+  body.drawer-open .clips-fab,
+  body.drawer-open .chat-fab { right: 24px; }
+}
+.clips-drawer { border-left: 1px solid var(--rule); }
+
+/* If both drawer and chat open simultaneously, stack them */
+body.drawer-open.chat-open .app { padding-right: calc(440px + var(--chat-w, 460px)); }
+body.drawer-open.chat-open .clips-drawer { right: var(--chat-w, 460px); }
+body.drawer-open.chat-open .clips-fab,
+body.drawer-open.chat-open .chat-fab { right: calc(24px + 440px + var(--chat-w, 460px)); }
+@media (max-width: 900px) {
+  body.drawer-open.chat-open .app { padding-right: 0; }
+  body.drawer-open.chat-open .clips-drawer { right: 0; }
+}
+
+/* AI message save tools */
+.chat-msg-tools {
+  display: flex; gap: 6px; margin-top: 6px;
+}
+.chat-msg-tools button {
+  font-size: 0.72rem; padding: 4px 10px;
+  border: 1px solid var(--rule); border-radius: 12px;
+  background: var(--paper); color: var(--ink); cursor: pointer;
+}
+.chat-msg-tools button:hover { background: rgba(0,0,0,0.05); }
+
+/* Memo tooltip on hover (revert from postit) */
+.memo-tooltip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: var(--paper); font-size: 0.82rem; line-height: 1.5;
+  padding: 8px 14px; border-radius: 8px; z-index: 310;
+  width: max-content; max-width: 320px; white-space: pre-wrap;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  pointer-events: none;
+}
+.memo-tooltip::after {
+  content: ''; position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%); border: 5px solid transparent;
+  border-top-color: var(--ink);
+}

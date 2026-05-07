@@ -47,7 +47,7 @@ function buildContext(post) {
   return txt.length > 6000 ? txt.slice(0, 6000) + '…' : txt;
 }
 
-function ChatPanel({ open, onClose, currentPost }) {
+function ChatPanel({ open, onClose, currentPost, onSaveClip, onSaveLookup }) {
   const [apiKey, setApiKey] = useState(() => getKey());
   const [keyInput, setKeyInput] = useState('');
   const [messages, setMessages] = useState([]); // {role, content}
@@ -272,12 +272,24 @@ function ChatPanel({ open, onClose, currentPost }) {
                   <small>예: "이 단락에서 캐리트레이드가 왜 영향을 줘?"</small>
                 </div>
               )}
-              {messages.map((m, i) => (
-                <div key={i} className={'chat-msg ' + m.role}>
-                  <div className="chat-role">{m.role === 'user' ? '나' : 'AI'}</div>
-                  <div className="chat-body">{m.content}</div>
-                </div>
-              ))}
+              {messages.map((m, i) => {
+                const meta = currentPost
+                  ? {title: currentPost.title, folder: currentPost.folder, date: currentPost.date, link: currentPost.link}
+                  : {title: 'AI 답변', folder: '', date: new Date().toISOString().slice(0,10), link: ''};
+                return (
+                  <div key={i} className={'chat-msg ' + m.role}>
+                    <div className="chat-role">{m.role === 'user' ? '나' : 'AI'}</div>
+                    <div className="chat-body">{m.content}</div>
+                    {m.role === 'assistant' && (
+                      <div className="chat-msg-tools">
+                        <button onClick={() => navigator.clipboard?.writeText(m.content)}>복사</button>
+                        <button onClick={() => onSaveClip?.({text: m.content, ...meta})}>클립에 저장</button>
+                        <button onClick={() => onSaveLookup?.({text: m.content, ...meta})}>모름에 저장</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               {loading && <div className="chat-msg assistant"><div className="chat-role">AI</div><div className="chat-body chat-typing">…생각 중</div></div>}
               {err && <div className="chat-err">⚠ {err}</div>}
             </div>

@@ -453,7 +453,8 @@ function App() {
         AI
       </button>
 
-      <ChatPanel open={showChat} onClose={() => setShowChat(false)} currentPost={expandedPost}/>
+      <ChatPanel open={showChat} onClose={() => setShowChat(false)} currentPost={expandedPost}
+        onSaveClip={addClip} onSaveLookup={addLookup}/>
 
       {showClips && (
         <ClipsDrawer

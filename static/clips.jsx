@@ -202,90 +202,21 @@ function LookupMark({ text }) {
   );
 }
 
-/* ---------- Memo mark + draggable resizable post-it ---------- */
-function MemoMark({ id, text, memo, pos, onUpdate }) {
-  const [open, setOpen] = useState(false);
-  const markRef = useRef(null);
-  const [box, setBox] = useState(() => pos || null);
-
-  useEffect(() => {
-    if (open && !box && markRef.current) {
-      const r = markRef.current.getBoundingClientRect();
-      setBox({
-        x: Math.min(r.left + window.scrollX, window.innerWidth - 260),
-        y: r.bottom + window.scrollY + 6,
-        w: 240, h: 140,
-      });
-    }
-  }, [open, box]);
-
-  const persist = (next) => {
-    setBox(next);
-    if (id != null && onUpdate) onUpdate(id, {pos: next});
-  };
-
-  const onDragStart = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const startX = e.clientX, startY = e.clientY;
-    const startBox = box;
-    const onMove = (ev) => {
-      const nx = Math.max(0, startBox.x + (ev.clientX - startX));
-      const ny = Math.max(0, startBox.y + (ev.clientY - startY));
-      setBox(b => ({...b, x: nx, y: ny}));
-    };
-    const onUp = (ev) => {
-      const nx = Math.max(0, startBox.x + (ev.clientX - startX));
-      const ny = Math.max(0, startBox.y + (ev.clientY - startY));
-      persist({...startBox, x: nx, y: ny});
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  };
-
-  const onResizeStart = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const startX = e.clientX, startY = e.clientY;
-    const startBox = box;
-    const onMove = (ev) => {
-      const nw = Math.max(160, startBox.w + (ev.clientX - startX));
-      const nh = Math.max(80, startBox.h + (ev.clientY - startY));
-      setBox(b => ({...b, w: nw, h: nh}));
-    };
-    const onUp = (ev) => {
-      const nw = Math.max(160, startBox.w + (ev.clientX - startX));
-      const nh = Math.max(80, startBox.h + (ev.clientY - startY));
-      persist({...startBox, w: nw, h: nh});
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  };
-
+/* ---------- Memo mark with hover tooltip ---------- */
+function MemoMark({ text, memo }) {
+  const [hover, setHover] = useState(false);
   return (
-    <>
-      <mark ref={markRef} className="memo-mark" onClick={() => setOpen(o => !o)}>
+    <span className="memo-mark-wrap" style={{position:'relative', display:'inline'}}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}>
+      <mark className="memo-mark">
         {text}
         <span className="memo-icon">💬</span>
       </mark>
-      {open && box && ReactDOM.createPortal(
-        <div className="postit" style={{left: box.x, top: box.y, width: box.w, height: box.h}}
-             onMouseDown={e => e.stopPropagation()}>
-          <div className="postit-head" onMouseDown={onDragStart}>
-            <span className="postit-grip">≡</span>
-            <span className="postit-label">메모</span>
-            <button className="postit-close" onClick={() => setOpen(false)}>×</button>
-          </div>
-          <div className="postit-body">{memo}</div>
-          <div className="postit-resize" onMouseDown={onResizeStart}/>
-        </div>,
-        document.body
+      {hover && (
+        <span className="memo-tooltip">{memo}</span>
       )}
-    </>
+    </span>
   );
 }
 
@@ -405,9 +336,13 @@ function ClipsDrawer({ clips, onClose, onRemove, onClear, onJump,
     else onRemoveLookup?.(id);
   };
 
+  useEffect(() => {
+    document.body.classList.add('drawer-open');
+    return () => document.body.classList.remove('drawer-open');
+  }, []);
+
   return (
     <>
-      <div className="clips-drawer-overlay" onClick={onClose}/>
       <aside className="clips-drawer">
         <div className="cd-head">
           <h2>내 서랍</h2>
