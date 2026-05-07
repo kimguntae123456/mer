@@ -56,7 +56,7 @@ function ChatPanel({ open, onClose, currentPost }) {
   useEffect(() => { if (open) grabSelection(); }, [open, grabSelection]);
 
   const saveKey = () => {
-    const k = keyInput.trim();
+    const k = keyInput.replace(/\s+/g, '').trim();
     if (!k.startsWith('sk-')) { setErr('OpenAI 키 형식 아님 (sk-…)'); return; }
     setKey(k);
     setApiKey(k);
@@ -86,11 +86,13 @@ function ChatPanel({ open, onClose, currentPost }) {
       : '너는 한국 금융·경제 학습 도우미. 짧고 정확하게, 한국어, 추측 금지.';
 
     try {
+      const cleanKey = apiKey.replace(/\s+/g, '').trim();
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
+        cache: 'no-store',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + apiKey,
+          'Authorization': 'Bearer ' + cleanKey,
         },
         body: JSON.stringify({
           model: MODEL,
@@ -99,14 +101,19 @@ function ChatPanel({ open, onClose, currentPost }) {
         }),
       });
       if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`${res.status} ${body.slice(0,200)}`);
+        let body = '';
+        try { body = await res.text(); } catch {}
+        throw new Error(`HTTP ${res.status} — ${body.slice(0,300)}`);
       }
       const data = await res.json();
       const reply = data.choices?.[0]?.message?.content || '(빈 응답)';
       setMessages(m => [...m, {role: 'assistant', content: reply}]);
     } catch (e) {
-      setErr(String(e.message || e));
+      const msg = String(e.message || e);
+      const hint = msg === 'Failed to fetch'
+        ? 'Failed to fetch — 키가 폐기됐거나(잘 가능성 큼), 브라우저 확장이 차단, 또는 SW 캐시 문제. 시크릿 창에서 재시도해보고, OpenAI 대시보드에서 키 상태 확인.'
+        : msg;
+      setErr(hint);
     } finally {
       setLoading(false);
     }
