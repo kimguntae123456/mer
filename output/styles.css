@@ -354,6 +354,22 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .row:hover { background: color-mix(in oklab, var(--paper-2) 50%, transparent); }
 .row:hover .row-title { color: var(--accent-ink); }
 
+/* Seen / unseen distinction */
+.row.seen .row-title { color: var(--muted); font-weight: 600; }
+.row.seen .row-excerpt { color: var(--muted-2); }
+.row.seen { opacity: 0.72; }
+.row.seen:hover { opacity: 1; }
+.new-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--c, #d23f31);
+  margin-right: 8px;
+  vertical-align: 0.18em;
+  flex: 0 0 auto;
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--c, #d23f31) 22%, transparent);
+}
+
 .row-meta-bottom {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   margin-top: 12px;

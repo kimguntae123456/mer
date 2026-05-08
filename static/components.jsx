@@ -66,6 +66,25 @@ function useBookmarks() {
   return [marks, toggle];
 }
 
+/* ---------- Seen posts (localStorage) ---------- */
+function useSeen() {
+  const [seen, setSeen] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('meru_seen') || '[]')); }
+    catch { return new Set(); }
+  });
+  const persist = (s) => localStorage.setItem('meru_seen', JSON.stringify([...s]));
+  const markSeen = useCallback((title) => {
+    setSeen(prev => {
+      if (prev.has(title)) return prev;
+      const n = new Set(prev); n.add(title); persist(n); return n;
+    });
+  }, []);
+  const clearSeen = useCallback(() => {
+    setSeen(() => { const n = new Set(); persist(n); return n; });
+  }, []);
+  return { seen, markSeen, clearSeen };
+}
+
 /* ---------- Hidden posts (localStorage) ---------- */
 function useHidden() {
   const [hidden, setHidden] = useState(() => {
@@ -99,13 +118,16 @@ function searchPosts(data, q) {
 }
 
 /* ---------- Row ---------- */
-function PostRow({ post, onOpen, isBookmarked, onToggleBookmark, showDate, isExpanded, expandedSlot, onHide, onRestore, isHidden }) {
+function PostRow({ post, onOpen, isBookmarked, onToggleBookmark, showDate, isExpanded, expandedSlot, onHide, onRestore, isHidden, isSeen }) {
   const sec = sectorMap[post.folder];
   const cssVar = sec?.cssVar;
   return (<>
-    <div className={'row' + (isExpanded ? ' expanded' : '')} onClick={onOpen} style={cssVar ? {'--c': `var(${cssVar})`} : {}}>
+    <div className={'row' + (isExpanded ? ' expanded' : '') + (isSeen ? ' seen' : ' unseen')} onClick={onOpen} style={cssVar ? {'--c': `var(${cssVar})`} : {}}>
       <div className="row-body">
-        <h3 className="row-title">{decodeEntities(post.title)}</h3>
+        <h3 className="row-title">
+          {!isSeen && <span className="new-dot" aria-label="안 본 글" title="안 본 글"/>}
+          {decodeEntities(post.title)}
+        </h3>
         <p className="row-excerpt">{decodeEntities(post.intro)}</p>
         <div className="row-meta-bottom">
           {showDate && <span className="row-date">{fmtDateShort(post.date)}</span>}
@@ -153,7 +175,7 @@ function PostRow({ post, onOpen, isBookmarked, onToggleBookmark, showDate, isExp
 }
 
 /* ---------- Day Group ---------- */
-function DayGroup({ date, posts, onOpen, marks, toggleMark, expandedTitle, expandedSlot, onHide, onRestore, hidden }) {
+function DayGroup({ date, posts, onOpen, marks, toggleMark, expandedTitle, expandedSlot, onHide, onRestore, hidden, seen }) {
   return (
     <div className="day-group">
       <div className="day-head">
@@ -169,11 +191,12 @@ function DayGroup({ date, posts, onOpen, marks, toggleMark, expandedTitle, expan
             isExpanded={expandedTitle === p.title}
             expandedSlot={expandedTitle === p.title ? expandedSlot : null}
             onHide={onHide} onRestore={onRestore}
-            isHidden={hidden ? hidden.has(p.title) : false}/>
+            isHidden={hidden ? hidden.has(p.title) : false}
+            isSeen={seen ? seen.has(p.title) : false}/>
         ))}
       </div>
     </div>
   );
 }
 
-window.MR = { SECTORS, sectorMap, Ico, fmtDate, fmtDateShort, dayWeek, decodeEntities, useBookmarks, useHidden, searchPosts, PostRow, DayGroup };
+window.MR = { SECTORS, sectorMap, Ico, fmtDate, fmtDateShort, dayWeek, decodeEntities, useBookmarks, useHidden, useSeen, searchPosts, PostRow, DayGroup };

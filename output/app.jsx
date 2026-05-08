@@ -1,7 +1,7 @@
 /* global React, ReactDOM, MR */
 const { useState, useEffect, useMemo, useCallback, useRef } = React;
 const { SECTORS, sectorMap, Ico, fmtDate, decodeEntities,
-        useBookmarks, useHidden, searchPosts, ArticleView, DayGroup, PostRow,
+        useBookmarks, useHidden, useSeen, searchPosts, ArticleView, DayGroup, PostRow,
         useClips, useHighlights, useMemos, useLookups, InlineArticle, ClipsDrawer, ChatPanel } = window.MR;
 
 /* ---------- Tweak defaults ---------- */
@@ -17,7 +17,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 const FS_LABELS = { s: '작게', m: '보통', l: '크게', xl: '아주 크게' };
 
 /* ---------- Sidebar (desktop) ---------- */
-function Sidebar({ filter, setFilter, counts, total, currentBookmarks, hiddenCount }) {
+function Sidebar({ filter, setFilter, counts, total, currentBookmarks, hiddenCount, unseenCount, onClearSeen }) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -76,6 +76,14 @@ function Sidebar({ filter, setFilter, counts, total, currentBookmarks, hiddenCou
       </div>
 
       <div className="sidebar-footer">
+        <div style={{marginBottom: 10, fontSize: '0.72rem', color: 'var(--muted-2)'}}>
+          안 본 글 <strong style={{color:'var(--ink-3)'}}>{unseenCount}</strong>편
+          {' · '}
+          <a href="#" onClick={(e) => {
+            e.preventDefault();
+            if (confirm('모든 글의 읽음 표시를 초기화할까요?')) onClearSeen();
+          }} style={{color:'var(--muted)', textDecoration:'underline'}}>읽음 초기화</a>
+        </div>
         2024년 1월부터 2026년 4월까지 메르 블로그<br/>전체 글을 섹터별로 정리한 리더입니다.
       </div>
     </aside>
@@ -248,6 +256,7 @@ function App() {
   const [showChat, setShowChat] = useState(false);
   const [marks, toggleMark] = useBookmarks();
   const { hidden, hide: hidePost, restore: restorePost, restoreAll: restoreAllPosts } = useHidden();
+  const { seen, markSeen, clearSeen } = useSeen();
   const { clips, add: addClipRaw, remove: removeClipRaw, clear: clearClipsRaw, setAll: setAllClips } = useClips();
   const { highlights, add: addHLRaw, remove: removeHLRaw, clear: clearHLRaw, setAll: setAllHL } = useHighlights();
   const { memos, add: addMemoRaw, remove: removeMemoRaw, clear: clearMemoRaw, update: updateMemoRaw, setAll: setAllMemos } = useMemos();
@@ -344,6 +353,7 @@ function App() {
 
   const handleOpen = useCallback((p) => {
     setExpandedTitle(prev => prev === p.title ? null : p.title);
+    markSeen(p.title);
     // smooth scroll to row after a tick
     setTimeout(() => {
       const el = document.querySelector('.row.expanded');
@@ -410,7 +420,7 @@ function App() {
           sub={`저장한 글 ${visibleBookmarks}편${q ? ` · 검색 결과 ${filteredPosts.length}편` : ''}`}/>
         <Timeline grouped={grouped} q={q} onOpen={handleOpen} marks={marks} toggleMark={toggleMark}
           expandedTitle={expandedTitle} expandedSlot={expandedSlot}
-          onHide={hidePost} hidden={hidden}
+          onHide={hidePost} hidden={hidden} seen={seen}
           emptyMsg={visibleBookmarks === 0 ? '아직 저장한 글이 없습니다.' : '검색 결과가 없습니다.'}/>
       </>
     );
@@ -430,7 +440,7 @@ function App() {
         )}
         <Timeline grouped={grouped} q={q} onOpen={handleOpen} marks={marks} toggleMark={toggleMark}
           expandedTitle={expandedTitle} expandedSlot={expandedSlot}
-          onRestore={restorePost} hidden={hidden}
+          onRestore={restorePost} hidden={hidden} seen={seen}
           emptyMsg={hidden.size === 0 ? '휴지통이 비어 있습니다.' : '검색 결과가 없습니다.'}/>
       </>
     );
@@ -442,7 +452,7 @@ function App() {
           sub={`${counts[filter.sector] || 0}편${q ? ` · 검색 결과 ${filteredPosts.length}편` : ''}`}/>
         <Timeline grouped={grouped} q={q} onOpen={handleOpen} marks={marks} toggleMark={toggleMark}
           expandedTitle={expandedTitle} expandedSlot={expandedSlot}
-          onHide={hidePost} hidden={hidden}/>
+          onHide={hidePost} hidden={hidden} seen={seen}/>
       </>
     );
   } else {
@@ -454,7 +464,7 @@ function App() {
         </div>}
         <Timeline grouped={grouped} q={q} onOpen={handleOpen} marks={marks} toggleMark={toggleMark}
           expandedTitle={expandedTitle} expandedSlot={expandedSlot}
-          onHide={hidePost} hidden={hidden}/>
+          onHide={hidePost} hidden={hidden} seen={seen}/>
       </>
     );
   }
@@ -463,7 +473,9 @@ function App() {
     <>
       <div className="app">
         <Sidebar filter={filter} setFilter={setFilter} counts={counts}
-          total={visibleTotal} currentBookmarks={visibleBookmarks} hiddenCount={hidden.size}/>
+          total={visibleTotal} currentBookmarks={visibleBookmarks} hiddenCount={hidden.size}
+          unseenCount={visibleTotal - [...seen].filter(t => !hidden.has(t)).length}
+          onClearSeen={clearSeen}/>
         <div className="content">
           <Topbar q={q} setQ={setQ}
             fontSize={tweaks.fontSize}
@@ -517,7 +529,7 @@ function App() {
 }
 
 /* ---------- Timeline ---------- */
-function Timeline({ grouped, q, onOpen, marks, toggleMark, emptyMsg, expandedTitle, expandedSlot, onHide, onRestore, hidden }) {
+function Timeline({ grouped, q, onOpen, marks, toggleMark, emptyMsg, expandedTitle, expandedSlot, onHide, onRestore, hidden, seen }) {
   if (grouped.length === 0) {
     return (
       <div className="empty">
@@ -532,7 +544,7 @@ function Timeline({ grouped, q, onOpen, marks, toggleMark, emptyMsg, expandedTit
         <DayGroup key={date} date={date} posts={posts} onOpen={onOpen}
           marks={marks} toggleMark={toggleMark}
           expandedTitle={expandedTitle} expandedSlot={expandedSlot}
-          onHide={onHide} onRestore={onRestore} hidden={hidden}/>
+          onHide={onHide} onRestore={onRestore} hidden={hidden} seen={seen}/>
       ))}
     </div>
   );
